@@ -1,0 +1,2186 @@
+openapi: 3.0.3
+info:
+  title: Shresht Library API
+  version: 1.0.0
+  description: Digital Library Management System Backend API
+paths:
+  /api/v1/admin/attendance/manual/:
+    post:
+      operationId: api_v1_admin_attendance_manual_create
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attendance'
+          description: ''
+  /api/v1/admin/dashboard/stats/:
+    get:
+      operationId: api_v1_admin_dashboard_stats_retrieve
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/notifications/send/:
+    post:
+      operationId: api_v1_admin_notifications_send_create
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/payments/{id}/verify/:
+    post:
+      operationId: api_v1_admin_payments_verify_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/plans/{id}/update/:
+    put:
+      operationId: api_v1_admin_plans_update_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+  /api/v1/admin/qrcode/generate/:
+    post:
+      operationId: api_v1_admin_qrcode_generate_create
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QRCode'
+          description: ''
+  /api/v1/admin/reviews/:
+    get:
+      operationId: api_v1_admin_reviews_list
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+          description: ''
+  /api/v1/admin/reviews/{id}/approve/:
+    post:
+      operationId: api_v1_admin_reviews_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/seats/{id}/status/:
+    post:
+      operationId: api_v1_admin_seats_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/seats/add/:
+    post:
+      operationId: api_v1_admin_seats_add_create
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminAddSeatRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminAddSeatRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminAddSeatRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admin/students/:
+    get:
+      operationId: api_v1_admin_students_list
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentProfile'
+          description: ''
+  /api/v1/admin/students/{id}/:
+    get:
+      operationId: api_v1_admin_students_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+          description: ''
+    put:
+      operationId: api_v1_admin_students_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin Panel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+          description: ''
+  /api/v1/attendance/logs/:
+    get:
+      operationId: api_v1_attendance_logs_list
+      tags:
+      - QR Attendance
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attendance'
+          description: ''
+  /api/v1/attendance/scan/:
+    post:
+      operationId: api_v1_attendance_scan_create
+      tags:
+      - QR Attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QRCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QRCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QRCodeRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/admin/change-password/:
+    post:
+      operationId: api_v1_auth_admin_change_password_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/admin/login/:
+    post:
+      operationId: api_v1_auth_admin_login_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/forgot-password/:
+    post:
+      operationId: api_v1_auth_forgot_password_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/email/:
+    post:
+      operationId: api_v1_auth_login_email_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/mobile/:
+    post:
+      operationId: api_v1_auth_login_mobile_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginMobileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserLoginMobileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserLoginMobileRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      tags:
+      - Authentication
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: api_v1_auth_register_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/reset-password/:
+    post:
+      operationId: api_v1_auth_reset_password_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/send-otp/:
+    post:
+      operationId: api_v1_auth_send_otp_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOTPRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendOTPRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendOTPRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/verify-otp/:
+    post:
+      operationId: api_v1_auth_verify_otp_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/library/achievers/:
+    get:
+      operationId: api_v1_library_achievers_list
+      tags:
+      - Library Info
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Achiever'
+          description: ''
+  /api/v1/library/info/:
+    get:
+      operationId: api_v1_library_info_retrieve
+      tags:
+      - Library Info
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryInfo'
+          description: ''
+  /api/v1/library/reviews/:
+    get:
+      operationId: api_v1_library_reviews_list
+      tags:
+      - Library Info
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+          description: ''
+  /api/v1/library/reviews/submit/:
+    post:
+      operationId: api_v1_library_reviews_submit_create
+      tags:
+      - Library Info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+  /api/v1/memberships/history/:
+    get:
+      operationId: api_v1_memberships_history_list
+      tags:
+      - Membership Plans
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membership'
+          description: ''
+  /api/v1/memberships/plans/:
+    get:
+      operationId: api_v1_memberships_plans_list
+      tags:
+      - Membership Plans
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+  /api/v1/notifications/list/:
+    get:
+      operationId: api_v1_notifications_list_list
+      tags:
+      - Notifications
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentNotification'
+          description: ''
+  /api/v1/notifications/read/{id}/:
+    post:
+      operationId: api_v1_notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Notifications
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/notifications/register-device/:
+    post:
+      operationId: api_v1_notifications_register_device_create
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/payments/history/:
+    get:
+      operationId: api_v1_payments_history_list
+      tags:
+      - Payments
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/v1/payments/initiate/:
+    post:
+      operationId: api_v1_payments_initiate_create
+      tags:
+      - Payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/attendance/:
+    get:
+      operationId: api_v1_reports_attendance_retrieve
+      tags:
+      - Reports
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/payments/:
+    get:
+      operationId: api_v1_reports_payments_retrieve
+      tags:
+      - Reports
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/seats/:
+    get:
+      operationId: api_v1_reports_seats_retrieve
+      tags:
+      - Reports
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/seats/history/:
+    get:
+      operationId: api_v1_seats_history_list
+      tags:
+      - Seats
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeatAssignment'
+          description: ''
+  /api/v1/seats/layout/:
+    get:
+      operationId: api_v1_seats_layout_list
+      tags:
+      - Seats
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Seat'
+          description: ''
+  /api/v1/student/dashboard/:
+    get:
+      operationId: api_v1_student_dashboard_retrieve
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/student/id-card/:
+    get:
+      operationId: api_v1_student_id_card_retrieve
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/student/profile/:
+    get:
+      operationId: api_v1_student_profile_retrieve
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+          description: ''
+  /api/v1/student/profile/photo/:
+    post:
+      operationId: api_v1_student_profile_photo_create
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/student/profile/update/:
+    put:
+      operationId: api_v1_student_profile_update_update
+      tags:
+      - Student Profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentProfileRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+          description: ''
+  /api/v1/student/referral/:
+    get:
+      operationId: api_v1_student_referral_retrieve
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralCode'
+          description: ''
+  /api/v1/student/referral/apply/:
+    post:
+      operationId: api_v1_student_referral_apply_create
+      tags:
+      - Student Profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferralCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReferralCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReferralCodeRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/student/referral/history/:
+    get:
+      operationId: api_v1_student_referral_history_list
+      tags:
+      - Student Profile
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferralHistory'
+          description: ''
+  /api/v1/study/goal/:
+    get:
+      operationId: api_v1_study_goal_retrieve
+      tags:
+      - Study Features
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyGoal'
+          description: ''
+    post:
+      operationId: api_v1_study_goal_create
+      tags:
+      - Study Features
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudyGoalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudyGoalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudyGoalRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyGoal'
+          description: ''
+  /api/v1/study/session/end/:
+    post:
+      operationId: api_v1_study_session_end_create
+      tags:
+      - Study Features
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudySession'
+          description: ''
+  /api/v1/study/session/start/:
+    post:
+      operationId: api_v1_study_session_start_create
+      tags:
+      - Study Features
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudySession'
+          description: ''
+  /api/v1/superadmin/admins/:
+    get:
+      operationId: api_v1_superadmin_admins_list
+      tags:
+      - Super Admin
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminProfile'
+          description: ''
+  /api/v1/superadmin/admins/{id}/remove/:
+    delete:
+      operationId: api_v1_superadmin_admins_remove_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Super Admin
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/superadmin/admins/add/:
+    post:
+      operationId: api_v1_superadmin_admins_add_create
+      tags:
+      - Super Admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProfile'
+          description: ''
+components:
+  schemas:
+    Achiever:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        photo:
+          type: string
+          format: uri
+          nullable: true
+        achievement:
+          type: string
+          maxLength: 255
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - achievement
+      - id
+      - name
+      - year
+    AdminAddSeatRequest:
+      type: object
+      properties:
+        floor:
+          type: string
+          minLength: 1
+          maxLength: 50
+        row:
+          type: string
+          minLength: 1
+          maxLength: 10
+        seat_number:
+          type: string
+          minLength: 1
+          maxLength: 10
+        status:
+          $ref: '#/components/schemas/Status4cbEnum'
+      required:
+      - floor
+      - row
+      - seat_number
+    AdminLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    AdminManualAttendanceRequest:
+      type: object
+      properties:
+        student_id:
+          type: integer
+          nullable: true
+        student_mobile:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 15
+        date:
+          type: string
+          format: date
+    AdminProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        permissions: {}
+        is_active:
+          type: boolean
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - id
+      - username
+    AdminStudentProfileUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+        last_name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        is_active:
+          type: boolean
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        date:
+          type: string
+          format: date
+        time_in:
+          type: string
+          format: time
+          readOnly: true
+        is_manual:
+          type: boolean
+      required:
+      - date
+      - id
+      - student_name
+      - time_in
+    ChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - confirm_password
+      - new_password
+      - old_password
+    DeviceTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+      required:
+      - token
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    GoalEnum:
+      enum:
+      - UPSC
+      - GPSC
+      - Banking
+      - Army
+      - Teacher
+      - Railway
+      - CA
+      - Other
+      type: string
+      description: |-
+        * `UPSC` - UPSC
+        * `GPSC` - GPSC
+        * `Banking` - Banking
+        * `Army` - Army
+        * `Teacher` - Teacher
+        * `Railway` - Railway
+        * `CA` - CA
+        * `Other` - Other
+    LibraryInfo:
+      type: object
+      properties:
+        rules:
+          type: string
+        facilities:
+          type: string
+        about:
+          type: string
+      required:
+      - about
+      - facilities
+      - rules
+    Membership:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        plan:
+          type: integer
+        plan_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+      required:
+      - end_date
+      - id
+      - plan
+      - plan_name
+      - start_date
+      - student_name
+    MembershipPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        duration_months:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - duration_months
+      - id
+      - name
+      - price
+    MembershipPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        duration_months:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - duration_months
+      - name
+      - price
+    MembershipStatusEnum:
+      enum:
+      - active
+      - expired
+      - suspended
+      - cancelled
+      type: string
+      description: |-
+        * `active` - Active
+        * `expired` - Expired
+        * `suspended` - Suspended
+        * `cancelled` - Cancelled
+    NotificationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+      required:
+      - body
+      - title
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        plan_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        payment_mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        payment_date:
+          type: string
+          format: date
+          readOnly: true
+        transaction_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        receipt_url:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+      - amount
+      - id
+      - payment_date
+      - plan_name
+      - receipt_url
+      - status
+      - student_name
+    PaymentModeEnum:
+      enum:
+      - Cash
+      - UPI
+      - Card
+      - Bank Transfer
+      type: string
+      description: |-
+        * `Cash` - Cash
+        * `UPI` - UPI
+        * `Card` - Card
+        * `Bank Transfer` - Bank Transfer
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - verified
+      - refunded
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `verified` - Verified
+        * `refunded` - Refunded
+        * `failed` - Failed
+    QRCode:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 255
+        valid_date:
+          type: string
+          format: date
+        is_expired:
+          type: boolean
+        expiry_timestamp:
+          type: string
+          format: date-time
+      required:
+      - code
+      - expiry_timestamp
+      - id
+      - valid_date
+    QRCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 255
+        valid_date:
+          type: string
+          format: date
+        is_expired:
+          type: boolean
+        expiry_timestamp:
+          type: string
+          format: date-time
+      required:
+      - code
+      - expiry_timestamp
+      - valid_date
+    ReferralCode:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        code:
+          type: string
+          maxLength: 20
+        used_by_count:
+          type: integer
+          readOnly: true
+        benefit_given:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - benefit_given
+      - code
+      - id
+      - student_name
+      - used_by_count
+    ReferralCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - code
+    ReferralHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        referred_student_name:
+          type: string
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_at
+      - id
+      - referred_student_name
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - confirm_password
+      - new_password
+      - token
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - id
+      - rating
+      - student_name
+    ReviewRequest:
+      type: object
+      properties:
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        comment:
+          type: string
+          minLength: 1
+      required:
+      - comment
+      - rating
+    RoleEnum:
+      enum:
+      - admin
+      - super_admin
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `super_admin` - Super Admin
+    Seat:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        floor:
+          type: string
+          maxLength: 50
+        row:
+          type: string
+          maxLength: 10
+        seat_number:
+          type: string
+          maxLength: 10
+        status:
+          $ref: '#/components/schemas/Status4cbEnum'
+      required:
+      - floor
+      - id
+      - row
+      - seat_number
+    SeatAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        seat_details:
+          type: string
+          readOnly: true
+        assigned_date:
+          type: string
+          format: date
+          readOnly: true
+        released_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - assigned_date
+      - id
+      - seat_details
+      - student_name
+    SendOTPRequest:
+      type: object
+      properties:
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 15
+      required:
+      - mobile
+    Status4cbEnum:
+      enum:
+      - available
+      - occupied
+      - reserved
+      type: string
+      description: |-
+        * `available` - Available
+        * `occupied` - Occupied
+        * `reserved` - Reserved
+    StudentNotification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - body
+      - id
+      - read_at
+      - sent_at
+      - title
+    StudentProfile:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        mobile:
+          type: string
+          readOnly: true
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        profile_photo:
+          type: string
+          format: uri
+          nullable: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+      required:
+      - email
+      - first_name
+      - last_name
+      - mobile
+      - username
+    StudentProfileRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+        last_name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        profile_photo:
+          type: string
+          format: binary
+          nullable: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+      required:
+      - email
+      - first_name
+      - last_name
+    StudyGoal:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        date:
+          type: string
+          format: date
+        target_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        achieved_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+      required:
+      - date
+      - id
+      - target_hours
+    StudyGoalRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        target_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        achieved_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+      required:
+      - date
+      - target_hours
+    StudySession:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        duration_minutes:
+          type: integer
+          readOnly: true
+      required:
+      - duration_minutes
+      - id
+      - start_time
+    SuperAdminAddAdminRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 15
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        permissions: {}
+      required:
+      - email
+      - first_name
+      - last_name
+      - mobile
+      - password
+      - username
+    TypeEnum:
+      enum:
+      - push
+      - sms
+      - email
+      - whatsapp
+      - all
+      type: string
+      description: |-
+        * `push` - Push
+        * `sms` - SMS
+        * `email` - Email
+        * `whatsapp` - WhatsApp
+        * `all` - All
+    UserLoginMobileRequest:
+      type: object
+      properties:
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 15
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - mobile
+      - password
+    UserLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    UserRegisterRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 15
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+        caste:
+          type: string
+          maxLength: 50
+        address:
+          type: string
+        parent_mobile:
+          type: string
+          maxLength: 15
+      required:
+      - confirm_password
+      - dob
+      - email
+      - first_name
+      - goal
+      - last_name
+      - mobile
+      - password
+    VerifyOTPRequest:
+      type: object
+      properties:
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 15
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+      required:
+      - mobile
+      - otp
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

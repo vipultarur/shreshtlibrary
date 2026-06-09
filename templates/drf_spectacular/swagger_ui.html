@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {% block head %}
+    <title>{{ title|default:"Swagger" }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if favicon_href %}<link rel="icon" href="{{ favicon_href }}">{% endif %}
+    <link rel="stylesheet" href="{{ swagger_ui_css }}">
+    <style>
+      html { box-sizing: border-box; overflow-y: scroll; }
+      *, *:after, *:before { box-sizing: inherit; }
+      body { background: #fafafa; margin: 0; }
+    </style>
+    {% endblock head %}
+  </head>
+  <body>
+    {% block body %}
+    <div id="swagger-ui"></div>
+    <script src="{{ swagger_ui_bundle }}"></script>
+    <script src="{{ swagger_ui_standalone }}"></script>
+    <script>
+      "use strict";
+
+      const swaggerSettings = {{ settings|safe }};
+      const schemaAuthNames = {{ schema_auth_names|safe }};
+      let schemaAuthFailed = false;
+      const plugins = [];
+
+      const reloadSchemaOnAuthChange = () => {
+        return {
+          statePlugins: {
+            auth: {
+              wrapActions: {
+                authorizeOauth2: (ori) => (...args) => {
+                  schemaAuthFailed = false;
+                  setTimeout(() => ui.specActions.download());
+                  return ori(...args);
+                },
+                authorize: (ori) => (...args) => {
+                  schemaAuthFailed = false;
+                  setTimeout(() => ui.specActions.download());
+                  return ori(...args);
+                },
+                logout: (ori) => (...args) => {
+                  schemaAuthFailed = false;
+                  setTimeout(() => ui.specActions.download());
+                  return ori(...args);
+                },
+              },
+            },
+          },
+        };
+      };
+
+      if (schemaAuthNames.length > 0) {
+        plugins.push(reloadSchemaOnAuthChange);
+      }
+
+      const uiInitialized = () => {
+        try {
+          ui;
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
+      const isSchemaUrl = (url) => {
+        if (!uiInitialized()) {
+          return false;
+        }
+        return url === new URL(ui.getConfigs().url, document.baseURI).href;
+      };
+
+      const responseInterceptor = (response, ...args) => {
+        if (!response.ok && isSchemaUrl(response.url)) {
+          console.warn("schema request received '" + response.status + "'. disabling credentials for schema till logout.");
+          if (!schemaAuthFailed) {
+            schemaAuthFailed = true;
+            setTimeout(() => ui.specActions.download());
+          }
+        }
+        
+        // Auto-extract JWT token from admin or student email/mobile login and pre-authorize Swagger session
+        if (response.status === 200 && (
+            response.url.includes('/api/v1/auth/admin/login/') || 
+            response.url.includes('/api/v1/auth/login/email/') ||
+            response.url.includes('/api/v1/auth/login/mobile/')
+        )) {
+          try {
+            const body = JSON.parse(response.text);
+            const token = body.data?.tokens?.access;
+            if (token) {
+              ui.preauthorizeApiKey("BearerAuth", token);
+              console.log("Successfully pre-authorized Swagger with JWT Access Token!");
+            }
+          } catch (e) {
+            console.error("Could not parse login response token:", e);
+          }
+        }
+        return response;
+      };
+
+      const injectAuthCredentials = (request) => {
+        let authorized;
+        if (uiInitialized()) {
+          const state = ui.getState().get("auth").get("authorized");
+          if (state !== undefined && Object.keys(state.toJS()).length !== 0) {
+            authorized = state.toJS();
+          }
+        } else if (![undefined, "{}"].includes(localStorage.authorized)) {
+          authorized = JSON.parse(localStorage.authorized);
+        }
+        if (authorized === undefined) {
+          return;
+        }
+        for (const authName of schemaAuthNames) {
+          const authDef = authorized[authName];
+          if (authDef === undefined || authDef.schema === undefined) {
+            continue;
+          }
+          if (authDef.schema.type === "http" && authDef.schema.scheme === "bearer") {
+            request.headers["Authorization"] = "Bearer " + authDef.value;
+            return;
+          } else if (authDef.schema.type === "http" && authDef.schema.scheme === "basic") {
+            request.headers["Authorization"] = "Basic " + btoa(authDef.value.username + ":" + authDef.value.password);
+            return;
+          } else if (authDef.schema.type === "apiKey" && authDef.schema.in === "header") {
+            request.headers[authDef.schema.name] = authDef.value;
+            return;
+          } else if (authDef.schema.type === "oauth2" && authDef.token.token_type === "Bearer") {
+            request.headers["Authorization"] = `Bearer ${authDef.token.access_token}`;
+            return;
+          }
+        }
+      };
+
+      const requestInterceptor = (request, ...args) => {
+        if (request.loadSpec && schemaAuthNames.length > 0 && !schemaAuthFailed) {
+          try {
+            injectAuthCredentials(request);
+          } catch (e) {
+            console.error("schema auth injection failed with error: ", e);
+          }
+        }
+        {% if csrf_header_name %}
+        if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(request.method) && request.credentials === "same-origin") {
+          request.headers["{{ csrf_header_name }}"] = "{{ csrf_token }}";
+        }
+        {% endif %}
+        return request;
+      };
+
+      const ui = SwaggerUIBundle({
+        url: "{{ schema_url|escapejs }}",
+        dom_id: "#swagger-ui",
+        presets: [SwaggerUIBundle.presets.apis],
+        plugins,
+        layout: "BaseLayout",
+        requestInterceptor,
+        responseInterceptor,
+        ...swaggerSettings,
+      });
+
+      {% if oauth2_config %}ui.initOAuth({{ oauth2_config|safe }});{% endif %}
+    </script>
+    {% endblock %}
+  </body>
+</html>
