@@ -5,8 +5,12 @@ from django.conf.urls.static import static
 from drf_spectacular.views import (
     SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 )
+from apps.library.views import LandingPageView
 
 urlpatterns = [
+    # Main library landing page showing features, seats & pricing
+    path('', LandingPageView.as_view(), name='landing'),
+
     # Built-in django admin panel
     path('admin/', admin.site.urls),
 
@@ -21,3 +25,4 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
