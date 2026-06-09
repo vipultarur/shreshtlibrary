@@ -89,6 +89,15 @@ if 'test' in sys.argv:
         }
     }
 else:
+    db_url = os.getenv('DATABASE_URL')
+    if db_url and 'db.crrfhaaqeainuqzkmged.supabase.co' in db_url:
+        # Rewrite direct Supabase URL to use the IPv4 connection pooler (Session Mode, port 5432)
+        # to prevent "Network is unreachable" errors on IPv4-only environments like Render.
+        db_url = db_url.replace('db.crrfhaaqeainuqzkmged.supabase.co', 'aws-1-ap-southeast-1.pooler.supabase.com')
+        if 'postgres.crrfhaaqeainuqzkmged' not in db_url:
+            db_url = db_url.replace('://postgres:', '://postgres.crrfhaaqeainuqzkmged:')
+        os.environ['DATABASE_URL'] = db_url
+
     DATABASES = {
         'default': dj_database_url.config(
             default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}",
