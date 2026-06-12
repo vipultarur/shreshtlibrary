@@ -17,11 +17,7 @@ class LibraryInfoView(APIView):
     def get(self, request):
         info = LibraryInfo.objects.first()
         if not info:
-            info = LibraryInfo.objects.create(
-                rules="No loud talking. Respect seat allocations.",
-                facilities="Free High-Speed Wi-Fi, AC Rooms, Daily Newspapers.",
-                about="Shresht Library offers a premium, quiet workspace for competitive exam prep."
-            )
+            return standard_response(data=None)
         serializer = LibraryInfoSerializer(info)
         return standard_response(data=serializer.data)
 
@@ -46,6 +42,7 @@ class ReviewsListView(APIView):
         return standard_response(data=serializer.data)
 
 
+
 class StudentSubmitReviewView(APIView):
     permission_classes = [IsStudent]
 
@@ -53,7 +50,21 @@ class StudentSubmitReviewView(APIView):
     def post(self, request):
         serializer = ReviewSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(student=request.user, is_approved=False)  # pending approval
+            review = serializer.save(student=request.user, is_approved=False)  # pending approval
+            
+            try:
+                from apps.notifications.models import AdminInboxNotification
+                from api.v1.v2_admin import _full_name
+                AdminInboxNotification.objects.create(
+                    type='SUPPORT',
+                    title='New Review/Message Submitted',
+                    message=f"Student {_full_name(request.user)} submitted a review/message: {review.comment[:50]}...",
+                    related_id=str(review.id),
+                    student=request.user
+                )
+            except Exception:
+                pass
+
             return standard_response(
                 message="Review submitted. It will be visible once approved by admin.",
                 data=serializer.data,

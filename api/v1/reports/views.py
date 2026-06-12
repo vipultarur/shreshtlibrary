@@ -18,10 +18,10 @@ class AdminAttendanceReportView(APIView):
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Reports'])
     def get(self, request):
         # Query parameters for date range
-        start_date = request.query_param.get('start_date')
-        end_date = request.query_param.get('end_date')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
 
-        queryset = Attendance.objects.all()
+        queryset = Attendance.objects.select_related('student').all()
         if start_date:
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
@@ -43,11 +43,11 @@ class AdminPaymentReportView(APIView):
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Reports'])
     def get(self, request):
-        queryset = Payment.objects.all()
+        queryset = Payment.objects.select_related('student', 'membership__plan').all()
         records = [{
             "id": r.id,
             "student_name": r.student.get_full_name() or r.student.username,
-            "plan_name": r.membership.plan.name if r.membership else "N/A",
+            "plan_name": r.membership.plan.name if r.membership else None,
             "amount": r.amount,
             "status": r.status,
             "payment_mode": r.payment_mode,

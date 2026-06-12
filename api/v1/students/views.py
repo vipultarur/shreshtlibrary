@@ -53,19 +53,22 @@ class StudentProfilePhotoView(APIView):
         return standard_response(message="Profile photo updated successfully.", data={"photo_url": profile.profile_photo.url})
 
 
+from api.v1.v2_admin import _holiday_for_date
+
 class StudentDashboardView(APIView):
     permission_classes = [IsStudent]
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Student Profile'])
     def get(self, request):
         user = request.user
+        today = timezone.now().date()
         
         # Membership details
         membership = Membership.objects.filter(student=user, status='active').last()
         days_left = 0
         plan_name = "No active plan"
         if membership:
-            days_left = (membership.end_date - timezone.now().date()).days
+            days_left = (membership.end_date - today).days
             days_left = max(0, days_left)
             plan_name = membership.plan.name
 
@@ -75,16 +78,46 @@ class StudentDashboardView(APIView):
         floor = seat_assign.seat.floor if seat_assign else "None"
 
         # Today's attendance
-        attended = Attendance.objects.filter(student=user, date=timezone.now().date()).exists()
+        attended = Attendance.objects.filter(student=user, date=today).exists()
+        
+        # Holiday check
+        holiday = _holiday_for_date(today)
+
+        # App config
+        from apps.library.models import AppConfig
+        config = AppConfig.get_solo()
+
+        is_premium = user.student_profile.status == "LIVE" if hasattr(user, 'student_profile') else False
+        
+        # Determine restrictions based on premium status and config
+        restricted_features = []
+        if config.is_premium_gating_enabled and not is_premium:
+            restricted_features.extend(['seats', 'payments', 'attendance', 'study', 'profile'])
+            if not config.allow_non_premium_notifications:
+                restricted_features.append('notifications')
+            if not config.allow_non_premium_sliders:
+                restricted_features.append('sliders')
+            if not config.allow_non_premium_library_info:
+                restricted_features.append('library')
 
         data = {
             "student_id": user.id,
             "full_name": user.get_full_name() or user.username,
             "membership_plan": plan_name,
             "membership_days_left": days_left,
+            "is_premium": is_premium,
+            "membership_status": user.student_profile.status if hasattr(user, 'student_profile') else "NEW",
+            "restricted_features": restricted_features,
+            "expiry_dialog": {
+                "title": config.expiry_dialog_title,
+                "message": config.expiry_dialog_message,
+            } if config.is_premium_gating_enabled and not is_premium else None,
             "assigned_seat": seat_number,
             "assigned_seat_floor": floor,
-            "marked_attendance_today": attended
+            "marked_attendance_today": attended,
+            "is_holiday": holiday is not None,
+            "holiday_title": holiday.title if holiday else None,
+            "holiday_description": holiday.description if holiday else None,
         }
         return standard_response(data=data)
 

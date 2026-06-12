@@ -1,15 +1,9 @@
 from rest_framework import serializers
-from apps.study.models import StudySession, StudyGoal
+from apps.study.models import StudySession
 
 class StudySessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudySession
-        fields = ['id', 'start_time', 'end_time', 'duration_minutes']
-        read_only_fields = ['id', 'duration_minutes']
+        fields = ['id', 'start_time', 'end_time', 'status', 'duration_minutes', 'paused_minutes']
+        read_only_fields = ['id', 'start_time']
 
-
-class StudyGoalSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudyGoal
-        fields = ['id', 'date', 'target_hours', 'achieved_hours']
-        read_only_fields = ['id']

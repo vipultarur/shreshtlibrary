@@ -4,6 +4,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.db import transaction
 import datetime
 
 from drf_spectacular.utils import extend_schema, OpenApiTypes
@@ -21,11 +22,16 @@ from apps.library.models import Review
 from apps.notifications.models import Notification, StudentNotification, DeviceToken
 from utils.fcm import send_push_notification
 
-from .serializers import AdminProfileSerializer, AdminStudentProfileUpdateSerializer, AdminAddSeatSerializer, AdminManualAttendanceSerializer
-from api.v1.students.serializers import StudentProfileSerializer
+from .serializers import (
+    AdminProfileSerializer,
+    AdminStudentProfileReadSerializer,
+    AdminStudentProfileUpdateSerializer,
+    AdminAddSeatSerializer,
+    AdminManualAttendanceSerializer,
+    AdminReviewSerializer,
+)
 from api.v1.attendance.serializers import QRCodeSerializer, AttendanceSerializer
 from api.v1.memberships.serializers import MembershipPlanSerializer
-from api.v1.library.serializers import ReviewSerializer
 from api.v1.notifications.serializers import NotificationSerializer
 
 User = get_user_model()
@@ -56,29 +62,29 @@ class AdminDashboardStatsView(APIView):
 class AdminStudentsListView(APIView):
     permission_classes = [IsLibraryAdmin]
 
-    @extend_schema(responses={200: StudentProfileSerializer(many=True)}, tags=['Admin Panel'])
+    @extend_schema(responses={200: AdminStudentProfileReadSerializer(many=True)}, tags=['Admin Panel'])
     def get(self, request):
         students = StudentProfile.objects.all()
-        serializer = StudentProfileSerializer(students, many=True)
+        serializer = AdminStudentProfileReadSerializer(students, many=True)
         return standard_response(data=serializer.data)
 
 
 class AdminStudentProfileView(APIView):
     permission_classes = [IsLibraryAdmin]
 
-    @extend_schema(responses={200: StudentProfileSerializer}, tags=['Admin Panel'])
+    @extend_schema(responses={200: AdminStudentProfileReadSerializer}, tags=['Admin Panel'])
     def get(self, request, pk):
         student = get_object_or_404(StudentProfile, user__id=pk)
-        serializer = StudentProfileSerializer(student)
+        serializer = AdminStudentProfileReadSerializer(student)
         return standard_response(data=serializer.data)
 
-    @extend_schema(request=AdminStudentProfileUpdateSerializer, responses={200: StudentProfileSerializer}, tags=['Admin Panel'])
+    @extend_schema(request=AdminStudentProfileUpdateSerializer, responses={200: AdminStudentProfileReadSerializer}, tags=['Admin Panel'])
     def put(self, request, pk):
         student = get_object_or_404(StudentProfile, user__id=pk)
         serializer = AdminStudentProfileUpdateSerializer(student, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return standard_response(message="Student profile updated by admin.", data=StudentProfileSerializer(student).data)
+            return standard_response(message="Student profile updated by admin.", data=AdminStudentProfileReadSerializer(student).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -87,14 +93,17 @@ class AdminVerifyPaymentView(APIView):
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Admin Panel'])
     def post(self, request, pk):
-        payment = get_object_or_404(Payment, id=pk)
-        payment.status = 'verified'
-        payment.save()
+        with transaction.atomic():
+            payment = get_object_or_404(Payment.objects.select_for_update(), id=pk)
+            payment.status = 'verified'
+            payment.verified_at = timezone.now()
+            payment.save()
 
-        # Activate membership
-        if payment.membership:
-            payment.membership.status = 'active'
-            payment.membership.save()
+            # Activate membership
+            if payment.membership:
+                payment.membership.status = 'active'
+                payment.membership.is_active = True
+                payment.membership.save()
 
         return standard_response(message="Payment verified and membership activated.")
 
@@ -108,26 +117,47 @@ class AdminSeatStatusUpdateView(APIView):
         tags=['Admin Panel']
     )
     def post(self, request, pk):
-        seat = get_object_or_404(Seat, id=pk)
-        new_status = request.data.get('status')
-        student_id = request.data.get('student_id')
+        with transaction.atomic():
+            try:
+                seat = Seat.objects.select_for_update(nowait=True).get(id=pk)
+            except Seat.DoesNotExist:
+                return Response({"errors": {"seat": ["Seat not found."]}}, status=status.HTTP_404_NOT_FOUND)
+            except Exception:
+                return Response({"errors": {"seat": ["Seat is currently being modified. Please try again."]}}, status=status.HTTP_409_CONFLICT)
+                
+            new_status = request.data.get('status')
+            student_id = request.data.get('student_id')
 
-        if new_status not in ['available', 'occupied', 'reserved']:
-            return Response({"errors": {"status": ["Invalid status value."]}}, status=status.HTTP_400_BAD_REQUEST)
+            if new_status not in ['available', 'occupied', 'reserved']:
+                return Response({"errors": {"status": ["Invalid status value."]}}, status=status.HTTP_400_BAD_REQUEST)
 
-        seat.status = new_status
-        seat.save()
+            # Handle seat assignment tracking
+            if new_status == 'occupied' and student_id:
+                student = get_object_or_404(User, id=student_id, role='student')
+                
+                if seat.student and seat.student.id != student.id:
+                    return Response({"errors": {"seat": ["Seat is already occupied by another student."]}}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Handle seat assignment tracking
-        if new_status == 'occupied' and student_id:
-            student = get_object_or_404(User, id=student_id, role='student')
-            # Release old seat assignments
-            SeatAssignment.objects.filter(student=student, released_date__isnull=True).update(released_date=timezone.now().date())
-            # Create new assignment
-            SeatAssignment.objects.create(student=student, seat=seat)
-        elif new_status == 'available':
-            # Release assignments linked to this seat
-            SeatAssignment.objects.filter(seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+                # Clear previous seats concurrently to prevent double seat assignments
+                previous_seats = Seat.objects.select_for_update().filter(student=student)
+                for prev in previous_seats:
+                    if prev.id != seat.id:
+                        prev.student = None
+                        prev.status = 'available'
+                        prev.save()
+                        
+                # Release old seat assignments
+                SeatAssignment.objects.filter(student=student, released_date__isnull=True).update(released_date=timezone.now().date())
+                # Create new assignment
+                SeatAssignment.objects.create(student=student, seat=seat)
+                seat.student = student
+            elif new_status == 'available':
+                seat.student = None
+                # Release assignments linked to this seat
+                SeatAssignment.objects.filter(seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+
+            seat.status = new_status
+            seat.save()
 
         return standard_response(message=f"Seat status updated to '{new_status}' successfully.")
 
@@ -185,14 +215,16 @@ class AdminManualAttendanceView(APIView):
                 return Response({"errors": {"student_id": ["Student not found."]}}, status=status.HTTP_400_BAD_REQUEST)
                 
             date = serializer.validated_data.get('date', timezone.now().date())
+            is_present = request.data.get('is_present', True)
             
-            if Attendance.objects.filter(student=student, date=date).exists():
-                return Response({"errors": {"student_id": ["Attendance already marked for this date."]}}, status=status.HTTP_400_BAD_REQUEST)
-
-            attendance = Attendance.objects.create(
+            attendance, created = Attendance.objects.update_or_create(
                 student=student,
                 date=date,
-                is_manual=True
+                defaults={
+                    'is_manual': True,
+                    'is_present': is_present,
+                    'method': 'MANUAL'
+                }
             )
             return standard_response(message="Manual attendance logged by admin.", data=AttendanceSerializer(attendance).data, status_code=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -211,13 +243,23 @@ class AdminUpdateMembershipPlanView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AdminMembershipPlansListView(APIView):
+    permission_classes = [IsLibraryAdmin]
+
+    @extend_schema(responses={200: MembershipPlanSerializer(many=True)}, tags=['Admin Panel'])
+    def get(self, request):
+        plans = MembershipPlan.objects.all().order_by('price')
+        serializer = MembershipPlanSerializer(plans, many=True)
+        return standard_response(data=serializer.data)
+
+
 class AdminReviewsListView(APIView):
     permission_classes = [IsLibraryAdmin]
 
-    @extend_schema(responses={200: ReviewSerializer(many=True)}, tags=['Admin Panel'])
+    @extend_schema(responses={200: AdminReviewSerializer(many=True)}, tags=['Admin Panel'])
     def get(self, request):
         reviews = Review.objects.all().order_by('-created_at')
-        serializer = ReviewSerializer(reviews, many=True)
+        serializer = AdminReviewSerializer(reviews, many=True)
         return standard_response(data=serializer.data)
 
 
@@ -258,18 +300,25 @@ class AdminSendNotificationView(APIView):
             elif target == 'expired':
                 students = students.exclude(memberships__status='active', memberships__end_date__gte=timezone.now().date()).distinct()
 
-            # Delivery
+            # Delivery using bulk_create for performance
+            student_notifications = []
             for student in students:
-                StudentNotification.objects.create(
-                    student=student,
-                    notification=notification
+                student_notifications.append(
+                    StudentNotification(student=student, notification=notification)
                 )
+            
+            StudentNotification.objects.bulk_create(student_notifications)
                 
-                # Push Notification Dispatch
-                if notif_type in ['push', 'all']:
-                    tokens = DeviceToken.objects.filter(student=student)
-                    for token_obj in tokens:
-                        send_push_notification(token_obj.token, title, body)
+            # Push Notification Dispatch (Optimized slightly by fetching all tokens at once)
+            if notif_type in ['push', 'all']:
+                student_ids = [s.id for s in students]
+                tokens = DeviceToken.objects.filter(student_id__in=student_ids).values_list('token', flat=True)
+                # In a real app, this should be sent to Celery. Doing synchronously for now.
+                for token in tokens:
+                    try:
+                        send_push_notification(token, title, body)
+                    except Exception:
+                        pass
 
             return standard_response(message="Broadcasting notification dispatched to targeted student segments.", status_code=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

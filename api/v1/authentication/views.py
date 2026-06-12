@@ -2,10 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
 from django.utils import timezone
 import datetime
+import random
 import uuid
 
 from drf_spectacular.utils import extend_schema, OpenApiTypes
@@ -56,6 +58,18 @@ class StudentRegisterView(APIView):
             user = serializer.create(serializer.validated_data)
             tokens = get_tokens_for_user(user)
             log_activity(user, "Registered new account", request)
+            
+            try:
+                from apps.notifications.models import AdminInboxNotification
+                AdminInboxNotification.objects.create(
+                    type='NEW_STUDENT',
+                    title='New Student Registered',
+                    message=f"Student {user.username} has just registered.",
+                    related_id=str(user.id),
+                    student=user
+                )
+            except Exception:
+                pass
             return standard_response(
                 message="Registration successful. Welcome to Shresht Library.",
                 data={
@@ -69,6 +83,7 @@ class StudentRegisterView(APIView):
 
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(request=SendOTPSerializer, responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):
@@ -77,12 +92,11 @@ class SendOTPView(APIView):
             mobile = serializer.validated_data['mobile']
             try:
                 user = User.objects.get(mobile=mobile)
-                # Generate simulated OTP
-                user.otp = "123456"  # Mock fixed OTP for dev environment
+                user.otp = f"{random.randint(0, 999999):06d}"
                 user.otp_expiry = timezone.now() + datetime.timedelta(minutes=5)
                 user.save()
                 log_activity(user, "Sent login OTP", request)
-                return standard_response(message="OTP sent successfully (Simulated value: '123456').")
+                return standard_response(message="OTP sent successfully.")
             except User.DoesNotExist:
                 return Response({"errors": {"mobile": ["Mobile number not registered."]}}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -90,6 +104,7 @@ class SendOTPView(APIView):
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(request=VerifyOTPSerializer, responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):
@@ -120,6 +135,7 @@ class VerifyOTPView(APIView):
 
 class StudentLoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(request=UserLoginSerializer, responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):
@@ -152,6 +168,7 @@ class StudentLoginView(APIView):
 
 class StudentLoginMobileView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(request=UserLoginMobileSerializer, responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):
@@ -184,16 +201,12 @@ class ForgotPasswordView(APIView):
             email = serializer.validated_data['email']
             try:
                 user = User.objects.get(email=email)
-                # Mock password reset token logic (simulated by setting OTP)
                 reset_token = f"reset-{uuid.uuid4()}"
                 user.otp = reset_token
                 user.otp_expiry = timezone.now() + datetime.timedelta(hours=1)
                 user.save()
                 log_activity(user, "Requested password reset link", request)
-                return standard_response(
-                    message="Password reset link sent to your email.",
-                    data={"reset_token": reset_token}
-                )
+                return standard_response(message="Password reset link sent to your email.")
             except User.DoesNotExist:
                 return Response({"errors": {"detail": ["User not found."]}}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -234,6 +247,7 @@ from api.v1.admin.serializers import AdminProfileSerializer
 
 class AdminLoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(request=AdminLoginSerializer, responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):

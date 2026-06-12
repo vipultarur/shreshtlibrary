@@ -4,22 +4,63 @@ info:
   version: 1.0.0
   description: Digital Library Management System Backend API
 paths:
-  /api/v1/admin/attendance/manual/:
-    post:
-      operationId: api_v1_admin_attendance_manual_create
+  /api/v1/admin/attendance/:
+    get:
+      operationId: api_v1_admin_attendance_list
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: method
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: student_id
+        schema:
+          type: integer
       tags:
-      - Admin Panel
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttendanceList'
+          description: ''
+    post:
+      operationId: api_v1_admin_attendance_create
+      tags:
+      - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AdminManualAttendanceRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
+        required: true
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -30,11 +71,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Attendance'
           description: ''
-  /api/v1/admin/dashboard/stats/:
+  /api/v1/admin/attendance/{id}/:
     get:
-      operationId: api_v1_admin_dashboard_stats_retrieve
+      operationId: api_v1_admin_attendance_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
       tags:
-      - Admin Panel
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -43,25 +90,165 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/Attendance'
           description: ''
-  /api/v1/admin/notifications/send/:
-    post:
-      operationId: api_v1_admin_notifications_send_create
+    put:
+      operationId: api_v1_admin_attendance_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
       tags:
-      - Admin Panel
+      - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/NotificationRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/NotificationRequest'
+              $ref: '#/components/schemas/AttendanceRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attendance'
+          description: ''
+    patch:
+      operationId: api_v1_admin_attendance_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAttendanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAttendanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAttendanceRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attendance'
+          description: ''
+    delete:
+      operationId: api_v1_admin_attendance_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/attendance/absentees/:
+    get:
+      operationId: api_v1_admin_attendance_absentees_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/attendance/daily-summary/:
+    get:
+      operationId: api_v1_admin_attendance_daily_summary_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/attendance/manual/:
+    get:
+      operationId: api_v1_admin_attendance_manual_list
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: method
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: student_id
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttendanceList'
+          description: ''
+    post:
+      operationId: api_v1_admin_attendance_manual_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttendanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttendanceRequest'
         required: true
       security:
       - BearerAuth: []
@@ -71,9 +258,998 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/Attendance'
           description: ''
+  /api/v1/admin/attendance/streak/:
+    get:
+      operationId: api_v1_admin_attendance_streak_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dashboard/stats/:
+    get:
+      operationId: api_v1_admin_dashboard_stats_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/floors/:
+    post:
+      operationId: api_v1_admin_floors_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_floors_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_floors_destroy
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/floors/{id}/:
+    post:
+      operationId: api_v1_admin_floors_create_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_floors_update_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_floors_destroy_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/holidays/:
+    get:
+      operationId: api_v1_admin_holidays_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_holidays_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_holidays_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_holidays_destroy
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/holidays/{id}/:
+    get:
+      operationId: api_v1_admin_holidays_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_holidays_create_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_holidays_update_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_holidays_destroy_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/inbox/:
+    get:
+      operationId: api_v1_admin_inbox_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/inbox/{id}/:
+    post:
+      operationId: api_v1_admin_inbox_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_inbox_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/inbox/{id}/{action}/:
+    post:
+      operationId: api_v1_admin_inbox_create_2
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_inbox_destroy_2
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/library/achievers/:
+    get:
+      operationId: api_v1_admin_library_achievers_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_library_achievers_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/achievers/{id}/:
+    get:
+      operationId: api_v1_admin_library_achievers_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_library_achievers_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_library_achievers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/library/achievers/{id}/toggle/:
+    patch:
+      operationId: api_v1_admin_library_achievers_toggle_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/achievers/reorder/:
+    patch:
+      operationId: api_v1_admin_library_achievers_reorder_partial_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/facilities/:
+    get:
+      operationId: api_v1_admin_library_facilities_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_library_facilities_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/facilities/{id}/:
+    put:
+      operationId: api_v1_admin_library_facilities_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_library_facilities_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/library/facilities/{id}/toggle/:
+    patch:
+      operationId: api_v1_admin_library_facilities_toggle_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/facilities/reorder/:
+    patch:
+      operationId: api_v1_admin_library_facilities_reorder_partial_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/library/info/:
+    get:
+      operationId: api_v1_admin_library_info_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_library_info_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/memberships/:
+    get:
+      operationId: api_v1_admin_memberships_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: plan_id
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - cancelled
+          - expired
+          - suspended
+        description: |-
+          * `active` - Active
+          * `expired` - Expired
+          * `suspended` - Suspended
+          * `cancelled` - Cancelled
+      - in: query
+        name: student_id
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembershipList'
+          description: ''
+  /api/v1/admin/memberships/{id}/:
+    get:
+      operationId: api_v1_admin_memberships_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    put:
+      operationId: api_v1_admin_memberships_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    patch:
+      operationId: api_v1_admin_memberships_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+  /api/v1/admin/memberships/assign/:
+    post:
+      operationId: api_v1_admin_memberships_assign_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/memberships/expired-today/:
+    get:
+      operationId: api_v1_admin_memberships_expired_today_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/memberships/expiring/:
+    get:
+      operationId: api_v1_admin_memberships_expiring_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/memberships/renew/:
+    post:
+      operationId: api_v1_admin_memberships_renew_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/memberships/upgrade/:
+    post:
+      operationId: api_v1_admin_memberships_upgrade_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/:
+    get:
+      operationId: api_v1_admin_notifications_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/{id}/:
+    get:
+      operationId: api_v1_admin_notifications_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/{id}/recipients/:
+    get:
+      operationId: api_v1_admin_notifications_recipients_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/schedule/:
+    post:
+      operationId: api_v1_admin_notifications_schedule_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/scheduled/:
+    get:
+      operationId: api_v1_admin_notifications_scheduled_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_notifications_scheduled_destroy
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/notifications/scheduled/{id}/cancel/:
+    get:
+      operationId: api_v1_admin_notifications_scheduled_cancel_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_notifications_scheduled_cancel_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/notifications/send/:
+    post:
+      operationId: api_v1_admin_notifications_send_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/notifications/templates/:
+    get:
+      operationId: api_v1_admin_notifications_templates_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payments/:
+    get:
+      operationId: api_v1_admin_payments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+    post:
+      operationId: api_v1_admin_payments_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/v1/admin/payments/{id}/:
+    get:
+      operationId: api_v1_admin_payments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    put:
+      operationId: api_v1_admin_payments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    patch:
+      operationId: api_v1_admin_payments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/v1/admin/payments/{id}/receipt/:
+    get:
+      operationId: api_v1_admin_payments_receipt_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payments/{id}/refund/:
+    post:
+      operationId: api_v1_admin_payments_refund_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/admin/payments/{id}/verify/:
     post:
       operationId: api_v1_admin_payments_verify_create
@@ -84,7 +1260,51 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payments/overdue/:
+    get:
+      operationId: api_v1_admin_payments_overdue_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payments/pending/:
+    get:
+      operationId: api_v1_admin_payments_pending_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/payments/summary/:
+    get:
+      operationId: api_v1_admin_payments_summary_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/plans/:
+    get:
+      operationId: api_v1_admin_plans_list
+      tags:
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -93,12 +1313,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipPlan'
           description: ''
-  /api/v1/admin/plans/{id}/update/:
-    put:
-      operationId: api_v1_admin_plans_update_update
+  /api/v1/admin/plans/{id}/:
+    get:
+      operationId: api_v1_admin_plans_retrieve
       parameters:
       - in: path
         name: id
@@ -106,7 +1327,28 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    put:
+      operationId: api_v1_admin_plans_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
       requestBody:
         content:
           application/json:
@@ -129,26 +1371,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/MembershipPlan'
           description: ''
-  /api/v1/admin/qrcode/generate/:
-    post:
-      operationId: api_v1_admin_qrcode_generate_create
+    patch:
+      operationId: api_v1_admin_plans_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
       tags:
-      - Admin Panel
-      security:
-      - BearerAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QRCode'
-          description: ''
-  /api/v1/admin/reviews/:
-    get:
-      operationId: api_v1_admin_reviews_list
-      tags:
-      - Admin Panel
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -157,10 +1400,415 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    delete:
+      operationId: api_v1_admin_plans_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/plans/{id}/students/:
+    get:
+      operationId: api_v1_admin_plans_students_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/plans/{id}/toggle/:
+    patch:
+      operationId: api_v1_admin_plans_toggle_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/plans/{id}/update/:
+    get:
+      operationId: api_v1_admin_plans_update_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    put:
+      operationId: api_v1_admin_plans_update_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    patch:
+      operationId: api_v1_admin_plans_update_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    delete:
+      operationId: api_v1_admin_plans_update_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/plans/create/:
+    get:
+      operationId: api_v1_admin_plans_create_list
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Review'
+                  $ref: '#/components/schemas/MembershipPlan'
           description: ''
+    post:
+      operationId: api_v1_admin_plans_create_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+  /api/v1/admin/plans/stats/:
+    get:
+      operationId: api_v1_admin_plans_stats_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/profile/:
+    get:
+      operationId: api_v1_admin_profile_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_profile_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_profile_partial_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/{id}/scans/:
+    get:
+      operationId: api_v1_admin_qr_scans_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_scans_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/current/:
+    get:
+      operationId: api_v1_admin_qr_current_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_current_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/expire/:
+    get:
+      operationId: api_v1_admin_qr_expire_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_expire_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/generate/:
+    get:
+      operationId: api_v1_admin_qr_generate_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_generate_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/history/:
+    get:
+      operationId: api_v1_admin_qr_history_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_history_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qr/regenerate/:
+    get:
+      operationId: api_v1_admin_qr_regenerate_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qr_regenerate_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/qrcode/generate/:
+    get:
+      operationId: api_v1_admin_qrcode_generate_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_qrcode_generate_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/reviews/:
+    get:
+      operationId: api_v1_admin_reviews_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/admin/reviews/{id}/approve/:
     post:
       operationId: api_v1_admin_reviews_approve_create
@@ -171,18 +1819,290 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
+    delete:
+      operationId: api_v1_admin_reviews_approve_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/reviews/{id}/delete/:
+    post:
+      operationId: api_v1_admin_reviews_delete_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_reviews_delete_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/reviews/{id}/reject/:
+    post:
+      operationId: api_v1_admin_reviews_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_reviews_reject_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/reviews/pending/:
+    get:
+      operationId: api_v1_admin_reviews_pending_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/rows/:
+    post:
+      operationId: api_v1_admin_rows_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_rows_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_rows_destroy
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/rows/{id}/:
+    post:
+      operationId: api_v1_admin_rows_create_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_rows_update_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_rows_destroy_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/seats/:
+    get:
+      operationId: api_v1_admin_seats_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_seats_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/{id}/:
+    get:
+      operationId: api_v1_admin_seats_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_seats_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/{id}/assign/:
+    post:
+      operationId: api_v1_admin_seats_assign_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_seats_assign_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/{id}/history/:
+    get:
+      operationId: api_v1_admin_seats_history_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/admin/seats/{id}/status/:
     post:
       operationId: api_v1_admin_seats_status_create
@@ -193,21 +2113,263 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: {}
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              additionalProperties: {}
-          multipart/form-data:
-            schema:
-              type: object
-              additionalProperties: {}
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_seats_status_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/{id}/unassign/:
+    post:
+      operationId: api_v1_admin_seats_unassign_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_seats_unassign_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/add/:
+    get:
+      operationId: api_v1_admin_seats_add_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_seats_add_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/available/:
+    get:
+      operationId: api_v1_admin_seats_available_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/layout/:
+    get:
+      operationId: api_v1_admin_seats_layout_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/stats/:
+    get:
+      operationId: api_v1_admin_seats_stats_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/settings/:
+    get:
+      operationId: api_v1_admin_settings_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_settings_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/sliders/:
+    get:
+      operationId: api_v1_admin_sliders_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_sliders_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/sliders/{id}/:
+    put:
+      operationId: api_v1_admin_sliders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_sliders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/students/:
+    get:
+      operationId: api_v1_admin_students_list
+      parameters:
+      - in: query
+        name: gender
+        schema:
+          type: string
+          enum:
+          - Female
+          - Male
+          - Other
+        description: |-
+          * `Male` - Male
+          * `Female` - Female
+          * `Other` - Other
+      - in: query
+        name: goal
+        schema:
+          type: string
+          enum:
+          - Army
+          - Banking
+          - CA
+          - CONSTABLE
+          - GPSC
+          - Other
+          - Railway
+          - SSC
+          - SSC CGL
+          - Teacher
+          - UPSC
+          - UPSC Exam
+        description: |-
+          * `UPSC` - UPSC
+          * `GPSC` - GPSC
+          * `CONSTABLE` - Constable
+          * `Banking` - Banking
+          * `Army` - Army
+          * `Teacher` - Teacher
+          * `Railway` - Railway
+          * `SSC` - SSC
+          * `CA` - CA
+          * `UPSC Exam` - UPSC Exam
+          * `SSC CGL` - SSC CGL
+          * `Other` - Other
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - EXPIRED
+          - LIVE
+          - SUSPENDED
+        description: |-
+          * `LIVE` - Live
+          * `EXPIRED` - Expired
+          * `SUSPENDED` - Suspended
+      tags:
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -216,26 +2378,23 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/PaginatedStudentProfileList'
           description: ''
-  /api/v1/admin/seats/add/:
     post:
-      operationId: api_v1_admin_seats_add_create
+      operationId: api_v1_admin_students_create
       tags:
-      - Admin Panel
+      - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminAddSeatRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AdminAddSeatRequest'
+              $ref: '#/components/schemas/StudentProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AdminAddSeatRequest'
-        required: true
+              $ref: '#/components/schemas/StudentProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentProfileRequest'
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -244,25 +2403,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/admin/students/:
-    get:
-      operationId: api_v1_admin_students_list
-      tags:
-      - Admin Panel
-      security:
-      - BearerAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/StudentProfile'
+                $ref: '#/components/schemas/StudentProfile'
           description: ''
   /api/v1/admin/students/{id}/:
     get:
@@ -274,7 +2415,7 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -294,18 +2435,18 @@ paths:
           type: integer
         required: true
       tags:
-      - Admin Panel
+      - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
+              $ref: '#/components/schemas/StudentProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AdminStudentProfileUpdateRequest'
+              $ref: '#/components/schemas/StudentProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentProfileRequest'
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -316,6 +2457,181 @@ paths:
               schema:
                 $ref: '#/components/schemas/StudentProfile'
           description: ''
+    patch:
+      operationId: api_v1_admin_students_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentProfileRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+          description: ''
+    delete:
+      operationId: api_v1_admin_students_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/students/{id}/{kind}/:
+    get:
+      operationId: api_v1_admin_students_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/{id}/activate/:
+    post:
+      operationId: api_v1_admin_students_activate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/{id}/analytics/:
+    get:
+      operationId: api_v1_admin_students_analytics_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/{id}/photo/:
+    post:
+      operationId: api_v1_admin_students_photo_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_admin_students_photo_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/{id}/suspend/:
+    post:
+      operationId: api_v1_admin_students_suspend_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/counts/:
+    get:
+      operationId: api_v1_admin_students_counts_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/students/export/:
+    get:
+      operationId: api_v1_admin_students_export_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/attendance/logs/:
     get:
       operationId: api_v1_attendance_logs_list
@@ -337,58 +2653,34 @@ paths:
     post:
       operationId: api_v1_attendance_scan_create
       tags:
-      - QR Attendance
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/QRCodeRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/QRCodeRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/QRCodeRequest'
-        required: true
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
   /api/v1/auth/admin/change-password/:
     post:
       operationId: api_v1_auth_admin_change_password_create
       tags:
-      - Authentication
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
-        required: true
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
+    put:
+      operationId: api_v1_auth_admin_change_password_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/auth/admin/login/:
     post:
       operationId: api_v1_auth_admin_login_create
@@ -418,6 +2710,38 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/auth/change-password/:
+    post:
+      operationId: api_v1_auth_change_password_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_auth_change_password_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/fcm-token/update/:
+    post:
+      operationId: api_v1_auth_fcm_token_update_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/auth/forgot-password/:
     post:
       operationId: api_v1_auth_forgot_password_create
@@ -434,6 +2758,35 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/admin/:
+    post:
+      operationId: api_v1_auth_login_admin_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
         required: true
       security:
       - BearerAuth: []
@@ -521,6 +2874,17 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: api_v1_auth_me_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/auth/register/:
     post:
       operationId: api_v1_auth_register_create
@@ -608,6 +2972,35 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: api_v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
   /api/v1/auth/verify-otp/:
     post:
       operationId: api_v1_auth_verify_otp_create
@@ -637,58 +3030,211 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/dashboard/activity/export/:
+    get:
+      operationId: api_v1_dashboard_activity_export_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/activity/log/:
+    get:
+      operationId: api_v1_dashboard_activity_log_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/activity/recent/:
+    get:
+      operationId: api_v1_dashboard_activity_recent_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/alerts/:
+    get:
+      operationId: api_v1_dashboard_alerts_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/charts/{domain}/{chart}/:
+    get:
+      operationId: api_v1_dashboard_charts_retrieve
+      parameters:
+      - in: path
+        name: chart
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: domain
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/stats/:
+    get:
+      operationId: api_v1_dashboard_stats_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/dashboard/stats/{section}/:
+    get:
+      operationId: api_v1_dashboard_stats_retrieve_2
+      parameters:
+      - in: path
+        name: section
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/holidays/:
+    get:
+      operationId: api_v1_holidays_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_holidays_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: api_v1_holidays_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_holidays_destroy
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/library/achievers/:
     get:
-      operationId: api_v1_library_achievers_list
+      operationId: api_v1_library_achievers_retrieve
       tags:
-      - Library Info
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Achiever'
-          description: ''
+          description: No response body
+  /api/v1/library/achievers/featured/:
+    get:
+      operationId: api_v1_library_achievers_featured_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/library/facilities/:
+    get:
+      operationId: api_v1_library_facilities_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /api/v1/library/info/:
     get:
       operationId: api_v1_library_info_retrieve
       tags:
-      - Library Info
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LibraryInfo'
-          description: ''
+          description: No response body
+    put:
+      operationId: api_v1_library_info_update
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/library/reviews/:
     get:
-      operationId: api_v1_library_reviews_list
+      operationId: api_v1_library_reviews_retrieve
       tags:
-      - Library Info
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Review'
-          description: ''
+          description: No response body
   /api/v1/library/reviews/submit/:
     post:
       operationId: api_v1_library_reviews_submit_create
@@ -716,6 +3262,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Review'
           description: ''
+  /api/v1/library/reviews/summary/:
+    get:
+      operationId: api_v1_library_reviews_summary_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /api/v1/memberships/history/:
     get:
       operationId: api_v1_memberships_history_list
@@ -865,54 +3423,256 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/plans/:
+    get:
+      operationId: api_v1_plans_list
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    post:
+      operationId: api_v1_plans_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+  /api/v1/plans/{id}/:
+    get:
+      operationId: api_v1_plans_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    put:
+      operationId: api_v1_plans_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MembershipPlanRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    patch:
+      operationId: api_v1_plans_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipPlanRequest'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+          description: ''
+    delete:
+      operationId: api_v1_plans_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/qr/scan/:
+    post:
+      operationId: api_v1_qr_scan_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/qr/today/:
+    get:
+      operationId: api_v1_qr_today_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/{kind}/export/:
+    get:
+      operationId: api_v1_reports_export_retrieve
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/reports/attendance/:
     get:
       operationId: api_v1_reports_attendance_retrieve
       tags:
-      - Reports
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
+  /api/v1/reports/daily-summary/:
+    get:
+      operationId: api_v1_reports_daily_summary_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/memberships/:
+    get:
+      operationId: api_v1_reports_memberships_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/reports/payments/:
     get:
       operationId: api_v1_reports_payments_retrieve
       tags:
-      - Reports
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
   /api/v1/reports/seats/:
     get:
       operationId: api_v1_reports_seats_retrieve
       tags:
-      - Reports
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+          description: No response body
+  /api/v1/reports/students/:
+    get:
+      operationId: api_v1_reports_students_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/seats/history/:
     get:
       operationId: api_v1_seats_history_list
@@ -948,6 +3708,18 @@ paths:
                 items:
                   $ref: '#/components/schemas/Seat'
           description: ''
+  /api/v1/sliders/:
+    get:
+      operationId: api_v1_sliders_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /api/v1/student/dashboard/:
     get:
       operationId: api_v1_student_dashboard_retrieve
@@ -1027,7 +3799,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/StudentProfileRequest'
-        required: true
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -1099,9 +3870,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/ReferralHistory'
           description: ''
-  /api/v1/study/goal/:
+  /api/v1/study/session/current/:
     get:
-      operationId: api_v1_study_goal_retrieve
+      operationId: api_v1_study_session_current_retrieve
       tags:
       - Study Features
       security:
@@ -1112,39 +3883,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudyGoal'
-          description: ''
-    post:
-      operationId: api_v1_study_goal_create
-      tags:
-      - Study Features
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StudyGoalRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/StudyGoalRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/StudyGoalRequest'
-        required: true
-      security:
-      - BearerAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StudyGoal'
+                $ref: '#/components/schemas/StudySession'
           description: ''
   /api/v1/study/session/end/:
     post:
       operationId: api_v1_study_session_end_create
       tags:
       - Study Features
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -1170,11 +3926,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/StudySession'
           description: ''
-  /api/v1/superadmin/admins/:
-    get:
-      operationId: api_v1_superadmin_admins_list
+  /api/v1/study/session/update/:
+    post:
+      operationId: api_v1_study_session_update_create
       tags:
-      - Super Admin
+      - Study Features
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudySessionRequest'
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -1183,11 +3950,117 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AdminProfile'
+                $ref: '#/components/schemas/StudySession'
           description: ''
+  /api/v1/superadmin/activity-log/:
+    get:
+      operationId: api_v1_superadmin_activity_log_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_activity_log_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/admins/:
+    get:
+      operationId: api_v1_superadmin_admins_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_admins_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/admins/{id}/:
+    put:
+      operationId: api_v1_superadmin_admins_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_superadmin_admins_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/superadmin/admins/{id}/deactivate/:
+    post:
+      operationId: api_v1_superadmin_admins_deactivate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/superadmin/admins/{id}/remove/:
+    put:
+      operationId: api_v1_superadmin_admins_remove_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
     delete:
       operationId: api_v1_superadmin_admins_remove_destroy
       parameters:
@@ -1197,93 +4070,162 @@ paths:
           type: integer
         required: true
       tags:
-      - Super Admin
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/superadmin/admins/add/:
+    get:
+      operationId: api_v1_superadmin_admins_add_retrieve
+      tags:
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/superadmin/admins/add/:
+          description: No response body
     post:
       operationId: api_v1_superadmin_admins_add_create
       tags:
-      - Super Admin
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SuperAdminAddAdminRequest'
-        required: true
+      - api
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminProfile'
-          description: ''
+        '200':
+          description: No response body
+  /api/v1/superadmin/backup/create/:
+    get:
+      operationId: api_v1_superadmin_backup_create_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_backup_create_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/backup/list/:
+    get:
+      operationId: api_v1_superadmin_backup_list_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_backup_list_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/backup/restore/:
+    get:
+      operationId: api_v1_superadmin_backup_restore_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_backup_restore_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/health/:
+    get:
+      operationId: api_v1_superadmin_health_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_health_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/permissions/:
+    get:
+      operationId: api_v1_superadmin_permissions_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_permissions_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/superadmin/permissions/assign/:
+    get:
+      operationId: api_v1_superadmin_permissions_assign_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_superadmin_permissions_assign_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
 components:
   schemas:
-    Achiever:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-          maxLength: 100
-        photo:
-          type: string
-          format: uri
-          nullable: true
-        achievement:
-          type: string
-          maxLength: 255
-        year:
-          type: integer
-          maximum: 2147483647
-          minimum: -2147483648
-      required:
-      - achievement
-      - id
-      - name
-      - year
-    AdminAddSeatRequest:
-      type: object
-      properties:
-        floor:
-          type: string
-          minLength: 1
-          maxLength: 50
-        row:
-          type: string
-          minLength: 1
-          maxLength: 10
-        seat_number:
-          type: string
-          minLength: 1
-          maxLength: 10
-        status:
-          $ref: '#/components/schemas/Status4cbEnum'
-      required:
-      - floor
-      - row
-      - seat_number
     AdminLoginRequest:
       type: object
       properties:
@@ -1297,89 +4239,6 @@ components:
       required:
       - password
       - username
-    AdminManualAttendanceRequest:
-      type: object
-      properties:
-        student_id:
-          type: integer
-          nullable: true
-        student_mobile:
-          type: string
-          nullable: true
-          minLength: 1
-          maxLength: 15
-        date:
-          type: string
-          format: date
-    AdminProfile:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        username:
-          type: string
-          readOnly: true
-        first_name:
-          type: string
-          maxLength: 150
-        last_name:
-          type: string
-          maxLength: 150
-        email:
-          type: string
-          format: email
-          nullable: true
-          maxLength: 254
-        mobile:
-          type: string
-          nullable: true
-          maxLength: 15
-        role:
-          $ref: '#/components/schemas/RoleEnum'
-        permissions: {}
-        is_active:
-          type: boolean
-        date_joined:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - date_joined
-      - id
-      - username
-    AdminStudentProfileUpdateRequest:
-      type: object
-      properties:
-        first_name:
-          type: string
-          minLength: 1
-        last_name:
-          type: string
-          minLength: 1
-        email:
-          type: string
-          format: email
-          minLength: 1
-        is_active:
-          type: boolean
-        goal:
-          $ref: '#/components/schemas/GoalEnum'
-        dob:
-          type: string
-          format: date
-          nullable: true
-        caste:
-          type: string
-          nullable: true
-          maxLength: 50
-        address:
-          type: string
-          nullable: true
-        parent_mobile:
-          type: string
-          nullable: true
-          maxLength: 15
     Attendance:
       type: object
       properties:
@@ -1396,32 +4255,64 @@ components:
           type: string
           format: time
           readOnly: true
+        is_present:
+          type: boolean
         is_manual:
           type: boolean
+        method:
+          type: string
+          maxLength: 20
+        marked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        student:
+          type: integer
+        qr_code:
+          type: integer
+          nullable: true
+        marked_by:
+          type: integer
+          nullable: true
       required:
       - date
       - id
+      - marked_at
+      - student
       - student_name
       - time_in
-    ChangePasswordRequest:
+    AttendanceRequest:
       type: object
       properties:
-        old_password:
+        date:
           type: string
-          writeOnly: true
-          minLength: 1
-        new_password:
+          format: date
+        is_present:
+          type: boolean
+        is_manual:
+          type: boolean
+        method:
           type: string
-          writeOnly: true
           minLength: 1
-        confirm_password:
+          maxLength: 20
+        note:
           type: string
-          writeOnly: true
-          minLength: 1
+          nullable: true
+        student:
+          type: integer
+        qr_code:
+          type: integer
+          nullable: true
+        marked_by:
+          type: integer
+          nullable: true
       required:
-      - confirm_password
-      - new_password
-      - old_password
+      - date
+      - student
     DeviceTokenRequest:
       type: object
       properties:
@@ -1439,39 +4330,44 @@ components:
           minLength: 1
       required:
       - email
+    GenderEnum:
+      enum:
+      - Male
+      - Female
+      - Other
+      type: string
+      description: |-
+        * `Male` - Male
+        * `Female` - Female
+        * `Other` - Other
     GoalEnum:
       enum:
       - UPSC
       - GPSC
+      - CONSTABLE
       - Banking
       - Army
       - Teacher
       - Railway
+      - SSC
       - CA
+      - UPSC Exam
+      - SSC CGL
       - Other
       type: string
       description: |-
         * `UPSC` - UPSC
         * `GPSC` - GPSC
+        * `CONSTABLE` - Constable
         * `Banking` - Banking
         * `Army` - Army
         * `Teacher` - Teacher
         * `Railway` - Railway
+        * `SSC` - SSC
         * `CA` - CA
+        * `UPSC Exam` - UPSC Exam
+        * `SSC CGL` - SSC CGL
         * `Other` - Other
-    LibraryInfo:
-      type: object
-      properties:
-        rules:
-          type: string
-        facilities:
-          type: string
-        about:
-          type: string
-      required:
-      - about
-      - facilities
-      - rules
     Membership:
       type: object
       properties:
@@ -1481,11 +4377,16 @@ components:
         student_name:
           type: string
           readOnly: true
-        plan:
-          type: integer
         plan_name:
           type: string
           readOnly: true
+        plan_name_snapshot:
+          type: string
+          maxLength: 100
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         start_date:
           type: string
           format: date
@@ -1494,12 +4395,35 @@ components:
           format: date
         status:
           $ref: '#/components/schemas/MembershipStatusEnum'
+        is_active:
+          type: boolean
+        renewal_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        student:
+          type: integer
+        plan:
+          type: integer
+        created_by:
+          type: integer
+          nullable: true
       required:
+      - created_at
       - end_date
       - id
       - plan
       - plan_name
       - start_date
+      - student
       - student_name
     MembershipPlan:
       type: object
@@ -1514,20 +4438,41 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
         price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        benefits: {}
         description:
           type: string
           nullable: true
         is_active:
           type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
+      - created_at
       - duration_months
       - id
       - name
       - price
+      - updated_at
     MembershipPlanRequest:
       type: object
       properties:
@@ -1539,19 +4484,67 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
         price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        benefits: {}
         description:
           type: string
           nullable: true
         is_active:
           type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
       required:
       - duration_months
       - name
       - price
+    MembershipRequest:
+      type: object
+      properties:
+        plan_name_snapshot:
+          type: string
+          maxLength: 100
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+        is_active:
+          type: boolean
+        renewal_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        notes:
+          type: string
+          nullable: true
+        student:
+          type: integer
+        plan:
+          type: integer
+        created_by:
+          type: integer
+          nullable: true
+      required:
+      - end_date
+      - plan
+      - start_date
+      - student
     MembershipStatusEnum:
       enum:
       - active
@@ -1564,21 +4557,298 @@ components:
         * `expired` - Expired
         * `suspended` - Suspended
         * `cancelled` - Cancelled
-    NotificationRequest:
+    PaginatedAttendanceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attendance'
+    PaginatedMembershipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+    PaginatedStudentProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentProfile'
+    PatchedAttendanceRequest:
       type: object
       properties:
-        title:
+        date:
+          type: string
+          format: date
+        is_present:
+          type: boolean
+        is_manual:
+          type: boolean
+        method:
           type: string
           minLength: 1
-          maxLength: 200
-        body:
+          maxLength: 20
+        note:
+          type: string
+          nullable: true
+        student:
+          type: integer
+        qr_code:
+          type: integer
+          nullable: true
+        marked_by:
+          type: integer
+          nullable: true
+    PatchedMembershipPlanRequest:
+      type: object
+      properties:
+        name:
           type: string
           minLength: 1
-        type:
-          $ref: '#/components/schemas/TypeEnum'
-      required:
-      - body
-      - title
+          maxLength: 100
+        duration_months:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        benefits: {}
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+    PatchedMembershipRequest:
+      type: object
+      properties:
+        plan_name_snapshot:
+          type: string
+          maxLength: 100
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+        is_active:
+          type: boolean
+        renewal_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        notes:
+          type: string
+          nullable: true
+        student:
+          type: integer
+        plan:
+          type: integer
+        created_by:
+          type: integer
+          nullable: true
+    PatchedPaymentRequest:
+      type: object
+      properties:
+        payment_id:
+          type: string
+          nullable: true
+          maxLength: 30
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        payment_mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        method:
+          type: string
+          minLength: 1
+          maxLength: 20
+        transaction_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        transaction_ref:
+          type: string
+          nullable: true
+          maxLength: 100
+        receipt_url:
+          type: string
+          format: binary
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        refund_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        refund_reason:
+          type: string
+          nullable: true
+        refunded_at:
+          type: string
+          format: date-time
+          nullable: true
+        student:
+          type: integer
+        membership:
+          type: integer
+          nullable: true
+        recorded_by:
+          type: integer
+          nullable: true
+        verified_by:
+          type: integer
+          nullable: true
+    PatchedStudentProfileRequest:
+      type: object
+      properties:
+        student_id:
+          type: string
+          nullable: true
+          maxLength: 20
+        middle_name:
+          type: string
+          nullable: true
+          maxLength: 100
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        profile_photo:
+          type: string
+          format: binary
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StudentProfileStatusEnum'
+        suspension_reason:
+          type: string
+          nullable: true
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+        preferred_language:
+          type: string
+          minLength: 1
+          maxLength: 10
     Payment:
       type: object
       properties:
@@ -1591,16 +4861,21 @@ components:
         plan_name:
           type: string
           readOnly: true
+        payment_id:
+          type: string
+          nullable: true
+          maxLength: 30
         amount:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          allOf:
-          - $ref: '#/components/schemas/PaymentStatusEnum'
-          readOnly: true
+          $ref: '#/components/schemas/PaymentStatusEnum'
         payment_mode:
           $ref: '#/components/schemas/PaymentModeEnum'
+        method:
+          type: string
+          maxLength: 20
         payment_date:
           type: string
           format: date
@@ -1609,21 +4884,60 @@ components:
           type: string
           nullable: true
           maxLength: 100
+        transaction_ref:
+          type: string
+          nullable: true
+          maxLength: 100
         receipt_url:
           type: string
           format: uri
-          readOnly: true
           nullable: true
         notes:
           type: string
           nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        refund_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        refund_reason:
+          type: string
+          nullable: true
+        refunded_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        student:
+          type: integer
+        membership:
+          type: integer
+          nullable: true
+        recorded_by:
+          type: integer
+          nullable: true
+        verified_by:
+          type: integer
+          nullable: true
       required:
       - amount
+      - created_at
       - id
       - payment_date
       - plan_name
-      - receipt_url
-      - status
+      - student
       - student_name
     PaymentModeEnum:
       enum:
@@ -1637,6 +4951,74 @@ components:
         * `UPI` - UPI
         * `Card` - Card
         * `Bank Transfer` - Bank Transfer
+    PaymentRequest:
+      type: object
+      properties:
+        payment_id:
+          type: string
+          nullable: true
+          maxLength: 30
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        payment_mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        method:
+          type: string
+          minLength: 1
+          maxLength: 20
+        transaction_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        transaction_ref:
+          type: string
+          nullable: true
+          maxLength: 100
+        receipt_url:
+          type: string
+          format: binary
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        refund_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        refund_reason:
+          type: string
+          nullable: true
+        refunded_at:
+          type: string
+          format: date-time
+          nullable: true
+        student:
+          type: integer
+        membership:
+          type: integer
+          nullable: true
+        recorded_by:
+          type: integer
+          nullable: true
+        verified_by:
+          type: integer
+          nullable: true
+      required:
+      - amount
+      - student
     PaymentStatusEnum:
       enum:
       - pending
@@ -1649,47 +5031,6 @@ components:
         * `verified` - Verified
         * `refunded` - Refunded
         * `failed` - Failed
-    QRCode:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        code:
-          type: string
-          maxLength: 255
-        valid_date:
-          type: string
-          format: date
-        is_expired:
-          type: boolean
-        expiry_timestamp:
-          type: string
-          format: date-time
-      required:
-      - code
-      - expiry_timestamp
-      - id
-      - valid_date
-    QRCodeRequest:
-      type: object
-      properties:
-        code:
-          type: string
-          minLength: 1
-          maxLength: 255
-        valid_date:
-          type: string
-          format: date
-        is_expired:
-          type: boolean
-        expiry_timestamp:
-          type: string
-          format: date-time
-      required:
-      - code
-      - expiry_timestamp
-      - valid_date
     ReferralCode:
       type: object
       properties:
@@ -1778,6 +5119,7 @@ components:
           type: string
           format: date-time
           readOnly: true
+          nullable: true
       required:
       - comment
       - created_at
@@ -1797,14 +5139,6 @@ components:
       required:
       - comment
       - rating
-    RoleEnum:
-      enum:
-      - admin
-      - super_admin
-      type: string
-      description: |-
-        * `admin` - Admin
-        * `super_admin` - Super Admin
     Seat:
       type: object
       properties:
@@ -1821,7 +5155,7 @@ components:
           type: string
           maxLength: 10
         status:
-          $ref: '#/components/schemas/Status4cbEnum'
+          $ref: '#/components/schemas/SeatStatusEnum'
       required:
       - floor
       - id
@@ -1852,6 +5186,18 @@ components:
       - id
       - seat_details
       - student_name
+    SeatStatusEnum:
+      enum:
+      - available
+      - occupied
+      - reserved
+      - inactive
+      type: string
+      description: |-
+        * `available` - Available
+        * `occupied` - Occupied
+        * `reserved` - Reserved
+        * `inactive` - Inactive
     SendOTPRequest:
       type: object
       properties:
@@ -1861,16 +5207,6 @@ components:
           maxLength: 15
       required:
       - mobile
-    Status4cbEnum:
-      enum:
-      - available
-      - occupied
-      - reserved
-      type: string
-      description: |-
-        * `available` - Available
-        * `occupied` - Occupied
-        * `reserved` - Reserved
     StudentNotification:
       type: object
       properties:
@@ -1903,25 +5239,47 @@ components:
     StudentProfile:
       type: object
       properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        student_id:
+          type: string
+          nullable: true
+          maxLength: 20
         username:
           type: string
           readOnly: true
         first_name:
           type: string
+          readOnly: true
+        middle_name:
+          type: string
+          nullable: true
+          maxLength: 100
         last_name:
           type: string
+          readOnly: true
         email:
           type: string
-          format: email
+          readOnly: true
         mobile:
           type: string
           readOnly: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
         goal:
           $ref: '#/components/schemas/GoalEnum'
         dob:
           type: string
           format: date
           nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
         caste:
           type: string
           nullable: true
@@ -1933,35 +5291,69 @@ components:
           type: string
           format: uri
           nullable: true
-        parent_mobile:
+        profile_image:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StudentProfileStatusEnum'
+        is_active:
+          type: boolean
+          readOnly: true
+        suspension_reason:
           type: string
           nullable: true
-          maxLength: 15
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+        preferred_language:
+          type: string
+          maxLength: 10
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
+      - created_at
       - email
       - first_name
+      - id
+      - is_active
       - last_name
       - mobile
+      - profile_image
+      - updated_at
+      - user_id
       - username
     StudentProfileRequest:
       type: object
       properties:
-        first_name:
+        student_id:
           type: string
-          minLength: 1
-        last_name:
+          nullable: true
+          maxLength: 20
+        middle_name:
           type: string
-          minLength: 1
-        email:
+          nullable: true
+          maxLength: 100
+        parent_mobile:
           type: string
-          format: email
-          minLength: 1
+          nullable: true
+          maxLength: 15
         goal:
           $ref: '#/components/schemas/GoalEnum'
         dob:
           type: string
           format: date
           nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
         caste:
           type: string
           nullable: true
@@ -1973,52 +5365,29 @@ components:
           type: string
           format: binary
           nullable: true
-        parent_mobile:
+        status:
+          $ref: '#/components/schemas/StudentProfileStatusEnum'
+        suspension_reason:
           type: string
           nullable: true
-          maxLength: 15
-      required:
-      - email
-      - first_name
-      - last_name
-    StudyGoal:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        date:
+        suspended_at:
           type: string
-          format: date
-        target_hours:
+          format: date-time
+          nullable: true
+        preferred_language:
           type: string
-          format: decimal
-          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
-        achieved_hours:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
-      required:
-      - date
-      - id
-      - target_hours
-    StudyGoalRequest:
-      type: object
-      properties:
-        date:
-          type: string
-          format: date
-        target_hours:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
-        achieved_hours:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
-      required:
-      - date
-      - target_hours
+          minLength: 1
+          maxLength: 10
+    StudentProfileStatusEnum:
+      enum:
+      - LIVE
+      - EXPIRED
+      - SUSPENDED
+      type: string
+      description: |-
+        * `LIVE` - Live
+        * `EXPIRED` - Expired
+        * `SUSPENDED` - Suspended
     StudySession:
       type: object
       properties:
@@ -2028,66 +5397,70 @@ components:
         start_time:
           type: string
           format: date-time
+          readOnly: true
         end_time:
           type: string
           format: date-time
           nullable: true
+        status:
+          $ref: '#/components/schemas/StudySessionStatusEnum'
         duration_minutes:
           type: integer
-          readOnly: true
+          maximum: 2147483647
+          minimum: -2147483648
+        paused_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
       required:
-      - duration_minutes
       - id
       - start_time
-    SuperAdminAddAdminRequest:
+    StudySessionRequest:
       type: object
       properties:
-        username:
+        end_time:
           type: string
-          minLength: 1
-          maxLength: 150
-        first_name:
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StudySessionStatusEnum'
+        duration_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        paused_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+    StudySessionStatusEnum:
+      enum:
+      - starting
+      - active
+      - paused
+      - completed
+      type: string
+      description: |-
+        * `starting` - Starting
+        * `active` - Active
+        * `paused` - Paused
+        * `completed` - Completed
+    TokenRefresh:
+      type: object
+      properties:
+        access:
           type: string
-          minLength: 1
-          maxLength: 150
-        last_name:
-          type: string
-          minLength: 1
-          maxLength: 150
-        email:
-          type: string
-          format: email
-          minLength: 1
-        mobile:
-          type: string
-          minLength: 1
-          maxLength: 15
-        password:
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
           type: string
           writeOnly: true
           minLength: 1
-        permissions: {}
       required:
-      - email
-      - first_name
-      - last_name
-      - mobile
-      - password
-      - username
-    TypeEnum:
-      enum:
-      - push
-      - sms
-      - email
-      - whatsapp
-      - all
-      type: string
-      description: |-
-        * `push` - Push
-        * `sms` - SMS
-        * `email` - Email
-        * `whatsapp` - WhatsApp
-        * `all` - All
+      - refresh
     UserLoginMobileRequest:
       type: object
       properties:

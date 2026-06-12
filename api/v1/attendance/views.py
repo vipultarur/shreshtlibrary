@@ -35,13 +35,19 @@ class StudentScanQRView(APIView):
         except QRCode.DoesNotExist:
             return standard_response("error", "Invalid QR code.", status_code=status.HTTP_400_BAD_REQUEST)
 
+        from django.db import IntegrityError
+        
         # Check if already marked attendance today
         today = timezone.now().date()
         if Attendance.objects.filter(student=user, date=today).exists():
             return standard_response("error", "Attendance already marked for today.", status_code=status.HTTP_400_BAD_REQUEST)
 
         # Create attendance record
-        attendance = Attendance.objects.create(student=user, date=today, qr_code=qr, is_manual=False)
+        try:
+            attendance = Attendance.objects.create(student=user, date=today, qr_code=qr, is_manual=False, method='QR')
+        except IntegrityError:
+            return standard_response("error", "Attendance already marked for today.", status_code=status.HTTP_400_BAD_REQUEST)
+            
         return standard_response(message="Attendance marked successfully.", data=AttendanceSerializer(attendance).data)
 
 

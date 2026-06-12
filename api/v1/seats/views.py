@@ -23,6 +23,6 @@ class StudentSeatHistoryView(APIView):
 
     @extend_schema(responses={200: SeatAssignmentSerializer(many=True)}, tags=['Seats'])
     def get(self, request):
-        history = SeatAssignment.objects.filter(student=request.user).order_by('-assigned_date')
+        history = SeatAssignment.objects.select_related('seat').filter(student=request.user).order_by('-assigned_date')
         serializer = SeatAssignmentSerializer(history, many=True)
         return standard_response(data=serializer.data)

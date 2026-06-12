@@ -46,7 +46,8 @@ class ShreshtLibraryAPITestCase(APITestCase):
             username="admin1",
             email="admin1@shresht.com",
             mobile="8888888888",
-            role="admin"
+            role="admin",
+            permissions={"manage_seats": True, "manage_students": True}
         )
         self.admin_user.set_password("adminpassword123")
         self.admin_user.save()
@@ -89,7 +90,7 @@ class ShreshtLibraryAPITestCase(APITestCase):
             email = user.email
 
         if role in ['admin', 'super_admin']:
-            url = reverse('auth-admin-login')
+            url = reverse('auth-admin-login-legacy')
             data = {
                 "username": username,
                 "password": password
@@ -145,9 +146,8 @@ class ShreshtLibraryAPITestCase(APITestCase):
         token = self.get_jwt_token("admin1", "adminpassword123")
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
-        url = reverse('admin-seat-status-update', kwargs={'pk': self.seat.id})
+        url = reverse('admin-seat-assign', kwargs={'pk': self.seat.id})
         data = {
-            "status": "occupied",
             "student_id": self.student_user.id
         }
         response = self.client.post(url, data, format='json')
@@ -171,7 +171,7 @@ class ShreshtLibraryAPITestCase(APITestCase):
             "code": "mock-active-qr-token"
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['status'], 'success')
 
         # Verify attendance record created
@@ -196,7 +196,7 @@ class ShreshtLibraryAPITestCase(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['status'], 'error')
-        self.assertEqual(response.data['message'], "Attendance already marked for today.")
+        self.assertEqual(response.data['message'], "You have already marked attendance today.")
 
     def test_qr_attendance_scan_expired_qr(self):
         token = self.get_jwt_token("student1", "securepassword123")
@@ -213,14 +213,14 @@ class ShreshtLibraryAPITestCase(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['status'], 'error')
-        self.assertEqual(response.data['message'], "Invalid or expired QR code.")
+        self.assertEqual(response.data['message'], "Invalid QR code.")
 
     def test_standard_response_errors(self):
         # Call a details view with invalid pk to test custom exception handler structure
         token = self.get_jwt_token("admin1", "adminpassword123")
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
-        url = reverse('admin-student-profile', kwargs={'pk': 99999})
+        url = reverse('admin-student-detail', kwargs={'pk': 99999})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['status'], 'error')

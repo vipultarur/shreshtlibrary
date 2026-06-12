@@ -3,7 +3,9 @@ from rest_framework.views import exception_handler
 from rest_framework import status
 
 def standard_response(status_str="success", message="", data=None, errors=None, status_code=status.HTTP_200_OK):
+    success = status_str == "success" and status_code < 400
     res_data = {
+        "success": success,
         "status": status_str,
         "message": message,
     }
@@ -35,6 +37,7 @@ def custom_exception_handler(exc, context):
                 break
 
         response.data = {
+            "success": False,
             "status": "error",
             "message": message,
             "errors": errors

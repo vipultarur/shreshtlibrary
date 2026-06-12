@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ing&tc-&$3+-0bw!f0!n2$-vbl
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'utils.cors.SimpleCorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -90,20 +91,26 @@ if 'test' in sys.argv:
     }
 else:
     db_url = os.getenv('DATABASE_URL')
-    if db_url and 'db.crrfhaaqeainuqzkmged.supabase.co' in db_url:
-        # Rewrite direct Supabase URL to use the IPv4 connection pooler (Session Mode, port 5432)
-        # to prevent "Network is unreachable" errors on IPv4-only environments like Render.
-        db_url = db_url.replace('db.crrfhaaqeainuqzkmged.supabase.co', 'aws-1-ap-southeast-1.pooler.supabase.com')
+    if db_url and 'supabase' in db_url:
+        # Rewrite to use the IPv4 connection pooler (Transaction Mode, port 6543)
+        if 'db.crrfhaaqeainuqzkmged.supabase.co' in db_url:
+            db_url = db_url.replace('db.crrfhaaqeainuqzkmged.supabase.co', 'aws-1-ap-southeast-1.pooler.supabase.com')
+        
+        # Ensure it's using port 6543 for transaction mode
+        db_url = db_url.replace(':5432/', ':6543/')
+        
         if 'postgres.crrfhaaqeainuqzkmged' not in db_url:
             db_url = db_url.replace('://postgres:', '://postgres.crrfhaaqeainuqzkmged:')
+            
         os.environ['DATABASE_URL'] = db_url
 
     DATABASES = {
         'default': dj_database_url.config(
             default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}",
-            conn_max_age=600
+            conn_max_age=0
         )
     }
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -143,6 +150,14 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'EXCEPTION_HANDLER': 'utils.response.custom_exception_handler',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',
+        'user': '100/minute'
+    }
 }
 
 # Supabase Auth Configuration
@@ -184,3 +199,5 @@ SPECTACULAR_SETTINGS = {
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CORS_ALLOW_ALL_ORIGINS = True

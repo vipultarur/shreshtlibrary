@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from utils.images import compress_image_field
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -33,6 +34,7 @@ class AdminUser(models.Model):
     mobile = models.CharField(max_length=15, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin')
     permissions = models.JSONField(default=dict, blank=True)
+    profile_image = models.ImageField(upload_to='admins/', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
@@ -58,6 +60,10 @@ class AdminUser(models.Model):
     def check_password(self, raw_password):
         from django.contrib.auth.hashers import check_password
         return check_password(raw_password, self.password)
+
+    def save(self, *args, **kwargs):
+        compress_image_field(self.profile_image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Admin: {self.username} ({self.role})"

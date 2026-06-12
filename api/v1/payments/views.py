@@ -4,6 +4,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 import datetime
+from django.db import transaction
 
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
@@ -18,7 +19,7 @@ class StudentPaymentHistoryView(APIView):
 
     @extend_schema(responses={200: PaymentSerializer(many=True)}, tags=['Payments'])
     def get(self, request):
-        payments = Payment.objects.filter(student=request.user).order_by('-payment_date')
+        payments = Payment.objects.select_related('student', 'membership', 'membership__plan').filter(student=request.user).order_by('-payment_date')
         serializer = PaymentSerializer(payments, many=True)
         return standard_response(data=serializer.data)
 
@@ -45,22 +46,37 @@ class StudentInitiatePaymentView(APIView):
         # Create inactive membership to be activated on verification
         start = timezone.now().date()
         end = start + datetime.timedelta(days=30 * plan.duration_months)
-        membership = Membership.objects.create(
-            student=user,
-            plan=plan,
-            start_date=start,
-            end_date=end,
-            status='suspended'  # Will be 'active' once payment is verified
-        )
+        
+        with transaction.atomic():
+            membership = Membership.objects.create(
+                student=user,
+                plan=plan,
+                start_date=start,
+                end_date=end,
+                status='suspended'  # Will be 'active' once payment is verified
+            )
 
-        payment = Payment.objects.create(
-            student=user,
-            membership=membership,
-            amount=plan.price,
-            payment_mode=payment_mode,
-            transaction_id=transaction_id,
-            status='pending'
-        )
+            payment = Payment.objects.create(
+                student=user,
+                membership=membership,
+                amount=plan.price,
+                payment_mode=payment_mode,
+                transaction_id=transaction_id,
+                status='pending'
+            )
+
+        try:
+            from apps.notifications.models import AdminInboxNotification
+            from api.v1.v2_admin import _full_name
+            AdminInboxNotification.objects.create(
+                type='PAYMENT',
+                title='New Payment Initiated',
+                message=f"Student {_full_name(user)} initiated a payment of {plan.price} via {payment_mode}.",
+                related_id=str(payment.id),
+                student=user
+            )
+        except Exception:
+            pass
 
         return standard_response(
             message="Payment transaction initiated successfully. Pending admin approval.",
