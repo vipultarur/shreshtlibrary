@@ -9,6 +9,11 @@ db.sqlite3-journal
 media/
 static/
 .env
+node_modules/
+.next/
+eslint-output.txt
+tsconfig.tsbuildinfo
+
 
 # Environments
 .env/
