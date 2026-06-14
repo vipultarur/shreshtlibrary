@@ -33,7 +33,7 @@ from api.v1.students.views import (
     StudentProfileUpdateView,
     StudentProfileView,
 )
-from api.v1.study.views import EndStudySessionView, StartStudySessionView, UpdateStudySessionView, CurrentStudySessionView
+from api.v1.study.views import EndStudySessionView, StartStudySessionView, UpdateStudySessionView, CurrentStudySessionView, StudySessionHistoryView
 
 
 urlpatterns = [
@@ -98,6 +98,7 @@ urlpatterns = [
     path('study/session/end/', EndStudySessionView.as_view(), name='study-session-end'),
     path('study/session/current/', CurrentStudySessionView.as_view(), name='study-session-current'),
     path('study/session/update/', UpdateStudySessionView.as_view(), name='study-session-update'),
+    path('study/session/history/', StudySessionHistoryView.as_view(), name='study-session-history'),
 
     # Dashboard Analytics
     path('dashboard/stats/', admin_dashboard_views.DashboardStatsView.as_view(), {'section': 'overview'}, name='dashboard-stats'),

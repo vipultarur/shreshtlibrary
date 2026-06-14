@@ -117,3 +117,11 @@ class CurrentStudySessionView(APIView):
             return standard_response(data=StudySessionSerializer(session).data)
         return standard_response(data=None)
 
+class StudySessionHistoryView(APIView):
+    permission_classes = [IsStudent]
+
+    @extend_schema(responses={200: StudySessionSerializer(many=True)}, tags=['Study Features'])
+    def get(self, request):
+        sessions = StudySession.objects.filter(student=request.user, status='completed').order_by('-start_time')
+        return standard_response(data=StudySessionSerializer(sessions, many=True).data)
+
