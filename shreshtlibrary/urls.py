@@ -15,6 +15,10 @@ urlpatterns = [
     path('api/v1/', include('api.v1.urls')),
 ]
 
+from django.urls import re_path
+from django.views.static import serve
+import os
+
 if settings.DEBUG:
     urlpatterns += [
         # Built-in django admin panel
@@ -25,4 +29,10 @@ if settings.DEBUG:
         path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
         path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc-ui'),
     ]
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve media files regardless of DEBUG status for Render deployment without external storage
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]

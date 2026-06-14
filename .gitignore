@@ -6,7 +6,8 @@ __pycache__/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
+# Allow tracking media files since we are serving them from Render
+!media/
 static/
 .env
 node_modules/
