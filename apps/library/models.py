@@ -120,3 +120,12 @@ class AppConfig(models.Model):
 
     def __str__(self):
         return "App Configuration"
+
+class DatabaseFile(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    data = models.BinaryField()
+    content_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

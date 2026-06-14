@@ -16,8 +16,15 @@ urlpatterns = [
 ]
 
 from django.urls import re_path
-from django.views.static import serve
-import os
+from django.http import HttpResponse, Http404
+
+def serve_db_media(request, path):
+    from apps.library.models import DatabaseFile
+    try:
+        f = DatabaseFile.objects.get(name=path)
+        return HttpResponse(f.data, content_type=f.content_type)
+    except DatabaseFile.DoesNotExist:
+        raise Http404("File not found")
 
 if settings.DEBUG:
     urlpatterns += [
@@ -30,9 +37,7 @@ if settings.DEBUG:
         path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc-ui'),
     ]
 
-# Serve media files regardless of DEBUG status for Render deployment without external storage
+# Serve media files from the database storage
 urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {
-        'document_root': settings.MEDIA_ROOT,
-    }),
+    re_path(r'^media/(?P<path>.*)$', serve_db_media, name='serve_db_media'),
 ]

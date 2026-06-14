@@ -199,5 +199,6 @@ SPECTACULAR_SETTINGS = {
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DEFAULT_FILE_STORAGE = 'utils.db_storage.DatabaseStorage'
 
 CORS_ALLOW_ALL_ORIGINS = True
