@@ -6,8 +6,8 @@ class AttendanceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Attendance
-        fields = ['id', 'student_name', 'date', 'time_in', 'is_manual']
-        read_only_fields = ['id', 'student_name', 'time_in']
+        fields = ['id', 'student_name', 'date', 'time_in', 'time_out', 'late_mark', 'under_time', 'total_hours', 'is_manual']
+        read_only_fields = ['id', 'student_name', 'time_in', 'time_out', 'late_mark', 'under_time', 'total_hours']
 
 
 class QRCodeSerializer(serializers.ModelSerializer):
