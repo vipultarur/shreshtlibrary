@@ -66,9 +66,41 @@ class EndStudySessionView(APIView):
         
         session.end_time = timezone.now()
         session.status = 'completed'
-        session.duration_minutes = request.data.get('duration_minutes', 0)
+        duration_minutes = request.data.get('duration_minutes', 0)
+        session.duration_minutes = duration_minutes
         session.paused_minutes = request.data.get('paused_minutes', 0)
         session.save()
+
+        # Update Attendance for today
+        from apps.attendance.models import Attendance
+        today = timezone.now().date()
+        attendance = Attendance.objects.filter(student=request.user, date=today).first()
+        if attendance:
+            # Update check-out time
+            attendance.time_out = session.end_time.time()
+            
+            # Update total hours by summing all completed study sessions today
+            completed_sessions = StudySession.objects.filter(
+                student=request.user, 
+                start_time__date=today,
+                status='completed'
+            )
+            total_mins = sum(s.duration_minutes for s in completed_sessions)
+            
+            # Calculate Late Marks: Assuming threshold > 10:00 AM
+            if attendance.time_in:
+                late_threshold = timezone.datetime.strptime("10:00:00", "%H:%M:%S").time()
+                attendance.late_mark = attendance.time_in > late_threshold
+            
+            # Calculate Under Time: Assuming < 4 hours (240 minutes) is under time
+            attendance.under_time = total_mins < 240
+            
+            # Store formatted hours
+            hours = total_mins // 60
+            mins = total_mins % 60
+            attendance.total_hours = f"{hours}:{mins:02d}"
+            
+            attendance.save()
 
         return standard_response(
             message="Study session ended. Great effort!",
