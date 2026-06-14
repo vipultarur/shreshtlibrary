@@ -8,9 +8,8 @@ def standard_response(status_str="success", message="", data=None, errors=None, 
         "success": success,
         "status": status_str,
         "message": message,
+        "data": data,
     }
-    if data is not None:
-        res_data["data"] = data
     if errors is not None:
         res_data["errors"] = errors
     return Response(res_data, status=status_code)

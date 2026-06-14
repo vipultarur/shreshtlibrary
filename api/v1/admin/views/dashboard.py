@@ -103,17 +103,34 @@ class DashboardChartView(APIView):
 
         if domain == "attendance":
             labels, present = [], []
+            start_date = today - datetime.timedelta(days=13)
+            
+            from django.db.models import Count
+            attendance_counts = Attendance.objects.filter(
+                date__gte=start_date, date__lte=today, is_present=True
+            ).values('date').annotate(count=Count('id'))
+            count_map = {item['date']: item['count'] for item in attendance_counts}
+            
             for offset in range(13, -1, -1):
                 day = today - datetime.timedelta(days=offset)
                 labels.append(day.strftime("%d %b"))
-                present.append(Attendance.objects.filter(date=day, is_present=True).count())
+                present.append(count_map.get(day, 0))
             data = {"labels": labels, "present": present, "total_students": StudentProfile.objects.count()}
         elif domain == "revenue":
             labels, revenue = [], []
+            from django.db.models.functions import TruncMonth
+            start_month = (today.replace(day=1) - datetime.timedelta(days=11 * 30)).replace(day=1)
+            
+            revenue_counts = Payment.objects.filter(
+                payment_date__gte=start_month, status="verified"
+            ).annotate(month=TruncMonth('payment_date')).values('month').annotate(total=Sum('amount'))
+            revenue_map = {item['month'].strftime("%Y-%m"): float(item['total'] or 0) for item in revenue_counts if item['month']}
+            
             for offset in range(11, -1, -1):
                 month = (today.replace(day=1) - datetime.timedelta(days=offset * 30)).replace(day=1)
+                month_key = month.strftime("%Y-%m")
                 labels.append(month.strftime("%b %Y"))
-                revenue.append(float(Payment.objects.filter(payment_date__year=month.year, payment_date__month=month.month, status="verified").aggregate(total=Sum("amount"))["total"] or 0))
+                revenue.append(revenue_map.get(month_key, 0.0))
             data = {"labels": labels, "revenue": revenue, "payment_count": []}
         elif domain == "students":
             data = {"items": list(StudentProfile.objects.values("goal").annotate(count=Count("id")).order_by("goal"))}
@@ -134,40 +151,50 @@ class AdminInboxView(APIView):
         today = timezone.now().date()
         two_days_from_now = today + datetime.timedelta(days=2)
         
+        existing_expiring = set(AdminInboxNotification.objects.filter(type='EXPIRING_SOON').values_list('related_id', flat=True))
+        existing_expired = set(AdminInboxNotification.objects.filter(type='EXPIRED').values_list('related_id', flat=True))
+
         # Auto-generate EXPIRING_SOON notifications
         # Capture memberships expiring between tomorrow and 3 days from now
         expiring_memberships = Membership.objects.filter(
             end_date__lte=today + datetime.timedelta(days=3),
             end_date__gt=today,
             status='active'
-        )
+        ).select_related('student')
+        
+        new_notifications = []
         for mem in expiring_memberships:
             related_id = f"exp_{mem.student_id}_{mem.end_date}"
-            if not AdminInboxNotification.objects.filter(type='EXPIRING_SOON', related_id=related_id).exists():
-                AdminInboxNotification.objects.create(
+            if related_id not in existing_expiring:
+                new_notifications.append(AdminInboxNotification(
                     type='EXPIRING_SOON',
                     title='Student Plan Expiring Soon',
                     message=f"Membership for {_full_name(mem.student)} is expiring on {mem.end_date}.",
                     related_id=related_id,
                     student=mem.student
-                )
+                ))
+                existing_expiring.add(related_id)
                 
         # Auto-generate EXPIRED notifications
         # Capture memberships that have expired today or earlier, but are still marked active
         expired_memberships = Membership.objects.filter(
             end_date__lte=today,
             status='active'
-        )
+        ).select_related('student')
         for mem in expired_memberships:
             related_id = f"expired_{mem.student_id}_{mem.end_date}"
-            if not AdminInboxNotification.objects.filter(type='EXPIRED', related_id=related_id).exists():
-                AdminInboxNotification.objects.create(
+            if related_id not in existing_expired:
+                new_notifications.append(AdminInboxNotification(
                     type='EXPIRED',
                     title='Student Plan Expired',
                     message=f"Membership for {_full_name(mem.student)} expired on {mem.end_date}.",
                     related_id=related_id,
                     student=mem.student
-                )
+                ))
+                existing_expired.add(related_id)
+                
+        if new_notifications:
+            AdminInboxNotification.objects.bulk_create(new_notifications)
                 
         notifications = AdminInboxNotification.objects.select_related('student', 'student__student_profile').all().order_by('-created_at')
         

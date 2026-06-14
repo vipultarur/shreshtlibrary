@@ -2146,6 +2146,7 @@ class DashboardActivityView(APIView):
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, export=False):
+        logs = ActivityLog.objects.select_related("admin").all().order_by("-timestamp")[:200]
         rows = [{
             "id": item.id,
             "admin_name": _full_name(item.admin) if item.admin else "System",
@@ -2154,7 +2155,7 @@ class DashboardActivityView(APIView):
             "target_model": item.details.get("target_model", ""),
             "target_id": item.details.get("target_id"),
             "created_at": item.timestamp,
-        } for item in ActivityLog.objects.all().order_by("-timestamp")[:200]]
+        } for item in logs]
         if export:
             return _export(rows, "activity-log.xlsx")
         return standard_response(data=rows[:20] if request.path.endswith("/recent/") else rows)
