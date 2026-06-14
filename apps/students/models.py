@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from utils.images import compress_image_field
 
 
 class StudentProfile(models.Model):
@@ -60,7 +59,6 @@ class StudentProfile(models.Model):
         if not self.student_id:
             next_id = StudentProfile.objects.exclude(student_id__isnull=True).count() + 1
             self.student_id = f"SHR-{next_id:04d}"
-        compress_image_field(self.profile_photo)
         super().save(*args, **kwargs)
 
     def __str__(self):

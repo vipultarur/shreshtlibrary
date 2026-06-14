@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-from utils.images import compress_image_field
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -62,7 +61,6 @@ class AdminUser(models.Model):
         return check_password(raw_password, self.password)
 
     def save(self, *args, **kwargs):
-        compress_image_field(self.profile_image)
         super().save(*args, **kwargs)
 
     def __str__(self):

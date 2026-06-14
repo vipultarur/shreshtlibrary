@@ -1,7 +1,5 @@
 from django.db import models
 from django.conf import settings
-from utils.images import compress_image_field
-
 
 class LibraryInfo(models.Model):
     name = models.CharField(max_length=200, default='Shresht Library')
@@ -28,7 +26,6 @@ class LibraryInfo(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        compress_image_field(self.feature_image)
         super().save(*args, **kwargs)
 
 
@@ -59,7 +56,6 @@ class Achiever(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def save(self, *args, **kwargs):
-        compress_image_field(self.photo)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -95,7 +91,6 @@ class HomeSlider(models.Model):
         ordering = ['sort_order', '-created_at']
 
     def save(self, *args, **kwargs):
-        compress_image_field(self.image)
         super().save(*args, **kwargs)
 
     def __str__(self):
