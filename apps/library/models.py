@@ -77,21 +77,18 @@ class Review(models.Model):
         return f"Review by {self.student.username} - Rating: {self.rating}"
 
 
+
 class HomeSlider(models.Model):
-    title = models.CharField(max_length=200, blank=True, default='')
-    subtitle = models.CharField(max_length=300, blank=True, default='')
-    image = models.ImageField(upload_to='sliders/')
-    link_url = models.URLField(blank=True, default='')
+    title = models.CharField(max_length=200, blank=True)
+    subtitle = models.CharField(max_length=200, blank=True)
+    image = models.ImageField(upload_to='sliders/', blank=True, null=True)
+    link_url = models.CharField(max_length=500, blank=True)
     is_active = models.BooleanField(default=True)
     sort_order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['sort_order', '-created_at']
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title or f"Slider {self.id}"
@@ -101,6 +98,7 @@ class AppConfig(models.Model):
     expiry_dialog_title = models.CharField(max_length=200, default='Plan Expired')
     expiry_dialog_message = models.TextField(default='Your plan has expired. Please renew to continue using premium features.')
     allow_non_premium_notifications = models.BooleanField(default=True)
+
     allow_non_premium_sliders = models.BooleanField(default=True)
     allow_non_premium_library_info = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)

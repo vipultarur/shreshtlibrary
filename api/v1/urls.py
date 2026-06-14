@@ -91,7 +91,8 @@ urlpatterns = [
     path('library/reviews/', v2.PublicReviewsView.as_view(), name='library-reviews'),
     path('library/reviews/summary/', v2.ReviewsSummaryView.as_view(), name='library-reviews-summary'),
     path('library/reviews/submit/', StudentSubmitReviewView.as_view(), name='library-reviews-submit'),
-    path('sliders/', v2.PublicSlidersView.as_view(), name='public-sliders'),
+    path('sliders/', v2.PublicSlidersView.as_view(), name='sliders-public'),
+
 
     # Study Features
     path('study/session/start/', StartStudySessionView.as_view(), name='study-session-start'),
@@ -212,10 +213,10 @@ urlpatterns = [
     path('admin/reviews/<int:pk>/approve/', v2.AdminReviewActionView.as_view(), {'action': 'approve'}, name='admin-review-approve'),
     path('admin/reviews/<int:pk>/reject/', v2.AdminReviewActionView.as_view(), {'action': 'reject'}, name='admin-review-reject'),
     path('admin/reviews/<int:pk>/delete/', v2.AdminReviewActionView.as_view(), {'action': 'delete'}, name='admin-review-delete'),
-
-    # Admin Sliders
     path('admin/sliders/', v2.AdminSlidersView.as_view(), name='admin-sliders'),
     path('admin/sliders/<int:pk>/', v2.AdminSliderDetailView.as_view(), name='admin-slider-detail'),
+
+
 
     # Reports and Exports
     path('reports/attendance/', v2.ReportsView.as_view(), {'kind': 'attendance'}, name='reports-attendance'),

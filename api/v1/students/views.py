@@ -95,6 +95,7 @@ class StudentDashboardView(APIView):
             restricted_features.extend(['seats', 'payments', 'attendance', 'study', 'profile'])
             if not config.allow_non_premium_notifications:
                 restricted_features.append('notifications')
+
             if not config.allow_non_premium_sliders:
                 restricted_features.append('sliders')
             if not config.allow_non_premium_library_info:

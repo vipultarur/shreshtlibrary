@@ -17,7 +17,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import AdminUser
 from apps.attendance.models import Attendance, Holiday, QRCode
-from apps.library.models import Achiever, Facility, HomeSlider, LibraryInfo, Review
+from apps.library.models import Achiever, Facility, LibraryInfo, Review, HomeSlider, AppConfig
 from apps.memberships.models import Membership, MembershipPlan
 from apps.notifications.models import Notification, StudentNotification
 from apps.payments.models import Payment
@@ -2285,7 +2285,6 @@ class AdminSettingsView(APIView):
             "expiry_dialog_title": config.expiry_dialog_title,
             "expiry_dialog_message": config.expiry_dialog_message,
             "allow_non_premium_notifications": config.allow_non_premium_notifications,
-            "allow_non_premium_sliders": config.allow_non_premium_sliders,
             "allow_non_premium_library_info": config.allow_non_premium_library_info,
         })
 
@@ -2320,81 +2319,147 @@ class AdminSettingsView(APIView):
             "expiry_dialog_title": config.expiry_dialog_title,
             "expiry_dialog_message": config.expiry_dialog_message,
             "allow_non_premium_notifications": config.allow_non_premium_notifications,
-            "allow_non_premium_sliders": config.allow_non_premium_sliders,
+            "allow_non_premium_sliders": getattr(config, 'allow_non_premium_sliders', True),
             "allow_non_premium_library_info": config.allow_non_premium_library_info,
         })
 
 
-# ─── Slider Serializer ────────────────────────────────────────────────────────
-
-def serialize_slider(slider):
+def serialize_slider(s, request=None):
+    image_url = s.image.url if s.image else None
+    if image_url and request:
+        image_url = request.build_absolute_uri(image_url)
     return {
-        "id": slider.id,
-        "title": slider.title,
-        "subtitle": slider.subtitle,
-        "image": slider.image.url if slider.image else None,
-        "link_url": slider.link_url,
-        "is_active": slider.is_active,
-        "sort_order": slider.sort_order,
-        "created_at": slider.created_at,
+        "id": s.id,
+        "title": s.title,
+        "subtitle": s.subtitle,
+        "image": image_url,
+        "link_url": s.link_url,
+        "is_active": s.is_active,
+        "sort_order": s.sort_order,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
     }
 
 
-# ─── Admin Sliders CRUD ───────────────────────────────────────────────────────
-
 class AdminSlidersView(APIView):
-    permission_classes = [HasAdminPermission("manage_library")]
-    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated, IsLibraryAdmin | HasAdminPermission('manage_library')]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        sliders = HomeSlider.objects.all().order_by('sort_order', '-created_at')
-        return standard_response(data=[serialize_slider(s) for s in sliders])
+        sliders = HomeSlider.objects.all()
+        return standard_response(data=[serialize_slider(s, request) for s in sliders])
 
     def post(self, request):
-        image = _image_upload(request, "image")
-        if not image:
-            return standard_response("error", "Image is required.", status_code=400)
-        slider = HomeSlider.objects.create(
-            title=request.data.get("title", ""),
-            subtitle=request.data.get("subtitle", ""),
-            image=image,
-            link_url=request.data.get("link_url", ""),
-            is_active=_bool(request.data.get("is_active"), True),
-            sort_order=int(request.data.get("sort_order", 0)),
-        )
-        _activity(request, "ADD_SLIDER", "HomeSlider", slider.id, f"Created slider '{slider.title}'")
-        return standard_response(data=serialize_slider(slider), status_code=201)
+        try:
+            data = request.data
+            
+            # Safely parse sort_order
+            sort_order_raw = data.get('sort_order')
+            try:
+                sort_order = int(sort_order_raw) if sort_order_raw else 0
+            except (ValueError, TypeError):
+                sort_order = 0
+
+            # Safely parse is_active
+            is_active_raw = data.get('is_active', True)
+            if isinstance(is_active_raw, str):
+                is_active = is_active_raw.lower() in ['true', '1', 'yes']
+            else:
+                is_active = bool(is_active_raw)
+
+            slider = HomeSlider.objects.create(
+                title=data.get('title', ''),
+                subtitle=data.get('subtitle', ''),
+                link_url=data.get('link_url', ''),
+                is_active=is_active,
+                sort_order=sort_order,
+            )
+            
+            if 'image' in request.FILES:
+                slider.image = request.FILES['image']
+                slider.save()
+
+            _activity(
+                request,
+                action="CREATE",
+                target_model="HomeSlider",
+                target_id=str(slider.id),
+                description=f"Created slider: {slider.title}"
+            )
+            return standard_response(data=serialize_slider(slider, request))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return standard_response("error", f"Failed to create slider: {str(e)}", status_code=400)
 
 
 class AdminSliderDetailView(APIView):
-    permission_classes = [HasAdminPermission("manage_library")]
-    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated, IsLibraryAdmin | HasAdminPermission('manage_library')]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_object(self, pk):
+        return get_object_or_404(HomeSlider, pk=pk)
 
     def put(self, request, pk):
-        slider = get_object_or_404(HomeSlider, pk=pk)
-        slider.title = request.data.get("title", slider.title)
-        slider.subtitle = request.data.get("subtitle", slider.subtitle)
-        slider.link_url = request.data.get("link_url", slider.link_url)
-        slider.is_active = _bool(request.data.get("is_active"), slider.is_active)
-        slider.sort_order = int(request.data.get("sort_order", slider.sort_order))
-        new_image = _image_upload(request, "image")
-        if new_image:
-            slider.image = new_image
-        slider.save()
-        return standard_response(data=serialize_slider(slider))
+        try:
+            slider = self.get_object(pk)
+            data = request.data
+            
+            if 'title' in data:
+                slider.title = data['title']
+            if 'subtitle' in data:
+                slider.subtitle = data['subtitle']
+            if 'link_url' in data:
+                slider.link_url = data['link_url']
+            
+            if 'is_active' in data:
+                is_active_raw = data['is_active']
+                if isinstance(is_active_raw, str):
+                    slider.is_active = is_active_raw.lower() in ['true', '1', 'yes']
+                else:
+                    slider.is_active = bool(is_active_raw)
+                    
+            if 'sort_order' in data:
+                try:
+                    slider.sort_order = int(data['sort_order']) if data['sort_order'] else 0
+                except (ValueError, TypeError):
+                    slider.sort_order = 0
+                
+            if 'image' in request.FILES:
+                slider.image = request.FILES['image']
+                
+            slider.save()
+            
+            _activity(
+                request,
+                action="UPDATE",
+                target_model="HomeSlider",
+                target_id=str(slider.id),
+                description=f"Updated slider: {slider.title}"
+            )
+            return standard_response(data=serialize_slider(slider, request))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return standard_response("error", f"Failed to update slider: {str(e)}", status_code=400)
 
     def delete(self, request, pk):
-        slider = get_object_or_404(HomeSlider, pk=pk)
+        slider = self.get_object(pk)
+        title = slider.title
         slider.delete()
-        _activity(request, "DELETE_SLIDER", "HomeSlider", pk, "Deleted slider")
-        return standard_response(message="Slider deleted.")
+        
+        _activity(
+            request,
+            action="DELETE",
+            target_model="HomeSlider",
+            target_id=str(pk),
+            description=f"Deleted slider: {title}"
+        )
+        return standard_response(message="Slider deleted")
 
-
-# ─── Public Sliders (Student App) ──────────────────────────────────────────────
 
 class PublicSlidersView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        sliders = HomeSlider.objects.filter(is_active=True).order_by('sort_order', '-created_at')
-        return standard_response(data=[serialize_slider(s) for s in sliders])
+        sliders = HomeSlider.objects.filter(is_active=True)
+        return standard_response(data=[serialize_slider(s, request) for s in sliders])
