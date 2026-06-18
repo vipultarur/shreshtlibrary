@@ -41,4 +41,3 @@ CSRF_COOKIE_SECURE = True
 # Disable SSL redirect — Render's load balancer handles TLS termination.
 # Enabling this causes infinite redirect loops.
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
-
