@@ -5,6 +5,8 @@ DEBUG = False
 
 # Base allowed hosts
 ALLOWED_HOSTS = ['shreshtlibrary.com', 'shreshtlibrary.onrender.com']
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
 
 # Automatically append Render external hostname if running on Render
 render_external_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')

@@ -10,12 +10,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Load environment variables from .env
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.env'))
 
+
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def env_list(name, default=''):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(',') if item.strip()]
+
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ing&tc-&$3+-0bw!f0!n2$-vbl63#40i#@^&rbn)gaohd4(c@d')
 
-DEBUG = True
+DEBUG = env_bool('DJANGO_DEBUG', False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]')
 
 # Application definition
 INSTALLED_APPS = [
@@ -209,4 +221,6 @@ STORAGES = {
     },
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', False)
+CORS_ALLOW_CREDENTIALS = env_bool('CORS_ALLOW_CREDENTIALS', True)
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')

@@ -262,6 +262,14 @@ def serialize_qr(qr):
     }
 
 
+def serialize_student_qr_status(qr, valid_date):
+    return {
+        "valid_date": valid_date,
+        "is_available": bool(qr),
+        "expires_at": qr.expires_at if qr else None,
+    }
+
+
 def serialize_floor(floor):
     return {
         "id": floor.id,
@@ -989,7 +997,7 @@ def _generate_qr(request, method="MANUAL"):
 
 
 class StudentQRTodayView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStudent]
 
     def get(self, request):
         today = timezone.now().date()
@@ -997,9 +1005,7 @@ class StudentQRTodayView(APIView):
         if holiday:
             return standard_response("error", f"Attendance is closed for holiday: {holiday.title}.", data=serialize_holiday(holiday), status_code=400)
         qr = QRCode.objects.filter(is_active=True, valid_date=today).order_by("-created_at").first()
-        if not qr:
-            qr = _generate_qr(request, "AUTO")
-        return standard_response(data=serialize_qr(qr))
+        return standard_response(data=serialize_student_qr_status(qr, today))
 
 
 class StudentQRScanView(APIView):

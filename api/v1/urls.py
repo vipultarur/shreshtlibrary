@@ -1,5 +1,4 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from api.v1 import v2_admin as v2
 from api.v1.admin.views import students as admin_students_views
@@ -11,6 +10,7 @@ from api.v1.attendance.views import StudentAttendanceLogsView
 from api.v1.authentication.views import (
     ForgotPasswordView,
     LogoutView,
+    RevokingTokenRefreshView,
     ResetPasswordView,
     SendOTPView,
     StudentLoginMobileView,
@@ -53,7 +53,7 @@ urlpatterns = [
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='auth-forgot-password'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='auth-reset-password'),
     path('auth/logout/', LogoutView.as_view(), name='auth-logout'),
-    path('auth/token/refresh/', TokenRefreshView.as_view(), name='auth-token-refresh'),
+    path('auth/token/refresh/', RevokingTokenRefreshView.as_view(), name='auth-token-refresh'),
 
     # Student Profile & Dashboard
     path('student/profile/', StudentProfileView.as_view(), name='student-profile'),

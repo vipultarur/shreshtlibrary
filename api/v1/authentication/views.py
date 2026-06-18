@@ -4,9 +4,12 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import get_user_model, authenticate
+from django.conf import settings
 from django.utils import timezone
 import datetime
+import jwt
 import random
 import uuid
 
@@ -19,6 +22,7 @@ from .serializers import (
 )
 from utils.response import standard_response
 from core.models import ActivityLog
+from shreshtlibrary.utils.authentication import is_token_revoked, revoke_token
 
 from apps.accounts.models import AdminUser
 
@@ -47,6 +51,49 @@ def log_activity(user, action, request):
     else:
         params["user"] = user
     ActivityLog.objects.create(**params)
+
+
+def _token_subject_is_active(payload):
+    user_identifier = payload.get('user_id') or payload.get('sub')
+    if not user_identifier:
+        return False
+
+    admin = AdminUser.objects.filter(pk=user_identifier).first()
+    student = User.objects.filter(pk=user_identifier).first()
+    role = payload.get('role')
+
+    if admin and student:
+        user = admin if role in ['admin', 'super_admin'] else student
+    else:
+        user = admin or student
+
+    return bool(user and user.is_active)
+
+
+class RevokingTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return standard_response("error", "Refresh token is required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = jwt.decode(
+                refresh_token,
+                settings.SECRET_KEY,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+        except jwt.InvalidTokenError:
+            return standard_response("error", "Invalid refresh token.", status_code=status.HTTP_401_UNAUTHORIZED)
+
+        if payload.get("token_type") != "refresh":
+            return standard_response("error", "Invalid refresh token.", status_code=status.HTTP_401_UNAUTHORIZED)
+        if is_token_revoked(refresh_token, payload):
+            return standard_response("error", "Refresh token has been revoked.", status_code=status.HTTP_401_UNAUTHORIZED)
+        if not _token_subject_is_active(payload):
+            return standard_response("error", "User account is inactive.", status_code=status.HTTP_401_UNAUTHORIZED)
+
+        return super().post(request, *args, **kwargs)
 
 class StudentRegisterView(APIView):
     permission_classes = [AllowAny]
@@ -238,7 +285,12 @@ class LogoutView(APIView):
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Authentication'])
     def post(self, request):
-        # JWT logout is stateless client-side discard, but we can record it
+        refresh_token = request.data.get("refresh")
+        if refresh_token:
+            revoke_token(str(refresh_token))
+
+        if request.auth:
+            revoke_token(str(request.auth), getattr(request, "auth_payload", None), request.user)
         log_activity(request.user, "Logged out", request)
         return standard_response(message="Logged out successfully.")
 

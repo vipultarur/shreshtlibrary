@@ -65,3 +65,19 @@ class AdminUser(models.Model):
 
     def __str__(self):
         return f"Admin: {self.username} ({self.role})"
+
+
+class AuthTokenRevocation(models.Model):
+    token_hash = models.CharField(max_length=64, unique=True)
+    jti = models.CharField(max_length=255, blank=True, db_index=True)
+    user_identifier = models.CharField(max_length=255, blank=True)
+    revoked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"Revoked token {self.jti or self.token_hash[:12]}"

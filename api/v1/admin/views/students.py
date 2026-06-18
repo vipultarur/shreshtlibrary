@@ -21,6 +21,16 @@ from api.v1.v2_admin import _activity, _admin_user, _image_upload
 
 User = get_user_model()
 
+def get_student_profile(pk_val, select_user=False):
+    qs = StudentProfile.objects.select_related("user") if select_user else StudentProfile.objects.all()
+    pk_val = str(pk_val)
+    if pk_val.isdigit():
+        profile = qs.filter(pk=pk_val).first()
+        if profile:
+            return profile
+        return get_object_or_404(qs, user_id=pk_val)
+    return get_object_or_404(qs, student_id__iexact=pk_val)
+
 class AdminStudentsView(generics.ListCreateAPIView):
     permission_classes = [HasAdminPermission("manage_students")]
     parser_classes = [parsers.JSONParser, parsers.MultiPartParser, parsers.FormParser]
@@ -57,6 +67,10 @@ class AdminStudentsView(generics.ListCreateAPIView):
         
         if not mobile:
             return standard_response("error", "Mobile is required.", errors={"mobile": ["This field is required."]}, status_code=400)
+            
+        username = payload.get("username") or mobile
+        if User.objects.filter(Q(username=username) | Q(mobile=mobile)).exists():
+            return standard_response("error", "User with this mobile number already exists.", errors={"mobile": ["A student with this mobile number already exists."]}, status_code=400)
             
         user = User.objects.create_user(
             username=payload.get("username") or mobile,
@@ -107,10 +121,7 @@ class AdminStudentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StudentProfileSerializer
 
     def get_object(self):
-        pk = str(self.kwargs['pk'])
-        if pk.isdigit():
-            return get_object_or_404(StudentProfile.objects.select_related("user"), Q(pk=pk) | Q(user_id=pk))
-        return get_object_or_404(StudentProfile.objects.select_related("user"), student_id__iexact=pk)
+        return get_student_profile(self.kwargs['pk'], select_user=True)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -162,11 +173,7 @@ class AdminStudentPhotoView(APIView):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def _upload(self, request, pk):
-        pk = str(pk)
-        if pk.isdigit():
-            profile = get_object_or_404(StudentProfile, Q(pk=pk) | Q(user_id=pk))
-        else:
-            profile = get_object_or_404(StudentProfile, student_id__iexact=pk)
+        profile = get_student_profile(pk)
         image = _image_upload(request, "profile_photo", "profile_image", "image")
         if not image:
             return standard_response(
@@ -188,11 +195,7 @@ class AdminStudentStatusView(APIView):
     permission_classes = [HasAdminPermission("manage_students")]
 
     def post(self, request, pk, action):
-        pk = str(pk)
-        if pk.isdigit():
-            profile = get_object_or_404(StudentProfile, Q(pk=pk) | Q(user_id=pk))
-        else:
-            profile = get_object_or_404(StudentProfile, student_id__iexact=pk)
+        profile = get_student_profile(pk)
         if action == "suspend":
             profile.status = "SUSPENDED"
             profile.suspension_reason = request.data.get("reason") or request.data.get("suspension_reason")
@@ -214,11 +217,7 @@ class AdminStudentRelatedView(APIView):
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request, pk, kind):
-        pk = str(pk)
-        if pk.isdigit():
-            profile = get_object_or_404(StudentProfile, Q(pk=pk) | Q(user_id=pk))
-        else:
-            profile = get_object_or_404(StudentProfile, student_id__iexact=pk)
+        profile = get_student_profile(pk)
         if kind == "timeline":
             activities = ActivityLog.objects.filter(details__icontains=str(profile.id)).order_by("-timestamp")[:50]
             return standard_response(data=[{

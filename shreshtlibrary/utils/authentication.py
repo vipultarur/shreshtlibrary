@@ -1,17 +1,72 @@
+import datetime as dt
+import hashlib
 import jwt
 import uuid
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.hashers import check_password
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import authentication
 from rest_framework import exceptions
 
-from apps.accounts.models import CustomUser, AdminUser
+from apps.accounts.models import AuthTokenRevocation, CustomUser, AdminUser
 
 User = get_user_model()
 
+
+def _hash_token(token):
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _expires_at_from_payload(payload):
+    exp = payload.get("exp")
+    if not exp:
+        return None
+    try:
+        return dt.datetime.fromtimestamp(int(exp), tz=dt.timezone.utc)
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def is_token_revoked(token, payload):
+    token_hash = _hash_token(token)
+    filters = Q(token_hash=token_hash)
+    jti = payload.get("jti")
+    if jti:
+        filters |= Q(jti=jti)
+    return AuthTokenRevocation.objects.filter(
+        filters,
+    ).filter(
+        Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
+    ).exists()
+
+
+def revoke_token(token, payload=None, user=None):
+    if payload is None:
+        try:
+            payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
+        except jwt.InvalidTokenError:
+            payload = {}
+
+    token_hash = _hash_token(token)
+    expires_at = _expires_at_from_payload(payload)
+    user_identifier = payload.get("sub") or payload.get("user_id")
+    AuthTokenRevocation.objects.get_or_create(
+        token_hash=token_hash,
+        defaults={
+            "jti": payload.get("jti") or "",
+            "user_identifier": str(user_identifier or getattr(user, "pk", "")),
+            "expires_at": expires_at,
+        },
+    )
+
+
 class SupabaseJWTAuthentication(authentication.BaseAuthentication):
+    def authenticate_header(self, request):
+        return "Bearer"
+
     def authenticate(self, request):
         auth_header = request.headers.get('Authorization')
         if not auth_header:
@@ -28,6 +83,7 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
         
         payload = None
         error = None
+        token_source = None
         
         # 1. Try decoding as a Supabase token (using HS256 and SUPABASE_JWT_SECRET)
         if jwt_secret:
@@ -38,6 +94,7 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
                     algorithms=["HS256"], 
                     options={"verify_aud": False}
                 )
+                token_source = "supabase"
             except jwt.InvalidTokenError as e:
                 error = e
                 
@@ -51,83 +108,59 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
                     options={"verify_aud": False}
                 )
                 error = None
+                token_source = "django"
             except jwt.InvalidTokenError as e:
                 if not error:
                     error = e
-                    
-        # 3. If still not decoded and settings.DEBUG is True, decode without signature verification
-        if not payload and settings.DEBUG:
-            try:
-                payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
-                error = None
-            except jwt.InvalidTokenError as e:
-                error = e
                 
         if not payload:
             raise exceptions.AuthenticationFailed(f'Invalid token: {error}')
+
+        if payload.get("token_type") and payload.get("token_type") != "access":
+            raise exceptions.AuthenticationFailed('Invalid token type.')
+
+        if is_token_revoked(token, payload):
+            raise exceptions.AuthenticationFailed('Token has been revoked.')
             
         # Support both 'sub' (Supabase) and 'user_id' (SimpleJWT)
         user_identifier = payload.get('sub') or payload.get('user_id')
         if not user_identifier:
             raise exceptions.AuthenticationFailed('Token payload missing user identifier.')
             
-        email = payload.get('email')
         user_metadata = payload.get('user_metadata', {})
-        role = user_metadata.get('role', payload.get('role', 'student'))
-        
-        if role not in ['student', 'admin', 'super_admin']:
-            role = 'student'
+        token_role = user_metadata.get('role', payload.get('role', 'student'))
+        if token_role not in ['student', 'admin', 'super_admin']:
+            token_role = 'student'
             
-        user = None
         is_uuid = False
         try:
             uuid.UUID(str(user_identifier))
             is_uuid = True
         except ValueError:
             pass
-            
-        if role in ['admin', 'super_admin']:
-            # Authenticate against separate AdminUser table
-            try:
-                if is_uuid:
-                    user = AdminUser.objects.get(supabase_uid=user_identifier)
-                else:
-                    user = AdminUser.objects.get(pk=user_identifier)
-            except AdminUser.DoesNotExist:
-                username = email or f"admin_{user_identifier}"
-                user, created = AdminUser.objects.get_or_create(
-                    username=username,
-                    defaults={
-                        'email': email,
-                        'role': role,
-                        'is_active': True,
-                        'supabase_uid': user_identifier if is_uuid else None
-                    }
-                )
+
+        if is_uuid:
+            admin_user = AdminUser.objects.filter(supabase_uid=user_identifier).first()
+            student_user = User.objects.filter(supabase_uid=user_identifier).first()
         else:
-            # Authenticate against CustomUser (Student) table
-            try:
-                if is_uuid:
-                    user = User.objects.get(supabase_uid=user_identifier)
-                else:
-                    user = User.objects.get(pk=user_identifier)
-            except User.DoesNotExist:
-                username = email or f"student_{user_identifier}"
-                user, created = User.objects.get_or_create(
-                    username=username,
-                    defaults={
-                        'email': email,
-                        'role': role,
-                        'is_active': True,
-                        'supabase_uid': user_identifier if is_uuid else None
-                    }
-                )
+            admin_user = AdminUser.objects.filter(pk=user_identifier).first()
+            student_user = User.objects.filter(pk=user_identifier).first()
+
+        if admin_user and student_user:
+            if token_source == "django":
+                user = admin_user if token_role in ['admin', 'super_admin'] else student_user
+            else:
+                raise exceptions.AuthenticationFailed('Token maps to multiple local users.')
+        else:
+            user = admin_user or student_user
+
+        if not user:
+            raise exceptions.AuthenticationFailed('User not found.')
+
+        if not getattr(user, 'is_active', False):
+            raise exceptions.AuthenticationFailed('User account is inactive.')
             
-        # Keep roles in sync
-        if user.role != role:
-            user.role = role
-            user.save()
-            
+        request.auth_payload = payload
         return (user, token)
 
 
@@ -136,18 +169,18 @@ class ShreshtLibraryAuthBackend(ModelBackend):
         # 1. Try AdminUser first (since it's password based for admin login view)
         try:
             admin = AdminUser.objects.get(username=username)
-            if admin.check_password(password):
+            if admin.is_active and admin.check_password(password):
                 return admin
         except AdminUser.DoesNotExist:
             # Try by email or mobile as fallback
             try:
                 admin = AdminUser.objects.get(email=username)
-                if admin.check_password(password):
+                if admin.is_active and admin.check_password(password):
                     return admin
             except AdminUser.DoesNotExist:
                 try:
                     admin = AdminUser.objects.get(mobile=username)
-                    if admin.check_password(password):
+                    if admin.is_active and admin.check_password(password):
                         return admin
                 except AdminUser.DoesNotExist:
                     pass
@@ -155,18 +188,18 @@ class ShreshtLibraryAuthBackend(ModelBackend):
         # 2. Try CustomUser (Student)
         try:
             user = CustomUser.objects.get(username=username)
-            if user.check_password(password) and user.role == 'student':
+            if user.is_active and user.check_password(password) and user.role == 'student':
                 return user
         except CustomUser.DoesNotExist:
             # Try by email or mobile
             try:
                 user = CustomUser.objects.get(email=username)
-                if user.check_password(password) and user.role == 'student':
+                if user.is_active and user.check_password(password) and user.role == 'student':
                     return user
             except CustomUser.DoesNotExist:
                 try:
                     user = CustomUser.objects.get(mobile=username)
-                    if user.check_password(password) and user.role == 'student':
+                    if user.is_active and user.check_password(password) and user.role == 'student':
                         return user
                 except CustomUser.DoesNotExist:
                     pass

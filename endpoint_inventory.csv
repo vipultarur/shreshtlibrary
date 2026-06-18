@@ -1,0 +1,256 @@
+Path,Method,Auth Requirement,Params (Path/Query),Request Schema,Response Schema,Status Codes,Rate Limit Tier,Deprecation Status
+/api/v1/admin/attendance/,GET,BearerAuth,"date (query), method (query), page (query), page_size (query), student_id (query)",None,PaginatedAttendanceList,200,Unknown,False
+/api/v1/admin/attendance/,POST,BearerAuth,None,AttendanceRequest,Attendance,201,Unknown,False
+/api/v1/admin/attendance/{id}/,GET,BearerAuth,id (path),None,Attendance,200,Unknown,False
+/api/v1/admin/attendance/{id}/,PUT,BearerAuth,id (path),AttendanceRequest,Attendance,200,Unknown,False
+/api/v1/admin/attendance/{id}/,PATCH,BearerAuth,id (path),PatchedAttendanceRequest,Attendance,200,Unknown,False
+/api/v1/admin/attendance/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/attendance/absentees/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/attendance/daily-summary/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/attendance/manual/,GET,BearerAuth,"date (query), method (query), page (query), page_size (query), student_id (query)",None,PaginatedAttendanceList,200,Unknown,False
+/api/v1/admin/attendance/manual/,POST,BearerAuth,None,AttendanceRequest,Attendance,201,Unknown,False
+/api/v1/admin/attendance/streak/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/dashboard/stats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/floors/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/floors/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/floors/,DELETE,BearerAuth,None,None,None,204,Unknown,False
+/api/v1/admin/floors/{id}/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/floors/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/floors/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/holidays/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/holidays/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/holidays/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/holidays/,DELETE,BearerAuth,None,None,None,204,Unknown,False
+/api/v1/admin/holidays/{id}/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/holidays/{id}/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/holidays/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/holidays/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/inbox/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/inbox/{id}/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/inbox/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/inbox/{id}/{action}/,POST,BearerAuth,"action (path), id (path)",None,None,200,Unknown,False
+/api/v1/admin/inbox/{id}/{action}/,DELETE,BearerAuth,"action (path), id (path)",None,None,204,Unknown,False
+/api/v1/admin/library/achievers/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/achievers/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/achievers/{id}/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/library/achievers/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/library/achievers/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/library/achievers/{id}/toggle/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/library/achievers/reorder/,PATCH,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/facilities/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/facilities/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/facilities/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/library/facilities/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/library/facilities/{id}/toggle/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/library/facilities/reorder/,PATCH,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/info/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/library/info/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/memberships/,GET,BearerAuth,"page (query), page_size (query), plan_id (query), status (query), student_id (query)",None,PaginatedMembershipList,200,Unknown,False
+/api/v1/admin/memberships/{id}/,GET,BearerAuth,id (path),None,Membership,200,Unknown,False
+/api/v1/admin/memberships/{id}/,PUT,BearerAuth,id (path),MembershipRequest,Membership,200,Unknown,False
+/api/v1/admin/memberships/{id}/,PATCH,BearerAuth,id (path),PatchedMembershipRequest,Membership,200,Unknown,False
+/api/v1/admin/memberships/assign/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/memberships/expired-today/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/memberships/expiring/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/memberships/renew/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/memberships/upgrade/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/notifications/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/notifications/{id}/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/notifications/{id}/recipients/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/notifications/schedule/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/notifications/scheduled/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/notifications/scheduled/,DELETE,BearerAuth,None,None,None,204,Unknown,False
+/api/v1/admin/notifications/scheduled/{id}/cancel/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/notifications/scheduled/{id}/cancel/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/notifications/send/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/notifications/templates/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/payments/,GET,BearerAuth,"page (query), page_size (query)",None,PaginatedPaymentList,200,Unknown,False
+/api/v1/admin/payments/,POST,BearerAuth,None,PaymentRequest,Payment,201,Unknown,False
+/api/v1/admin/payments/{id}/,GET,BearerAuth,id (path),None,Payment,200,Unknown,False
+/api/v1/admin/payments/{id}/,PUT,BearerAuth,id (path),PaymentRequest,Payment,200,Unknown,False
+/api/v1/admin/payments/{id}/,PATCH,BearerAuth,id (path),PatchedPaymentRequest,Payment,200,Unknown,False
+/api/v1/admin/payments/{id}/receipt/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/payments/{id}/refund/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/payments/{id}/verify/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/payments/overdue/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/payments/pending/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/payments/summary/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/plans/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/admin/plans/{id}/,GET,BearerAuth,id (path),None,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/,PUT,BearerAuth,id (path),MembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/,PATCH,BearerAuth,id (path),PatchedMembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/plans/{id}/students/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/plans/{id}/toggle/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/plans/{id}/update/,GET,BearerAuth,id (path),None,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/update/,PUT,BearerAuth,id (path),MembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/update/,PATCH,BearerAuth,id (path),PatchedMembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/admin/plans/{id}/update/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/plans/create/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/admin/plans/create/,POST,BearerAuth,None,MembershipPlanRequest,MembershipPlan,201,Unknown,False
+/api/v1/admin/plans/stats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/profile/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/profile/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/profile/,PATCH,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/{id}/scans/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/qr/{id}/scans/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/qr/current/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/current/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/expire/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/expire/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/generate/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/generate/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/history/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/history/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/regenerate/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qr/regenerate/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qrcode/generate/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/qrcode/generate/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/reviews/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/reviews/{id}/approve/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/reviews/{id}/approve/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/reviews/{id}/delete/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/reviews/{id}/delete/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/reviews/{id}/reject/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/reviews/{id}/reject/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/reviews/pending/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/rows/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/rows/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/rows/,DELETE,BearerAuth,None,None,None,204,Unknown,False
+/api/v1/admin/rows/{id}/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/rows/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/rows/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/seats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/assign/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/assign/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/history/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/status/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/status/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/unassign/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/{id}/unassign/,PATCH,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/seats/add/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/add/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/available/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/layout/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/seats/stats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/settings/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/settings/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/sliders/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/sliders/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/sliders/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/sliders/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/students/,GET,BearerAuth,"gender (query), goal (query), page (query), page_size (query), status (query)",None,PaginatedStudentProfileList,200,Unknown,False
+/api/v1/admin/students/,POST,BearerAuth,None,StudentProfileRequest,StudentProfile,201,Unknown,False
+/api/v1/admin/students/{id}/,GET,BearerAuth,id (path),None,StudentProfile,200,Unknown,False
+/api/v1/admin/students/{id}/,PUT,BearerAuth,id (path),StudentProfileRequest,StudentProfile,200,Unknown,False
+/api/v1/admin/students/{id}/,PATCH,BearerAuth,id (path),PatchedStudentProfileRequest,StudentProfile,200,Unknown,False
+/api/v1/admin/students/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/admin/students/{id}/{kind}/,GET,BearerAuth,"id (path), kind (path)",None,None,200,Unknown,False
+/api/v1/admin/students/{id}/activate/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/students/{id}/analytics/,GET,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/students/{id}/photo/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/students/{id}/photo/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/students/{id}/suspend/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/admin/students/counts/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/admin/students/export/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/attendance/logs/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/attendance/scan/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/admin/change-password/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/admin/change-password/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/admin/login/,POST,BearerAuth,None,AdminLoginRequest,object,200,Unknown,False
+/api/v1/auth/change-password/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/change-password/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/fcm-token/update/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/forgot-password/,POST,BearerAuth,None,ForgotPasswordRequest,object,200,Unknown,False
+/api/v1/auth/login/admin/,POST,BearerAuth,None,AdminLoginRequest,object,200,Unknown,False
+/api/v1/auth/login/email/,POST,BearerAuth,None,UserLoginRequest,object,200,Unknown,False
+/api/v1/auth/login/mobile/,POST,BearerAuth,None,UserLoginMobileRequest,object,200,Unknown,False
+/api/v1/auth/logout/,POST,BearerAuth,None,None,object,200,Unknown,False
+/api/v1/auth/me/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/auth/register/,POST,BearerAuth,None,UserRegisterRequest,object,201,Unknown,False
+/api/v1/auth/reset-password/,POST,BearerAuth,None,ResetPasswordRequest,object,200,Unknown,False
+/api/v1/auth/send-otp/,POST,BearerAuth,None,SendOTPRequest,object,200,Unknown,False
+/api/v1/auth/token/refresh/,POST,BearerAuth,None,TokenRefreshRequest,TokenRefresh,200,Unknown,False
+/api/v1/auth/verify-otp/,POST,BearerAuth,None,VerifyOTPRequest,object,200,Unknown,False
+/api/v1/dashboard/activity/export/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/dashboard/activity/log/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/dashboard/activity/recent/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/dashboard/alerts/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/dashboard/charts/{domain}/{chart}/,GET,BearerAuth,"chart (path), domain (path)",None,None,200,Unknown,False
+/api/v1/dashboard/stats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/dashboard/stats/{section}/,GET,BearerAuth,section (path),None,None,200,Unknown,False
+/api/v1/holidays/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/holidays/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/holidays/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/holidays/,DELETE,BearerAuth,None,None,None,204,Unknown,False
+/api/v1/library/achievers/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/achievers/featured/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/facilities/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/info/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/info/,PUT,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/reviews/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/library/reviews/submit/,POST,BearerAuth,None,ReviewRequest,Review,201,Unknown,False
+/api/v1/library/reviews/summary/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/memberships/history/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/memberships/plans/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/notifications/list/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/notifications/read/{id}/,POST,BearerAuth,id (path),None,object,200,Unknown,False
+/api/v1/notifications/register-device/,POST,BearerAuth,None,DeviceTokenRequest,object,200,Unknown,False
+/api/v1/payments/history/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/payments/initiate/,POST,BearerAuth,None,None,object,201,Unknown,False
+/api/v1/plans/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/plans/,POST,BearerAuth,None,MembershipPlanRequest,MembershipPlan,201,Unknown,False
+/api/v1/plans/{id}/,GET,BearerAuth,id (path),None,MembershipPlan,200,Unknown,False
+/api/v1/plans/{id}/,PUT,BearerAuth,id (path),MembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/plans/{id}/,PATCH,BearerAuth,id (path),PatchedMembershipPlanRequest,MembershipPlan,200,Unknown,False
+/api/v1/plans/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/qr/scan/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/qr/today/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/{kind}/export/,GET,BearerAuth,kind (path),None,None,200,Unknown,False
+/api/v1/reports/attendance/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/daily-summary/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/memberships/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/payments/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/seats/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/reports/students/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/seats/history/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/seats/layout/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/sliders/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/student/dashboard/,GET,BearerAuth,None,None,object,200,Unknown,False
+/api/v1/student/id-card/,GET,BearerAuth,None,None,object,200,Unknown,False
+/api/v1/student/profile/,GET,BearerAuth,None,None,StudentProfile,200,Unknown,False
+/api/v1/student/profile/photo/,POST,BearerAuth,None,None,object,200,Unknown,False
+/api/v1/student/profile/update/,PUT,BearerAuth,None,StudentProfileRequest,StudentProfile,200,Unknown,False
+/api/v1/student/referral/,GET,BearerAuth,None,None,ReferralCode,200,Unknown,False
+/api/v1/student/referral/apply/,POST,BearerAuth,None,ReferralCodeRequest,object,200,Unknown,False
+/api/v1/student/referral/history/,GET,BearerAuth,None,None,array,200,Unknown,False
+/api/v1/study/session/current/,GET,BearerAuth,None,None,StudySession,200,Unknown,False
+/api/v1/study/session/end/,POST,BearerAuth,None,StudySessionRequest,StudySession,200,Unknown,False
+/api/v1/study/session/start/,POST,BearerAuth,None,None,StudySession,201,Unknown,False
+/api/v1/study/session/update/,POST,BearerAuth,None,StudySessionRequest,StudySession,200,Unknown,False
+/api/v1/superadmin/activity-log/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/activity-log/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/admins/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/admins/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/admins/{id}/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/superadmin/admins/{id}/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/superadmin/admins/{id}/deactivate/,POST,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/superadmin/admins/{id}/remove/,PUT,BearerAuth,id (path),None,None,200,Unknown,False
+/api/v1/superadmin/admins/{id}/remove/,DELETE,BearerAuth,id (path),None,None,204,Unknown,False
+/api/v1/superadmin/admins/add/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/admins/add/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/create/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/create/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/list/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/list/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/restore/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/backup/restore/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/health/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/health/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/permissions/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/permissions/,POST,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/permissions/assign/,GET,BearerAuth,None,None,None,200,Unknown,False
+/api/v1/superadmin/permissions/assign/,POST,BearerAuth,None,None,None,200,Unknown,False
