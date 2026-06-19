@@ -16,14 +16,14 @@ def send_transactional_email(email_type, profile, context=None):
     }
     
     primary_color = "#4f46e5" # default indigo
-    image_url = "https://shreshtlibrary.vercel.app/images/emails/notification.png"
+    image_url = "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/notification.png"
     subject = "Shresht Library Update"
     action_url = "https://shreshtlibrary.vercel.app"
     
     if email_type == "SUSPEND_STUDENT":
         subject = "Action Required: Account Suspended ⚠️"
         primary_color = "#ef4444" # red-500
-        image_url = "https://shreshtlibrary.vercel.app/images/emails/suspended.png"
+        image_url = "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/suspended.png"
         template_data.update({
             "title": "Account Suspended",
             "subtitle": "Your library account has been suspended due to a policy violation or unpaid dues.",
@@ -37,12 +37,32 @@ def send_transactional_email(email_type, profile, context=None):
     elif email_type == "ACTIVATE_STUDENT":
         subject = "Your Subscription Details 📚" # Or something like "Account Reactivated"
         primary_color = "#10b981" # emerald-500
-        image_url = "https://shreshtlibrary.vercel.app/images/emails/congratulations.png" # No specific 'reactivate' in React, maybe 'congratulations' or 'receipt'
+        image_url = "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/congratulations.png" # No specific 'reactivate' in React, maybe 'congratulations' or 'receipt'
         template_data.update({
             "title": "Account Reactivated!",
             "subtitle": "Good news! Your Shresht Library account has been successfully reactivated. You can now access library facilities again.",
             "actionText": "Go to Dashboard",
             "footer": "We're glad to have you back!",
+        })
+        
+    elif email_type == "NEW_PLAN":
+        plan = context.get("plan")
+        start_date = context.get("start_date")
+        end_date = context.get("end_date")
+        
+        subject = "Membership Plan Assigned 🚀"
+        primary_color = "#3b82f6" # blue-500
+        image_url = "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/plan_details.png"
+        template_data.update({
+            "title": "New Plan Active",
+            "subtitle": f"A new library membership plan '{plan.name}' has been successfully assigned to your account.",
+            "actionText": "View Membership Details",
+            "footer": "Thank you for choosing Shresht Library!",
+            "stats": [
+                {"label": "Plan Name", "value": plan.name},
+                {"label": "Valid From", "value": start_date.strftime("%d %b, %Y") if hasattr(start_date, 'strftime') else str(start_date)},
+                {"label": "Valid Until", "value": end_date.strftime("%d %b, %Y") if hasattr(end_date, 'strftime') else str(end_date)}
+            ]
         })
     else:
         print(f"Unknown email type: {email_type}")

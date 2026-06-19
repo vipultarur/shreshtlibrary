@@ -158,6 +158,22 @@ class AdminMembershipActionView(APIView):
             created_by=_admin_user(request),
         )
         _activity(request, f"MEMBERSHIP_{action.upper()}", "Membership", membership.id, f"{action} membership for {student.username}")
+        
+        import threading
+        def send_plan_email(user, p, s_date, e_date):
+            try:
+                from utils.emails import send_transactional_email
+                if hasattr(user, "student_profile"):
+                    send_transactional_email("NEW_PLAN", user.student_profile, {
+                        "plan": p,
+                        "start_date": s_date,
+                        "end_date": e_date
+                    })
+            except Exception as e:
+                print(f"Error sending plan email: {e}")
+                
+        threading.Thread(target=send_plan_email, args=(student, plan, start, end)).start()
+        
         return standard_response(data=MembershipSerializer(membership).data, status_code=201)
 
 
