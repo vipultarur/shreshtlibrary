@@ -91,13 +91,21 @@ def _activity(request, action, target_model="", target_id=None, description=""):
     )
 
 
-def _paginate(request, rows):
+def _paginate(request, rows, serializer_func=None):
     page = max(int(request.query_params.get("page", 1)), 1)
     page_size = min(max(int(request.query_params.get("page_size", 20)), 1), 100)
-    count = len(rows)
+    
+    is_qs = hasattr(rows, 'count')
+    count = rows.count() if is_qs else len(rows)
+    
     start = (page - 1) * page_size
     end = start + page_size
     total_pages = (count + page_size - 1) // page_size
+    
+    page_data = rows[start:end]
+    if is_qs and serializer_func:
+        page_data = [serializer_func(item) for item in page_data]
+        
     return Response({
         "success": True,
         "count": count,
@@ -105,7 +113,7 @@ def _paginate(request, rows):
         "current_page": page,
         "next": None if page >= total_pages else f"?page={page + 1}&page_size={page_size}",
         "previous": None if page <= 1 else f"?page={page - 1}&page_size={page_size}",
-        "data": rows[start:end],
+        "data": page_data,
     })
 
 
@@ -568,7 +576,7 @@ class AdminStudentsView(APIView):
             qs = qs.filter(created_at__date__gte=created_from)
         if created_to:
             qs = qs.filter(created_at__date__lte=created_to)
-        return _paginate(request, [serialize_student(profile) for profile in qs])
+        return _paginate(request, qs, serialize_student)
 
     def post(self, request):
         payload = request.data
@@ -912,7 +920,7 @@ class AdminMembershipsView(APIView):
             qs = qs.filter(student_id=request.query_params["student_id"])
         if request.query_params.get("plan_id"):
             qs = qs.filter(plan_id=request.query_params["plan_id"])
-        return _paginate(request, [serialize_membership(item) for item in qs])
+        return _paginate(request, qs, serialize_membership)
 
 
 class AdminMembershipActionView(APIView):
@@ -1039,7 +1047,7 @@ class AdminQRView(APIView):
 
     def get(self, request, action=None, pk=None):
         if action == "history":
-            return _paginate(request, [serialize_qr(qr) for qr in QRCode.objects.all().order_by("-created_at")])
+            return _paginate(request, QRCode.objects.all().order_by("-created_at"), serialize_qr)
         if action == "scans":
             return standard_response(data=[serialize_attendance(item) for item in Attendance.objects.filter(qr_code_id=pk)])
         qr = QRCode.objects.filter(is_active=True).order_by("-created_at").first()
@@ -1075,7 +1083,7 @@ class AdminAttendanceView(APIView):
             qs = qs.filter(date__lte=request.query_params["to_date"])
         if request.query_params.get("method"):
             qs = qs.filter(method=request.query_params["method"])
-        return _paginate(request, [serialize_attendance(item) for item in qs])
+        return _paginate(request, qs, serialize_attendance)
 
     def post(self, request):
         student = None
@@ -1244,11 +1252,15 @@ class AdminAttendanceSummaryView(APIView):
                 ser["attendance_status"] = "pending" if is_pending_period else "absent"
                 res.append(ser)
             return standard_response(data=res)
+        from django.db.models import Count, Q
+        profiles = StudentProfile.objects.select_related("user").annotate(
+            streak=Count('user__attendances', filter=Q(user__attendances__is_present=True))
+        ).order_by('-streak')[:20]
+
         streaks = []
-        for profile in StudentProfile.objects.select_related("user"):
-            count = Attendance.objects.filter(student=profile.user, is_present=True).count()
-            streaks.append({"student": serialize_student(profile), "streak": count})
-        return standard_response(data=sorted(streaks, key=lambda item: item["streak"], reverse=True)[:20])
+        for profile in profiles:
+            streaks.append({"student": serialize_student(profile), "streak": profile.streak})
+        return standard_response(data=streaks)
 
 
 class AdminPaymentsView(APIView):
@@ -1263,7 +1275,7 @@ class AdminPaymentsView(APIView):
                 qs = qs.filter(**{lookup: value})
         if request.query_params.get("from_date"):
             qs = qs.filter(payment_date__gte=request.query_params["from_date"])
-        return _paginate(request, [serialize_payment(item) for item in qs])
+        return _paginate(request, qs, serialize_payment)
 
     def post(self, request):
         student = get_object_or_404(User, id=request.data.get("student_id"), role="student")
@@ -1383,7 +1395,7 @@ class AdminSeatsView(APIView):
     def get(self, request):
         _ensure_floor_rows()
         seats = Seat.objects.select_related("student", "student__student_profile", "row_ref").all().order_by("floor", "row", "seat_number")
-        return _paginate(request, [serialize_seat(seat) for seat in seats])
+        return _paginate(request, seats, serialize_seat)
 
     def post(self, request):
         floor_name = request.data.get("floor") or request.data.get("floor_name") or "Ground"
@@ -1418,14 +1430,11 @@ class AdminSeatDetailView(APIView):
 
     def delete(self, request, pk):
         seat = get_object_or_404(Seat, id=pk)
-        student = seat.student
-        if student:
-            seat.student = None
-            seat.status = 'available'
-            seat.save()
-            SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
-            SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Seat is being deleted")
         seat.delete()
+        
+        from core.signals import invalidate_dashboard_cache
+        invalidate_dashboard_cache()
+        
         return standard_response(message="Seat deleted successfully.")
 
 
@@ -1447,20 +1456,13 @@ class FloorView(APIView):
     def delete(self, request, pk):
         floor = get_object_or_404(Floor, id=pk)
         
-        # Unassign all students from seats on this floor
-        for row in floor.rows.all():
-            for seat in row.seats.all():
-                student = seat.student
-                if student:
-                    seat.student = None
-                    seat.status = 'available'
-                    seat.save()
-                    SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
-                    SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Floor is being deleted")
-                seat.delete()
-            row.delete()
-            
+        Seat.objects.filter(row_ref__floor=floor).delete()
+        floor.rows.all().delete()
         floor.delete()
+        
+        from core.signals import invalidate_dashboard_cache
+        invalidate_dashboard_cache()
+        
         return standard_response(message="Floor deleted successfully.")
 
 
@@ -1608,17 +1610,28 @@ class AdminSeatsReleaseAllView(APIView):
     def post(self, request):
         from django.db import transaction
         with transaction.atomic():
-            occupied_seats = Seat.objects.select_for_update().filter(status="occupied")
-            count = 0
-            for seat in occupied_seats:
-                student = seat.student
-                seat.student = None
-                seat.status = "available"
-                seat.save()
-                if student:
-                    SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
-                SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Bulk release all seats")
-                count += 1
+            occupied_seats = list(Seat.objects.select_for_update().filter(status="occupied"))
+            count = len(occupied_seats)
+            if count > 0:
+                admin = _admin_user(request)
+                logs_to_create = []
+                seats_to_update = []
+                for seat in occupied_seats:
+                    student = seat.student
+                    seat.student = None
+                    seat.status = "available"
+                    seats_to_update.append(seat)
+                    if student:
+                        logs_to_create.append(SeatChangeLog(seat=seat, student=student, action="UNASSIGNED", changed_by=admin, reason="Bulk release all seats"))
+                
+                Seat.objects.bulk_update(seats_to_update, ['student', 'status'])
+                SeatAssignment.objects.filter(seat__in=seats_to_update, released_date__isnull=True).update(released_date=timezone.now().date())
+                if logs_to_create:
+                    SeatChangeLog.objects.bulk_create(logs_to_create)
+                
+                from core.signals import invalidate_dashboard_cache
+                invalidate_dashboard_cache()
+                
         return standard_response(message=f"Successfully released {count} seats.")
 
 
@@ -1631,10 +1644,7 @@ class AdminSeatsReserveBulkView(APIView):
         
         from django.db import transaction
         with transaction.atomic():
-            seats = Seat.objects.select_for_update().filter(id__in=seat_ids)
-            for seat in seats:
-                seat.is_reserved_for_girls = is_reserved
-                seat.save(update_fields=['is_reserved_for_girls'])
+            Seat.objects.filter(id__in=seat_ids).update(is_reserved_for_girls=is_reserved)
                 
         return standard_response(message="Seats reservation updated successfully.")
 
@@ -1642,7 +1652,7 @@ class AdminNotificationsView(APIView):
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request):
-        return _paginate(request, [serialize_notification(item) for item in Notification.objects.all().order_by("-created_at")])
+        return _paginate(request, Notification.objects.all().order_by("-created_at"), serialize_notification)
 
 
 class AdminNotificationSendView(APIView):
@@ -1753,15 +1763,18 @@ def _create_notification(request, send_now):
         notification.total_recipients = students.count()
         notification.success_count = students.count()
         notification.save(update_fields=["total_recipients", "success_count"])
-        for student in students:
-            StudentNotification.objects.create(
+        now = _now()
+        notifications_to_create = [
+            StudentNotification(
                 student=student,
                 notification=notification,
                 push_delivered=notification.send_push,
                 email_delivered=notification.send_email,
                 sms_delivered=notification.send_sms,
-                delivered_at=_now(),
-            )
+                delivered_at=now,
+            ) for student in students
+        ]
+        StudentNotification.objects.bulk_create(notifications_to_create, batch_size=500)
     _activity(request, "SEND_NOTIFICATION" if send_now else "SCHEDULE_NOTIFICATION", "Notification", notification.id, notification.title)
     return notification
 
@@ -1834,13 +1847,16 @@ def _notify_holiday(holiday, action="added", admin_user=None):
     notification.total_recipients = students.count()
     notification.success_count = students.count()
     notification.save(update_fields=["total_recipients", "success_count"])
-    for student in students:
-        StudentNotification.objects.create(
+    now = _now()
+    notifications_to_create = [
+        StudentNotification(
             student=student,
             notification=notification,
             push_delivered=True,
-            delivered_at=_now(),
-        )
+            delivered_at=now,
+        ) for student in students
+    ]
+    StudentNotification.objects.bulk_create(notifications_to_create, batch_size=500)
 
     if action == "added":
         reminder_time = timezone.make_aware(datetime.datetime.combine(holiday.date - datetime.timedelta(days=1), datetime.time(9, 0)))
@@ -2092,22 +2108,28 @@ class ReportsView(APIView):
 
     def get(self, request, kind, export=False):
         user = request.user
+        qs = None
+        serializer = None
         if kind == "attendance":
             if user.role != "super_admin" and not user.permissions.get("manage_attendance"):
                 return standard_response("error", "Forbidden", status_code=403)
-            rows = [serialize_attendance(item) for item in Attendance.objects.select_related("student").all()]
+            qs = Attendance.objects.select_related("student").all()
+            serializer = serialize_attendance
         elif kind == "payments":
             if user.role != "super_admin" and not user.permissions.get("manage_payments"):
                 return standard_response("error", "Forbidden", status_code=403)
-            rows = [serialize_payment(item) for item in Payment.objects.select_related("student").all()]
+            qs = Payment.objects.select_related("student").all()
+            serializer = serialize_payment
         elif kind == "students":
             if user.role != "super_admin" and not user.permissions.get("manage_students"):
                 return standard_response("error", "Forbidden", status_code=403)
-            rows = [serialize_student(item) for item in StudentProfile.objects.select_related("user").all()]
+            qs = StudentProfile.objects.select_related("user").all()
+            serializer = serialize_student
         elif kind == "memberships":
             if user.role != "super_admin" and not user.permissions.get("manage_plans"):
                 return standard_response("error", "Forbidden", status_code=403)
-            rows = [serialize_membership(item) for item in Membership.objects.select_related("student", "plan").all()]
+            qs = Membership.objects.select_related("student", "plan").all()
+            serializer = serialize_membership
         else:
             rows = {
                 "date": timezone.now().date(),
@@ -2115,10 +2137,13 @@ class ReportsView(APIView):
                 "attendance": Attendance.objects.filter(date=timezone.now().date()).count(),
                 "payments": str(Payment.objects.filter(payment_date=timezone.now().date()).aggregate(total=Sum("amount"))["total"] or 0),
             }
+
         if export:
+            if qs is not None:
+                rows = [serializer(item) for item in qs]
             return _export(rows, f"{kind}.{request.query_params.get('format', 'xlsx')}")
-        if isinstance(rows, list):
-            return _paginate(request, rows)
+        if qs is not None:
+            return _paginate(request, qs, serializer)
         return standard_response(data=rows)
 
 

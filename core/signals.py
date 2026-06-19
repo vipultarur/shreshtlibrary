@@ -8,13 +8,24 @@ from apps.seats.models import Seat
 from apps.students.models import StudentProfile
 
 def invalidate_dashboard_cache():
-    # Django's default locmemcache doesn't support wildcard deletes easily unless we clear all,
-    # but we can try to clear known keys or clear all.
-    # For a simple cache, clear all might be too aggressive, but since dashboard stats are heavy,
-    # and default cache is simple, clearing is safer. Or we can just let it expire in 5 minutes.
-    # To be precise, since dashboard keys have today's date, we clear the entire cache for simplicity if not using Redis,
-    # or rely on cache.clear().
-    cache.clear()
+    from django.utils import timezone
+    today = timezone.now().date()
+    keys_to_delete = []
+    
+    sections = [
+        "students", "attendance/today", "payments/today", 
+        "payments/month", "memberships", "seats", "overview"
+    ]
+    for section in sections:
+        keys_to_delete.append(f"dashboard_stats_{section}_{today}")
+        
+    domains = ["attendance", "revenue", "students", "memberships", "seats", "overview"]
+    for domain in domains:
+        # Chart views use cache_key = f"dashboard_chart_{domain}_{chart}_{today}"
+        for chart in ["line", "bar", "pie", "doughnut", "radar", "polarArea"]:
+            keys_to_delete.append(f"dashboard_chart_{domain}_{chart}_{today}")
+
+    cache.delete_many(keys_to_delete)
 
 @receiver([post_save, post_delete], sender=Payment)
 @receiver([post_save, post_delete], sender=Attendance)

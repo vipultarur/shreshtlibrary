@@ -91,8 +91,11 @@ class PlanStudentsView(APIView):
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request, pk):
-        memberships = Membership.objects.filter(plan_id=pk, status="active").select_related("student")
-        data = [StudentProfileSerializer(item.student.student_profile).data for item in memberships if hasattr(item.student, "student_profile")]
+        memberships = Membership.objects.filter(plan_id=pk, status="active").select_related("student", "student__student_profile")
+        
+        profiles = [item.student.student_profile for item in memberships if hasattr(item.student, "student_profile")]
+        data = StudentProfileSerializer(profiles, many=True).data
+        
         return standard_response(data=data)
 
 

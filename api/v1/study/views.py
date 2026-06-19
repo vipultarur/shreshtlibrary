@@ -160,14 +160,16 @@ class LeaderboardView(APIView):
         from api.v1.admin.serializers import StudentProfileSerializer
         
         student_ids = [s['student_id'] for s in sessions]
-        profiles = StudentProfile.objects.filter(user_id__in=student_ids).exclude(status__in=['EXPIRED', 'SUSPENDED']).select_related('user')
-        profile_map = {p.user_id: p for p in profiles}
+        profiles = list(StudentProfile.objects.filter(user_id__in=student_ids).exclude(status__in=['EXPIRED', 'SUSPENDED']).select_related('user'))
+        
+        serialized_profiles = StudentProfileSerializer(profiles, many=True, context={'request': request}).data
+        serialized_map = {p['user_id']: p for p in serialized_profiles}
         
         leaderboard = []
         rank = 1
         for s in sessions:
-            if s['student_id'] in profile_map:
-                profile = profile_map[s['student_id']]
+            if s['student_id'] in serialized_map:
+                student_data = serialized_map[s['student_id']]
                 hours = s['total_minutes'] / 60.0
                 lvl, t, c = 1, "Newbie", "#94a3b8" # Gray
                 if hours >= 280: lvl, t, c = 9, "Library Legend", "#22d3ee" # Cyan
@@ -181,7 +183,7 @@ class LeaderboardView(APIView):
                 
                 leaderboard.append({
                     "rank": rank,
-                    "student": StudentProfileSerializer(profile, context={'request': request}).data,
+                    "student": student_data,
                     "total_minutes": s['total_minutes'],
                     "hours_formatted": f"{s['total_minutes'] // 60}h {s['total_minutes'] % 60}m",
                     "level_info": {"level": lvl, "title": t, "badge_color": c}

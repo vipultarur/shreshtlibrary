@@ -196,15 +196,20 @@ class AdminAttendanceSummaryView(APIView):
             
         if kind == "absentees":
             qs = StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).exclude(user_id__in=present_students).select_related("user")
-            res = []
-            for item in qs:
-                ser = StudentProfileSerializer(item).data
-                ser["attendance_status"] = "pending" if is_pending_period else "absent"
-                res.append(ser)
+            res = StudentProfileSerializer(qs, many=True).data
+            for item in res:
+                item["attendance_status"] = "pending" if is_pending_period else "absent"
             return standard_response(data=res)
             
+        from django.db.models import Count, Q
+        profiles = StudentProfile.objects.exclude(
+            status__in=['EXPIRED', 'SUSPENDED']
+        ).select_related("user").annotate(
+            streak=Count('user__attendances', filter=Q(user__attendances__is_present=True))
+        ).order_by('-streak')[:20]
+
         streaks = []
-        for profile in StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).select_related("user"):
-            count = Attendance.objects.filter(student=profile.user, is_present=True).count()
-            streaks.append({"student": StudentProfileSerializer(profile).data, "streak": count})
-        return standard_response(data=sorted(streaks, key=lambda item: item["streak"], reverse=True)[:20])
+        for profile in profiles:
+            streaks.append({"student": StudentProfileSerializer(profile).data, "streak": profile.streak})
+            
+        return standard_response(data=streaks)
