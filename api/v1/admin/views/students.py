@@ -210,7 +210,9 @@ class AdminStudentStatusView(APIView):
     permission_classes = [HasAdminPermission("manage_students")]
 
     def post(self, request, pk, action):
+        import threading
         profile = get_student_profile(pk)
+        
         if action == "suspend":
             profile.status = "SUSPENDED"
             profile.suspension_reason = request.data.get("reason") or request.data.get("suspension_reason")
@@ -219,11 +221,14 @@ class AdminStudentStatusView(APIView):
             event = "SUSPEND_STUDENT"
             self._unassign_seat(profile.user, request)
             
-            try:
-                from utils.emails import send_transactional_email
-                send_transactional_email("SUSPEND_STUDENT", profile)
-            except Exception as e:
-                print(f"Error sending suspend email: {e}")
+            def send_suspend_email(prof):
+                try:
+                    from utils.emails import send_transactional_email
+                    send_transactional_email("SUSPEND_STUDENT", prof)
+                except Exception as e:
+                    print(f"Error sending suspend email: {e}")
+            
+            threading.Thread(target=send_suspend_email, args=(profile,)).start()
 
         else:
             profile.status = "LIVE"
@@ -232,11 +237,14 @@ class AdminStudentStatusView(APIView):
             profile.suspended_by = None
             event = "ACTIVATE_STUDENT"
             
-            try:
-                from utils.emails import send_transactional_email
-                send_transactional_email("ACTIVATE_STUDENT", profile)
-            except Exception as e:
-                print(f"Error sending reactivate email: {e}")
+            def send_activate_email(prof):
+                try:
+                    from utils.emails import send_transactional_email
+                    send_transactional_email("ACTIVATE_STUDENT", prof)
+                except Exception as e:
+                    print(f"Error sending reactivate email: {e}")
+            
+            threading.Thread(target=send_activate_email, args=(profile,)).start()
 
         profile.save()
         _activity(request, event, "StudentProfile", profile.id, f"{event} {profile.student_id}")
