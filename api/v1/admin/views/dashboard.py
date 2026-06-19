@@ -28,7 +28,7 @@ class DashboardStatsView(APIView):
         if cached_data:
             return standard_response(data=cached_data)
 
-        total_students = StudentProfile.objects.count()
+        total_students = StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).count()
         present = Attendance.objects.filter(date=today, is_present=True).count()
         
         is_pending_period = False
@@ -55,9 +55,9 @@ class DashboardStatsView(APIView):
                 "live": StudentProfile.objects.filter(status="LIVE").count(),
                 "expired": StudentProfile.objects.filter(status="EXPIRED").count(),
                 "suspended": StudentProfile.objects.filter(status="SUSPENDED").count(),
-                "girls": StudentProfile.objects.filter(gender__iexact="Female").count(),
-                "boys": StudentProfile.objects.filter(gender__iexact="Male").count(),
-                "other": StudentProfile.objects.exclude(gender__iexact="Female").exclude(gender__iexact="Male").count()
+                "girls": StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).filter(gender__iexact="Female").count(),
+                "boys": StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).filter(gender__iexact="Male").count(),
+                "other": StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).exclude(gender__iexact="Female").exclude(gender__iexact="Male").count()
             }
         elif section == "attendance/today":
             pending = max(total_students - present, 0) if is_pending_period else 0
@@ -115,7 +115,7 @@ class DashboardChartView(APIView):
                 day = today - datetime.timedelta(days=offset)
                 labels.append(day.strftime("%d %b"))
                 present.append(count_map.get(day, 0))
-            data = {"labels": labels, "present": present, "total_students": StudentProfile.objects.count()}
+            data = {"labels": labels, "present": present, "total_students": StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).count()}
         elif domain == "revenue":
             labels, revenue = [], []
             from django.db.models.functions import TruncMonth
@@ -244,3 +244,44 @@ class AdminInboxNotificationDetailView(APIView):
         if notification:
             notification.delete()
         return standard_response(message='Notification deleted')
+
+class GlobalSearchView(APIView):
+    permission_classes = [IsLibraryAdmin]
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if len(query) < 2:
+            return standard_response(data={"students": [], "seats": [], "payments": []})
+            
+        from django.db.models import Q
+        
+        students = StudentProfile.objects.select_related("user").filter(
+            Q(user__username__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(user__mobile__icontains=query) |
+            Q(student_id__icontains=query) |
+            Q(parent_mobile__icontains=query)
+        ).exclude(status__in=['EXPIRED', 'SUSPENDED'])[:10]
+        
+        seats = Seat.objects.filter(
+            Q(seat_number__icontains=query) |
+            Q(floor__icontains=query) |
+            Q(row__icontains=query)
+        )[:10]
+        
+        payments = Payment.objects.filter(
+            Q(transaction_id__icontains=query) |
+            Q(student__first_name__icontains=query) |
+            Q(student__last_name__icontains=query) |
+            Q(student__username__icontains=query)
+        )[:10]
+
+        from api.v1.admin.serializers import PaymentSerializer
+        from api.v1.v2_admin import AdminSeatSerializer
+        
+        return standard_response(data={
+            "students": StudentProfileSerializer(students, many=True, context={'request': request}).data,
+            "seats": AdminSeatSerializer(seats, many=True, context={'request': request}).data,
+            "payments": PaymentSerializer(payments, many=True, context={'request': request}).data
+        })

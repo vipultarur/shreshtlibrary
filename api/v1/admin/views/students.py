@@ -25,10 +25,10 @@ def get_student_profile(pk_val, select_user=False):
     qs = StudentProfile.objects.select_related("user") if select_user else StudentProfile.objects.all()
     pk_val = str(pk_val)
     if pk_val.isdigit():
-        profile = qs.filter(pk=pk_val).first()
+        profile = qs.filter(user_id=pk_val).first()
         if profile:
             return profile
-        return get_object_or_404(qs, user_id=pk_val)
+        return get_object_or_404(qs, pk=pk_val)
     return get_object_or_404(qs, student_id__iexact=pk_val)
 
 class AdminStudentsView(generics.ListCreateAPIView):
@@ -40,7 +40,7 @@ class AdminStudentsView(generics.ListCreateAPIView):
     filterset_fields = ['status', 'goal', 'gender']
 
     def get_queryset(self):
-        qs = StudentProfile.objects.select_related("user").all().order_by("-created_at", "-id")
+        qs = StudentProfile.objects.select_related("user").order_by("-created_at", "-id")
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(
@@ -138,6 +138,7 @@ class AdminStudentDetailView(generics.RetrieveUpdateDestroyAPIView):
             user.is_active = str(request.data["is_active"]).lower() in ["true", "1", "yes"]
         user.save()
         
+        old_status = profile.status
         for field in ["middle_name", "goal", "dob", "gender", "caste", "address", "parent_mobile", "status", "preferred_language"]:
             if field in request.data:
                 val = request.data[field]
@@ -153,6 +154,17 @@ class AdminStudentDetailView(generics.RetrieveUpdateDestroyAPIView):
             profile.profile_photo = image
             
         profile.save()
+        
+        if old_status not in ["EXPIRED", "SUSPENDED"] and profile.status in ["EXPIRED", "SUSPENDED"]:
+            from apps.seats.models import Seat, SeatAssignment, SeatChangeLog
+            seat = Seat.objects.filter(student=user).first()
+            if seat:
+                seat.student = None
+                seat.status = 'available'
+                seat.save()
+                SeatAssignment.objects.filter(student=user, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+                SeatChangeLog.objects.create(seat=seat, student=user, action="UNASSIGNED", changed_by=_admin_user(request), reason=f"Student status changed to {profile.status}")
+
         _activity(request, "EDIT_STUDENT", "StudentProfile", profile.id, f"Updated student {profile.student_id}")
         return standard_response(message="Student updated successfully.", data=self.get_serializer(profile).data)
 
@@ -202,6 +214,7 @@ class AdminStudentStatusView(APIView):
             profile.suspended_at = timezone.now()
             profile.suspended_by = _admin_user(request)
             event = "SUSPEND_STUDENT"
+            self._unassign_seat(profile.user, request)
         else:
             profile.status = "LIVE"
             profile.suspension_reason = None
@@ -211,6 +224,17 @@ class AdminStudentStatusView(APIView):
         profile.save()
         _activity(request, event, "StudentProfile", profile.id, f"{event} {profile.student_id}")
         return standard_response(data=StudentProfileSerializer(profile, context={'request': request}).data)
+
+    def _unassign_seat(self, student_user, request):
+        from apps.seats.models import Seat, SeatAssignment, SeatChangeLog
+        seat = Seat.objects.filter(student=student_user).first()
+        if seat:
+            seat.student = None
+            seat.status = 'available'
+            seat.save()
+            SeatAssignment.objects.filter(student=student_user, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+            SeatChangeLog.objects.create(seat=seat, student=student_user, action="UNASSIGNED", changed_by=_admin_user(request), reason="Student status changed to Suspended")
+
 
 
 class AdminStudentRelatedView(APIView):
@@ -237,16 +261,17 @@ class AdminStudentCountsView(APIView):
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request):
-        girls = StudentProfile.objects.filter(gender__iexact="Female").count()
-        boys = StudentProfile.objects.filter(gender__iexact="Male").count()
+        qs = StudentProfile.objects.all()
+        girls = qs.filter(gender__iexact="Female").count()
+        boys = qs.filter(gender__iexact="Male").count()
         return standard_response(data={
-            "total": StudentProfile.objects.count(),
-            "live": StudentProfile.objects.filter(status="LIVE").count(),
+            "total": qs.count(),
+            "live": qs.filter(status="LIVE").count(),
             "expired": StudentProfile.objects.filter(status="EXPIRED").count(),
             "suspended": StudentProfile.objects.filter(status="SUSPENDED").count(),
             "girls": girls,
             "boys": boys,
-            "other": StudentProfile.objects.exclude(gender__iexact="Female").exclude(gender__iexact="Male").count(),
+            "other": qs.exclude(gender__iexact="Female").exclude(gender__iexact="Male").count(),
         })
 
 # Keep the analytics and export logic from v2_admin, simply updating it to use the new serializer structure if needed.

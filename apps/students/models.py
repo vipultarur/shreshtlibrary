@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class StudentProfile(models.Model):
@@ -44,6 +45,8 @@ class StudentProfile(models.Model):
     suspended_by = models.ForeignKey('accounts.AdminUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='suspended_students')
     preferred_language = models.CharField(max_length=10, default='en')
     referred_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_students')
+    joining_date = models.DateField(default=timezone.now)
+    allowed_study_minutes = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -59,6 +62,9 @@ class StudentProfile(models.Model):
         if not self.student_id:
             next_id = StudentProfile.objects.exclude(student_id__isnull=True).count() + 1
             self.student_id = f"SHR-{next_id:04d}"
+            while StudentProfile.objects.filter(student_id=self.student_id).exists():
+                next_id += 1
+                self.student_id = f"SHR-{next_id:04d}"
         super().save(*args, **kwargs)
 
     def __str__(self):

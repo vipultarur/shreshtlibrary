@@ -125,3 +125,67 @@ class StudySessionHistoryView(APIView):
         sessions = StudySession.objects.filter(student=request.user, status='completed').order_by('-start_time')
         return standard_response(data=StudySessionSerializer(sessions, many=True).data)
 
+class LeaderboardView(APIView):
+    from rest_framework.permissions import IsAuthenticated
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Sum
+        import datetime
+        now = timezone.now()
+        duration = request.query_params.get("duration", "month")
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
+        
+        filter_kwargs = {'status': 'completed'}
+        if duration == 'today':
+            filter_kwargs['start_time__date'] = now.date()
+        elif duration == 'week':
+            week_start = now - datetime.timedelta(days=now.weekday())
+            filter_kwargs['start_time__gte'] = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif duration == 'year':
+            filter_kwargs['start_time__year'] = now.year
+        elif duration == 'custom' and start_date and end_date:
+            filter_kwargs['start_time__date__gte'] = start_date
+            filter_kwargs['start_time__date__lte'] = end_date
+        else:
+            filter_kwargs['start_time__month'] = now.month
+            filter_kwargs['start_time__year'] = now.year
+            
+        sessions = StudySession.objects.filter(**filter_kwargs).values('student_id').annotate(
+            total_minutes=Sum('duration_minutes')
+        ).order_by('-total_minutes')[:100]
+        
+        from apps.students.models import StudentProfile
+        from api.v1.admin.serializers import StudentProfileSerializer
+        
+        student_ids = [s['student_id'] for s in sessions]
+        profiles = StudentProfile.objects.filter(user_id__in=student_ids).exclude(status__in=['EXPIRED', 'SUSPENDED']).select_related('user')
+        profile_map = {p.user_id: p for p in profiles}
+        
+        leaderboard = []
+        rank = 1
+        for s in sessions:
+            if s['student_id'] in profile_map:
+                profile = profile_map[s['student_id']]
+                hours = s['total_minutes'] / 60.0
+                lvl, t, c = 1, "Newbie", "#94a3b8" # Gray
+                if hours >= 280: lvl, t, c = 9, "Library Legend", "#22d3ee" # Cyan
+                elif hours >= 220: lvl, t, c = 8, "Grand Master Scholar", "#fbbf24" # Gold
+                elif hours >= 170: lvl, t, c = 7, "Academic Champion", "#c084fc" # Purple
+                elif hours >= 130: lvl, t, c = 6, "Book Slayer", "#f87171" # Red
+                elif hours >= 90: lvl, t, c = 5, "Study Warrior", "#fb923c" # Orange
+                elif hours >= 60: lvl, t, c = 4, "Knowledge Knight", "#BDAD40" # Light Blue
+                elif hours >= 30: lvl, t, c = 3, "Library Squire", "#4ade80" # Green
+                elif hours >= 10: lvl, t, c = 2, "Rookie Scholar", "#69A3E0" # Blue
+                
+                leaderboard.append({
+                    "rank": rank,
+                    "student": StudentProfileSerializer(profile, context={'request': request}).data,
+                    "total_minutes": s['total_minutes'],
+                    "hours_formatted": f"{s['total_minutes'] // 60}h {s['total_minutes'] % 60}m",
+                    "level_info": {"level": lvl, "title": t, "badge_color": c}
+                })
+                rank += 1
+                
+        return standard_response(data=leaderboard)

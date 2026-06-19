@@ -43,31 +43,74 @@ class AdminPaymentsView(generics.ListCreateAPIView):
         return qs
 
     def create(self, request, *args, **kwargs):
-        # Validate amount before attempting Decimal conversion
-        raw_amount = request.data.get("amount")
-        try:
-            amount = Decimal(str(raw_amount))
-            if amount <= 0:
-                return standard_response("error", "Amount must be greater than zero.", status_code=400)
-        except Exception:
-            return standard_response("error", "Invalid amount value.", status_code=400)
-
+        from apps.memberships.models import MembershipPlan
+        from django.db import transaction
+        import datetime
+        
         student = get_object_or_404(User, id=request.data.get("student_id"), role="student")
-        membership = Membership.objects.filter(id=request.data.get("membership_id")).first()
+        
+        # Check active plan restriction
+        active_sub = Membership.objects.filter(student=student, status="active").first()
+        if active_sub:
+            return standard_response("error", "Student already has an active subscription. You can assign a new plan after the current one expires.", status_code=400)
+            
+        plan_id = request.data.get("plan_id")
+        if not plan_id:
+            return standard_response("error", "Plan is required.", status_code=400)
+            
+        plan = get_object_or_404(MembershipPlan, id=plan_id)
+        
+        try:
+            duration_days = int(request.data.get("duration_days", 30))
+            if duration_days < 30:
+                return standard_response("error", "Minimum custom duration is 30 days.", status_code=400)
+        except ValueError:
+            return standard_response("error", "Invalid duration.", status_code=400)
+            
+        # Automatic Price Calculation
+        try:
+            base_duration = Decimal(str(plan.duration_days or 30))
+            price_per_day = plan.price / base_duration
+            amount = round(price_per_day * Decimal(str(duration_days)), 2)
+        except Exception:
+            return standard_response("error", "Failed to calculate amount.", status_code=400)
+
         payment_mode = request.data.get("payment_mode") or request.data.get("method", "Cash")
-        payment = Payment.objects.create(
-            student=student,
-            membership=membership,
-            amount=amount,
-            payment_mode=payment_mode,
-            method=payment_mode.upper().replace(" ", "_"),
-            transaction_id=request.data.get("transaction_id") or request.data.get("transaction_ref"),
-            transaction_ref=request.data.get("transaction_ref") or request.data.get("transaction_id"),
-            notes=request.data.get("notes"),
-            recorded_by=_admin_user(request),
-            paid_at=_now(),
-            status="pending",
-        )
+        
+        today = timezone.now().date()
+        end_date = today + datetime.timedelta(days=duration_days)
+        
+        with transaction.atomic():
+            membership = Membership.objects.create(
+                student=student,
+                plan=plan,
+                start_date=today,
+                end_date=end_date,
+                status="active",
+                renewal_count=0,
+                notes=request.data.get("notes"),
+                created_by=_admin_user(request)
+            )
+            
+            payment = Payment.objects.create(
+                student=student,
+                membership=membership,
+                amount=amount,
+                payment_mode=payment_mode,
+                method=payment_mode.upper().replace(" ", "_"),
+                transaction_id=request.data.get("transaction_id") or request.data.get("transaction_ref"),
+                transaction_ref=request.data.get("transaction_ref") or request.data.get("transaction_id"),
+                notes=request.data.get("notes"),
+                recorded_by=_admin_user(request),
+                paid_at=_now(),
+                status="pending",
+            )
+            
+            # Update student status to LIVE
+            if hasattr(student, 'student_profile'):
+                student.student_profile.status = "LIVE"
+                student.student_profile.save(update_fields=['status'])
+
         _activity(request, "RECORD_PAYMENT", "Payment", payment.id, f"Recorded payment {payment.payment_id}")
 
         try:
@@ -111,12 +154,24 @@ class AdminPaymentActionView(APIView):
     def post(self, request, pk, action):
         payment = get_object_or_404(Payment, id=pk)
         if action == "verify":
+            if payment.membership:
+                # Check for active subscription
+                active_sub = Membership.objects.filter(student=payment.student, status="active").exclude(id=payment.membership.id).first()
+                if active_sub:
+                    return standard_response("error", "Student already has an active subscription. Cannot verify this payment and activate a new plan.", status_code=400)
+            
             payment.status = "verified"
             payment.verified_by = _admin_user(request)
             payment.verified_at = _now()
             if payment.membership:
                 payment.membership.status = "active"
                 payment.membership.save()
+                
+                # Update student status
+                if hasattr(payment.student, 'student_profile'):
+                    payment.student.student_profile.status = "LIVE"
+                    payment.student.student_profile.save(update_fields=['status'])
+                    
             event = "VERIFY_PAYMENT"
         elif action == "refund":
             payment.status = "refunded"

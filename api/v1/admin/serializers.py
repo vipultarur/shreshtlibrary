@@ -44,7 +44,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'id', 'user_id', 'student_id', 'username', 'first_name', 'middle_name', 'last_name',
             'email', 'mobile', 'parent_mobile', 'goal', 'dob', 'gender', 'caste', 'address',
             'profile_photo', 'profile_image', 'status', 'is_active', 'suspension_reason', 'suspended_at',
-            'preferred_language', 'created_at', 'updated_at'
+            'preferred_language', 'created_at', 'updated_at', 'joining_date', 'allowed_study_minutes'
         ]
 
     def get_profile_image(self, obj):

@@ -33,7 +33,7 @@ from api.v1.students.views import (
     StudentProfileUpdateView,
     StudentProfileView,
 )
-from api.v1.study.views import EndStudySessionView, StartStudySessionView, UpdateStudySessionView, CurrentStudySessionView, StudySessionHistoryView
+from api.v1.study.views import EndStudySessionView, StartStudySessionView, UpdateStudySessionView, CurrentStudySessionView, StudySessionHistoryView, LeaderboardView
 
 
 urlpatterns = [
@@ -100,6 +100,7 @@ urlpatterns = [
     path('study/session/current/', CurrentStudySessionView.as_view(), name='study-session-current'),
     path('study/session/update/', UpdateStudySessionView.as_view(), name='study-session-update'),
     path('study/session/history/', StudySessionHistoryView.as_view(), name='study-session-history'),
+    path('study/leaderboard/', LeaderboardView.as_view(), name='study-leaderboard'),
 
     # Dashboard Analytics
     path('dashboard/stats/', admin_dashboard_views.DashboardStatsView.as_view(), {'section': 'overview'}, name='dashboard-stats'),
@@ -110,6 +111,7 @@ urlpatterns = [
     path('dashboard/activity/log/', v2.DashboardActivityView.as_view(), name='dashboard-activity-log'),
     path('dashboard/activity/export/', v2.DashboardActivityView.as_view(), {'export': True}, name='dashboard-activity-export'),
     path('dashboard/alerts/', v2.DashboardAlertsView.as_view(), name='dashboard-alerts'),
+    path('admin/search/', admin_dashboard_views.GlobalSearchView.as_view(), name='admin-global-search'),
 
     # Admin Students
     path('admin/students/counts/', admin_students_views.AdminStudentCountsView.as_view(), name='admin-students-counts'),
@@ -169,6 +171,8 @@ urlpatterns = [
 
     # Seats
     path('admin/seats/layout/', v2.AdminSeatsLayoutView.as_view(), name='admin-seats-layout'),
+    path('admin/seats/release-all/', v2.AdminSeatsReleaseAllView.as_view(), name='admin-seats-release-all'),
+    path('admin/seats/reserve-bulk/', v2.AdminSeatsReserveBulkView.as_view(), name='admin-seats-reserve-bulk'),
     path('admin/seats/available/', v2.SeatSpecialView.as_view(), {'kind': 'available'}, name='admin-seats-available'),
     path('admin/seats/stats/', v2.SeatSpecialView.as_view(), {'kind': 'stats'}, name='admin-seats-stats'),
     path('admin/seats/add/', v2.AdminSeatsView.as_view(), name='admin-seats-add-legacy'),

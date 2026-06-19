@@ -3,14 +3,25 @@ import os
 
 DEBUG = False
 
-# Base allowed hosts
-ALLOWED_HOSTS = ['shreshtlibrary.com', 'shreshtlibrary.onrender.com']
+# ── Allowed Hosts ────────────────────────────────────────────────
+# Production base URL: https://shreshtlibrary.onrender.com
+ALLOWED_HOSTS = [
+    'shreshtlibrary.onrender.com',
+    'shreshtlibrary.com',
+    'www.shreshtlibrary.com',
+]
 
 # Automatically append Render external hostname if running on Render
 render_external_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if render_external_hostname:
     ALLOWED_HOSTS.append(render_external_hostname)
 
+# Also accept any .onrender.com subdomain (Render internal routing)
+render_service_name = os.environ.get('RENDER_SERVICE_NAME')
+if render_service_name:
+    ALLOWED_HOSTS.append(f'{render_service_name}.onrender.com')
+
+# ── Security ─────────────────────────────────────────────────────
 # Trust the reverse proxy header for SSL/HTTPS detection on Render
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -20,4 +31,10 @@ CSRF_COOKIE_SECURE = True
 
 # Enable SSL redirection in production (can be disabled via environment variable if needed)
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+
+# ── Throttle Rates (production) ──────────────────────────────────
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'anon': '30/minute',
+    'user': '300/minute',
+}
 

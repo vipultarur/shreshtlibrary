@@ -19,21 +19,21 @@ from api.v1.v2_admin import _activity, _admin_user, _date, _holiday_for_date
 
 User = get_user_model()
 
-def _generate_qr(request, method="MANUAL"):
+def _generate_qr(request, method="MANUAL", validity_days=1):
     QRCode.objects.filter(is_active=True).update(is_active=False, is_expired=True)
     now = timezone.now()
     qr = QRCode.objects.create(
         token=uuid.uuid4(),
         code=f"library-qr-{now.date()}-{uuid.uuid4()}",
         valid_date=now.date(),
-        expiry_timestamp=now + datetime.timedelta(days=1),
-        expires_at=now + datetime.timedelta(days=1),
+        expiry_timestamp=now + datetime.timedelta(days=validity_days),
+        expires_at=now + datetime.timedelta(days=validity_days),
         is_active=True,
         is_expired=False,
         generation_method=method,
         created_by=_admin_user(request),
     )
-    _activity(request, "GENERATE_QR", "QRCode", qr.id, "Generated QR code")
+    _activity(request, "GENERATE_QR", "QRCode", qr.id, f"Generated QR code valid for {validity_days} days")
     return qr
 
 class AdminQRView(APIView):
@@ -55,7 +55,13 @@ class AdminQRView(APIView):
 
     def post(self, request, action=None):
         if action in ["generate", "regenerate"]:
-            qr = _generate_qr(request)
+            try:
+                validity_days = int(request.data.get("validity_days", 1))
+            except ValueError:
+                validity_days = 1
+            if validity_days < 1 or validity_days > 7:
+                validity_days = 1
+            qr = _generate_qr(request, validity_days=validity_days)
             return standard_response(data=QRCodeSerializer(qr).data, status_code=201)
             
         if action == "expire":
@@ -73,7 +79,8 @@ class AdminAttendanceView(generics.ListCreateAPIView):
     filterset_fields = ['student_id', 'date', 'method']
 
     def get_queryset(self):
-        qs = Attendance.objects.select_related("student").all().order_by("-date", "-marked_at")
+        qs = Attendance.objects.select_related("student", "student__student_profile").all().order_by("-date", "-marked_at")
+        qs = qs.exclude(student__student_profile__status__in=['EXPIRED', 'SUSPENDED'])
         from_date = self.request.query_params.get("from_date")
         to_date = self.request.query_params.get("to_date")
         if from_date:
@@ -91,6 +98,12 @@ class AdminAttendanceView(generics.ListCreateAPIView):
             
         if not student:
             return standard_response("error", "Student is required.", status_code=400)
+            
+        try:
+            if student.student_profile.status in ['EXPIRED', 'SUSPENDED']:
+                return standard_response("error", "Cannot mark attendance for suspended/expired students.", status_code=400)
+        except:
+            pass
             
         date = _date(request.data.get("date"), timezone.now().date())
         holiday = _holiday_for_date(date)
@@ -119,6 +132,12 @@ class AdminAttendanceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         record = self.get_object()
+        try:
+            if record.student.student_profile.status in ['EXPIRED', 'SUSPENDED']:
+                return standard_response("error", "Cannot update attendance for suspended/expired students.", status_code=400)
+        except:
+            pass
+            
         target_date = _date(request.data.get("date"), record.date)
         holiday = _holiday_for_date(target_date)
         if holiday:
@@ -133,7 +152,13 @@ class AdminAttendanceDetailView(generics.RetrieveUpdateDestroyAPIView):
         return standard_response("error", "Validation failed.", errors=serializer.errors, status_code=400)
 
     def destroy(self, request, *args, **kwargs):
-        self.get_object().delete()
+        record = self.get_object()
+        try:
+            if record.student.student_profile.status in ['EXPIRED', 'SUSPENDED']:
+                return standard_response("error", "Cannot delete attendance for suspended/expired students.", status_code=400)
+        except:
+            pass
+        record.delete()
         return standard_response(message="Attendance deleted.")
 
 
@@ -163,14 +188,14 @@ class AdminAttendanceSummaryView(APIView):
                 pass
 
         if kind == "daily-summary":
-            total = User.objects.filter(role="student").count()
+            total = StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).count()
             present = len(set(present_students))
             pending_count = max(total - present, 0) if is_pending_period else 0
             absent_count = 0 if is_pending_period else max(total - present, 0)
             return standard_response(data={"date": date, "present": present, "absent": absent_count, "pending": pending_count, "total": total})
             
         if kind == "absentees":
-            qs = StudentProfile.objects.exclude(user_id__in=present_students).select_related("user")
+            qs = StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).exclude(user_id__in=present_students).select_related("user")
             res = []
             for item in qs:
                 ser = StudentProfileSerializer(item).data
@@ -179,7 +204,7 @@ class AdminAttendanceSummaryView(APIView):
             return standard_response(data=res)
             
         streaks = []
-        for profile in StudentProfile.objects.select_related("user"):
+        for profile in StudentProfile.objects.exclude(status__in=['EXPIRED', 'SUSPENDED']).select_related("user"):
             count = Attendance.objects.filter(student=profile.user, is_present=True).count()
             streaks.append({"student": StudentProfileSerializer(profile).data, "streak": count})
         return standard_response(data=sorted(streaks, key=lambda item: item["streak"], reverse=True)[:20])

@@ -30,15 +30,26 @@ class StudentScanQRView(APIView):
         # Validate QR code exists, valid date, not expired
         try:
             qr = QRCode.objects.get(code=code)
-            if qr.is_expired or qr.valid_date != timezone.now().date() or qr.expiry_timestamp < timezone.now():
+            if qr.is_expired or qr.expires_at < timezone.now():
                 return standard_response("error", "Invalid or expired QR code.", status_code=status.HTTP_400_BAD_REQUEST)
         except QRCode.DoesNotExist:
             return standard_response("error", "Invalid QR code.", status_code=status.HTTP_400_BAD_REQUEST)
 
         from django.db import IntegrityError
+        import datetime
+        from apps.library.models import LibraryInfo
         
         # Check if already marked attendance today
-        today = timezone.now().date()
+        now = timezone.now()
+        lib_info = LibraryInfo.objects.first()
+        if lib_info and lib_info.open_time:
+            if now.time() < lib_info.open_time:
+                today = (now - datetime.timedelta(days=1)).date()
+            else:
+                today = now.date()
+        else:
+            today = now.date()
+            
         if Attendance.objects.filter(student=user, date=today).exists():
             return standard_response("error", "Attendance already marked for today.", status_code=status.HTTP_400_BAD_REQUEST)
 

@@ -6,6 +6,8 @@ class LibraryInfo(models.Model):
     tagline = models.CharField(max_length=300, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     feature_image = models.ImageField(upload_to='library/', null=True, blank=True)
+    logo_square = models.ImageField(upload_to='library/logos/', null=True, blank=True)
+    logo_rectangle = models.ImageField(upload_to='library/logos/', null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     phone_primary = models.CharField(max_length=20, null=True, blank=True)
     phone_secondary = models.CharField(max_length=20, null=True, blank=True)
@@ -101,6 +103,8 @@ class AppConfig(models.Model):
 
     allow_non_premium_sliders = models.BooleanField(default=True)
     allow_non_premium_library_info = models.BooleanField(default=True)
+    default_allowed_study_minutes = models.IntegerField(default=60)
+    expired_student_permissions = models.JSONField(default=dict)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

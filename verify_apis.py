@@ -1,7 +1,7 @@
 import requests
 import json
 
-BASE_URL = "http://127.0.0.1:8000"
+from baseapi import BASE_URL
 
 print("Starting API Endpoints Verification...")
 

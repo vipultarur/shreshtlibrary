@@ -309,6 +309,7 @@ def serialize_seat(seat):
         "student_profile_photo": profile_image,
         "assigned_at": seat.assigned_at,
         "notes": seat.notes,
+        "is_reserved_for_girls": getattr(seat, 'is_reserved_for_girls', False),
     }
 
 
@@ -1415,6 +1416,18 @@ class AdminSeatDetailView(APIView):
         seat.save()
         return standard_response(data=serialize_seat(seat))
 
+    def delete(self, request, pk):
+        seat = get_object_or_404(Seat, id=pk)
+        student = seat.student
+        if student:
+            seat.student = None
+            seat.status = 'available'
+            seat.save()
+            SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+            SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Seat is being deleted")
+        seat.delete()
+        return standard_response(message="Seat deleted successfully.")
+
 
 class FloorView(APIView):
     permission_classes = [HasAdminPermission("manage_seats")]
@@ -1433,10 +1446,22 @@ class FloorView(APIView):
 
     def delete(self, request, pk):
         floor = get_object_or_404(Floor, id=pk)
-        if floor.rows.exists():
-            return standard_response("error", "Floor is not empty.", status_code=400)
+        
+        # Unassign all students from seats on this floor
+        for row in floor.rows.all():
+            for seat in row.seats.all():
+                student = seat.student
+                if student:
+                    seat.student = None
+                    seat.status = 'available'
+                    seat.save()
+                    SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+                    SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Floor is being deleted")
+                seat.delete()
+            row.delete()
+            
         floor.delete()
-        return standard_response(message="Floor deleted.")
+        return standard_response(message="Floor deleted successfully.")
 
 
 class RowView(APIView):
@@ -1508,6 +1533,10 @@ class SeatActionView(APIView):
                     if seat.student and seat.student.id != student.id:
                         return standard_response("error", f"Seat is already occupied by another student.", status_code=400)
                     
+                    # Check gender for girls reserved seats
+                    if seat.is_reserved_for_girls and student.student_profile and student.student_profile.gender.lower() in ['male', 'boy']:
+                        return standard_response("error", "This seat is reserved for girls.", status_code=400)
+                    
                     # Prevent a student from having multiple seats assigned (one seat one time)
                     previous_seats = Seat.objects.select_for_update().filter(student=student)
                     previous = previous_seats.exclude(id=seat.id).first()
@@ -1572,6 +1601,42 @@ class SeatSpecialView(APIView):
             })
         return standard_response(data=summary)
 
+
+class AdminSeatsReleaseAllView(APIView):
+    permission_classes = [HasAdminPermission("manage_seats")]
+
+    def post(self, request):
+        from django.db import transaction
+        with transaction.atomic():
+            occupied_seats = Seat.objects.select_for_update().filter(status="occupied")
+            count = 0
+            for seat in occupied_seats:
+                student = seat.student
+                seat.student = None
+                seat.status = "available"
+                seat.save()
+                if student:
+                    SeatAssignment.objects.filter(student=student, seat=seat, released_date__isnull=True).update(released_date=timezone.now().date())
+                SeatChangeLog.objects.create(seat=seat, student=student, action="UNASSIGNED", changed_by=_admin_user(request), reason="Bulk release all seats")
+                count += 1
+        return standard_response(message=f"Successfully released {count} seats.")
+
+
+class AdminSeatsReserveBulkView(APIView):
+    permission_classes = [HasAdminPermission("manage_seats")]
+
+    def post(self, request):
+        seat_ids = request.data.get("seat_ids", [])
+        is_reserved = request.data.get("is_reserved_for_girls", True)
+        
+        from django.db import transaction
+        with transaction.atomic():
+            seats = Seat.objects.select_for_update().filter(id__in=seat_ids)
+            for seat in seats:
+                seat.is_reserved_for_girls = is_reserved
+                seat.save(update_fields=['is_reserved_for_girls'])
+                
+        return standard_response(message="Seats reservation updated successfully.")
 
 class AdminNotificationsView(APIView):
     permission_classes = [HasAdminPermission("manage_notifications")]
@@ -2292,6 +2357,7 @@ class AdminSettingsView(APIView):
             "expiry_dialog_message": config.expiry_dialog_message,
             "allow_non_premium_notifications": config.allow_non_premium_notifications,
             "allow_non_premium_library_info": config.allow_non_premium_library_info,
+            "expired_student_permissions": config.expired_student_permissions,
         })
 
     def put(self, request):
@@ -2316,6 +2382,8 @@ class AdminSettingsView(APIView):
             config.allow_non_premium_sliders = bool(request.data["allow_non_premium_sliders"])
         if "allow_non_premium_library_info" in request.data:
             config.allow_non_premium_library_info = bool(request.data["allow_non_premium_library_info"])
+        if "expired_student_permissions" in request.data:
+            config.expired_student_permissions = request.data["expired_student_permissions"]
         config.save()
 
         return standard_response(data={
@@ -2327,6 +2395,7 @@ class AdminSettingsView(APIView):
             "allow_non_premium_notifications": config.allow_non_premium_notifications,
             "allow_non_premium_sliders": getattr(config, 'allow_non_premium_sliders', True),
             "allow_non_premium_library_info": config.allow_non_premium_library_info,
+            "expired_student_permissions": config.expired_student_permissions,
         })
 
 
