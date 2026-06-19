@@ -60,11 +60,21 @@ class StudentProfile(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.student_id:
-            next_id = StudentProfile.objects.exclude(student_id__isnull=True).count() + 1
-            self.student_id = f"SHR-{next_id:04d}"
-            while StudentProfile.objects.filter(student_id=self.student_id).exists():
-                next_id += 1
+            from django.db import transaction
+            with transaction.atomic():
+                last_profile = StudentProfile.objects.select_for_update().order_by('-id').first()
+                if last_profile and last_profile.student_id and last_profile.student_id.startswith('SHR-'):
+                    try:
+                        next_id = int(last_profile.student_id.replace('SHR-', '')) + 1
+                    except ValueError:
+                        next_id = StudentProfile.objects.count() + 1
+                else:
+                    next_id = StudentProfile.objects.count() + 1
+                
                 self.student_id = f"SHR-{next_id:04d}"
+                while StudentProfile.objects.filter(student_id=self.student_id).exists():
+                    next_id += 1
+                    self.student_id = f"SHR-{next_id:04d}"
         super().save(*args, **kwargs)
 
     def __str__(self):

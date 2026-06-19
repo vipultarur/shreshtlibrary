@@ -234,4 +234,4 @@ class AdminPaymentSpecialView(APIView):
             from datetime import timedelta
             overdue_cutoff = timezone.now() - timedelta(days=3)
             qs = Payment.objects.filter(status="pending", created_at__lte=overdue_cutoff)
-        return standard_response(data=PaymentSerializer(qs.select_related("student", "membership", "membership__plan"), many=True).data)
+        return standard_response(data=PaymentSerializer(qs.select_related("student", "membership", "membership__plan")[:500], many=True).data)

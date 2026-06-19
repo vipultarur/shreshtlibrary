@@ -2696,7 +2696,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Attendance'
+                  $ref: '#/components/schemas/StudentAttendance'
           description: ''
   /api/v1/attendance/scan/:
     post:
@@ -2712,16 +2712,6 @@ paths:
   /api/v1/auth/admin/change-password/:
     post:
       operationId: api_v1_auth_admin_change_password_create
-      tags:
-      - api
-      security:
-      - BearerAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: api_v1_auth_admin_change_password_update
       tags:
       - api
       security:
@@ -2762,16 +2752,6 @@ paths:
   /api/v1/auth/change-password/:
     post:
       operationId: api_v1_auth_change_password_create
-      tags:
-      - api
-      security:
-      - BearerAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: api_v1_auth_change_password_update
       tags:
       - api
       security:
@@ -3338,7 +3318,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Membership'
+                  $ref: '#/components/schemas/StudentMembership'
           description: ''
   /api/v1/memberships/plans/:
     get:
@@ -3356,7 +3336,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MembershipPlan'
+                  $ref: '#/components/schemas/StudentMembershipPlan'
           description: ''
   /api/v1/notifications/list/:
     get:
@@ -3440,7 +3420,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Payment'
+                  $ref: '#/components/schemas/StudentPayment'
           description: ''
   /api/v1/payments/initiate/:
     post:
@@ -3814,7 +3794,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudentProfile'
+                $ref: '#/components/schemas/AppStudentProfile'
           description: ''
   /api/v1/student/profile/photo/:
     post:
@@ -3841,13 +3821,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StudentProfileRequest'
+              $ref: '#/components/schemas/AppStudentProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/StudentProfileRequest'
+              $ref: '#/components/schemas/AppStudentProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/StudentProfileRequest'
+              $ref: '#/components/schemas/AppStudentProfileRequest'
+        required: true
       security:
       - BearerAuth: []
       - BearerAuth: []
@@ -3856,7 +3837,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudentProfile'
+                $ref: '#/components/schemas/AppStudentProfile'
           description: ''
   /api/v1/student/referral/:
     get:
@@ -3923,13 +3904,18 @@ paths:
     get:
       operationId: api_v1_study_leaderboard_retrieve
       tags:
-      - api
+      - Study Features
       security:
       - BearerAuth: []
       - BearerAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/study/session/current/:
     get:
       operationId: api_v1_study_session_current_retrieve
@@ -4316,6 +4302,87 @@ components:
       required:
       - password
       - username
+    AppStudentProfile:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        mobile:
+          type: string
+          readOnly: true
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        profile_photo:
+          type: string
+          format: uri
+          nullable: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+      required:
+      - email
+      - first_name
+      - last_name
+      - mobile
+      - username
+    AppStudentProfileRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+        last_name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        goal:
+          $ref: '#/components/schemas/GoalEnum'
+        dob:
+          type: string
+          format: date
+          nullable: true
+        caste:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+        profile_photo:
+          type: string
+          format: binary
+          nullable: true
+        parent_mobile:
+          type: string
+          nullable: true
+          maxLength: 15
+      required:
+      - email
+      - first_name
+      - last_name
     Attendance:
       type: object
       properties:
@@ -4495,7 +4562,7 @@ components:
           type: string
           format: date
         status:
-          $ref: '#/components/schemas/MembershipStatusEnum'
+          $ref: '#/components/schemas/Status6afEnum'
         is_active:
           type: boolean
         renewal_count:
@@ -4631,7 +4698,7 @@ components:
           type: string
           format: date
         status:
-          $ref: '#/components/schemas/MembershipStatusEnum'
+          $ref: '#/components/schemas/Status6afEnum'
         is_active:
           type: boolean
         renewal_count:
@@ -4654,18 +4721,6 @@ components:
       - plan
       - start_date
       - student
-    MembershipStatusEnum:
-      enum:
-      - active
-      - expired
-      - suspended
-      - cancelled
-      type: string
-      description: |-
-        * `active` - Active
-        * `expired` - Expired
-        * `suspended` - Suspended
-        * `cancelled` - Cancelled
     PaginatedAttendanceList:
       type: object
       required:
@@ -4844,7 +4899,7 @@ components:
           type: string
           format: date
         status:
-          $ref: '#/components/schemas/MembershipStatusEnum'
+          $ref: '#/components/schemas/Status6afEnum'
         is_active:
           type: boolean
         renewal_count:
@@ -4874,7 +4929,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          $ref: '#/components/schemas/Status1e4Enum'
         payment_mode:
           $ref: '#/components/schemas/PaymentModeEnum'
         method:
@@ -5004,7 +5059,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          $ref: '#/components/schemas/Status1e4Enum'
         payment_mode:
           $ref: '#/components/schemas/PaymentModeEnum'
         method:
@@ -5097,7 +5152,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          $ref: '#/components/schemas/Status1e4Enum'
         payment_mode:
           $ref: '#/components/schemas/PaymentModeEnum'
         method:
@@ -5153,18 +5208,6 @@ components:
       required:
       - amount
       - student
-    PaymentStatusEnum:
-      enum:
-      - pending
-      - verified
-      - refunded
-      - failed
-      type: string
-      description: |-
-        * `pending` - Pending
-        * `verified` - Verified
-        * `refunded` - Refunded
-        * `failed` - Failed
     ReferralCode:
       type: object
       properties:
@@ -5343,6 +5386,129 @@ components:
           maxLength: 15
       required:
       - mobile
+    Status1e4Enum:
+      enum:
+      - pending
+      - verified
+      - refunded
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `verified` - Verified
+        * `refunded` - Refunded
+        * `failed` - Failed
+    Status6afEnum:
+      enum:
+      - active
+      - expired
+      - suspended
+      - cancelled
+      type: string
+      description: |-
+        * `active` - Active
+        * `expired` - Expired
+        * `suspended` - Suspended
+        * `cancelled` - Cancelled
+    StudentAttendance:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        date:
+          type: string
+          format: date
+        time_in:
+          type: string
+          format: time
+          readOnly: true
+        time_out:
+          type: string
+          format: time
+          readOnly: true
+          nullable: true
+        late_mark:
+          type: boolean
+          readOnly: true
+        under_time:
+          type: boolean
+          readOnly: true
+        total_hours:
+          type: string
+          readOnly: true
+          nullable: true
+        is_manual:
+          type: boolean
+      required:
+      - date
+      - id
+      - late_mark
+      - student_name
+      - time_in
+      - time_out
+      - total_hours
+      - under_time
+    StudentMembership:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        plan:
+          type: integer
+        plan_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/Status6afEnum'
+      required:
+      - end_date
+      - id
+      - plan
+      - plan_name
+      - start_date
+      - student_name
+    StudentMembershipPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        duration_months:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - duration_months
+      - id
+      - name
+      - price
     StudentNotification:
       type: object
       properties:
@@ -5372,6 +5538,52 @@ components:
       - read_at
       - sent_at
       - title
+    StudentPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        plan_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1e4Enum'
+          readOnly: true
+        payment_mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        payment_date:
+          type: string
+          format: date
+          readOnly: true
+        transaction_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        receipt_url:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+      - amount
+      - id
+      - payment_date
+      - plan_name
+      - receipt_url
+      - status
+      - student_name
     StudentProfile:
       type: object
       properties:

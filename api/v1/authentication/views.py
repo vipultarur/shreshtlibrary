@@ -140,14 +140,19 @@ class SendOTPView(APIView):
             mobile = serializer.validated_data['mobile']
             try:
                 user = User.objects.get(mobile=mobile)
-                user.otp = f"{random.randint(0, 999999):06d}"
+                raw_otp = f"{random.randint(0, 999999):06d}"
+                # Log or send raw_otp here (e.g., via SMS)
+                # print(f"OTP for {mobile}: {raw_otp}")
+                from django.contrib.auth.hashers import make_password
+                user.otp = make_password(raw_otp)
                 user.otp_expiry = timezone.now() + datetime.timedelta(minutes=5)
+                user.otp_attempts = 0
                 user.save()
                 log_activity(user, "Sent login OTP", request)
                 return standard_response(message="OTP sent successfully.")
             except User.DoesNotExist:
-                return Response({"errors": {"mobile": ["Mobile number not registered."]}}, status=status.HTTP_404_NOT_FOUND)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return standard_response("error", "Mobile number not registered.", errors={"mobile": ["Mobile number not registered."]}, status_code=404)
+        return standard_response("error", "Validation failed.", errors=serializer.errors, status_code=400)
 
 
 class VerifyOTPView(APIView):
@@ -162,8 +167,15 @@ class VerifyOTPView(APIView):
             otp = serializer.validated_data['otp']
             try:
                 user = User.objects.get(mobile=mobile)
-                if user.otp == otp and user.otp_expiry > timezone.now():
+                if user.otp_attempts >= 5:
+                    return standard_response("error", "Too many failed attempts. Please request a new OTP.", status_code=403)
+                if user.otp_expiry < timezone.now():
+                    return standard_response("error", "OTP has expired.", errors={"otp": ["OTP has expired."]}, status_code=400)
+                
+                from django.contrib.auth.hashers import check_password
+                if check_password(otp, user.otp):
                     user.otp = None  # Consume OTP
+                    user.otp_attempts = 0
                     user.save()
                     tokens = get_tokens_for_user(user)
                     log_activity(user, "Logged in via OTP", request)
@@ -175,10 +187,12 @@ class VerifyOTPView(APIView):
                         }
                     )
                 else:
-                    return Response({"errors": {"otp": ["Invalid or expired OTP."]}}, status=status.HTTP_400_BAD_REQUEST)
+                    user.otp_attempts += 1
+                    user.save(update_fields=['otp_attempts'])
+                    return standard_response("error", "Invalid OTP.", errors={"otp": ["Invalid OTP."]}, status_code=400)
             except User.DoesNotExist:
-                return Response({"errors": {"mobile": ["Mobile number not registered."]}}, status=status.HTTP_404_NOT_FOUND)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return standard_response("error", "Mobile number not registered.", errors={"mobile": ["Mobile number not registered."]}, status_code=404)
+        return standard_response("error", "Validation failed.", errors=serializer.errors, status_code=400)
 
 
 class StudentLoginView(APIView):

@@ -11,8 +11,9 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, null=True, blank=True)
     mobile = models.CharField(max_length=15, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
-    otp = models.CharField(max_length=6, null=True, blank=True)
+    otp = models.CharField(max_length=128, null=True, blank=True)
     otp_expiry = models.DateTimeField(null=True, blank=True)
+    otp_attempts = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     supabase_uid = models.UUIDField(unique=True, null=True, blank=True)
 

@@ -10,8 +10,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Load environment variables from .env
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.env'))
 
-# Quick-start development settings - unsuitable for production
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ing&tc-&$3+-0bw!f0!n2$-vbl63#40i#@^&rbn)gaohd4(c@d')
+# Security: SECRET_KEY must be set via environment in production
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    _settings_module = os.getenv('DJANGO_SETTINGS_MODULE', '')
+    if 'production' in _settings_module:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured('SECRET_KEY environment variable must be set in production')
+    SECRET_KEY = 'django-insecure-dev-only-key-do-not-use-in-production'
 
 DEBUG = True
 
@@ -130,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
@@ -211,10 +217,11 @@ STORAGES = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Email Configuration
+# Email Configuration — credentials MUST come from environment variables
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'vipultarur2003@gmail.com'
-EMAIL_HOST_PASSWORD = 'ounn zeso yxdi lsra'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

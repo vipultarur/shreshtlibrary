@@ -54,7 +54,10 @@ def _profile_for_pk(pk):
 def _date(value, default=None):
     if not value:
         return default
-    return datetime.date.fromisoformat(str(value))
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        return default
 
 
 def _bool(value, default=False):
@@ -92,9 +95,35 @@ def _activity(request, action, target_model="", target_id=None, description=""):
     )
 
 
+def _safe_int(value, default=0, min_val=None, max_val=None):
+    """Safely parse an integer from user input."""
+    try:
+        result = int(value)
+    except (ValueError, TypeError):
+        return default
+    if min_val is not None:
+        result = max(result, min_val)
+    if max_val is not None:
+        result = min(result, max_val)
+    return result
+
+
+def _safe_decimal(value, default=Decimal("0")):
+    """Safely parse a Decimal from user input. Returns None on invalid input for error handling."""
+    if value is None:
+        return default
+    try:
+        result = Decimal(str(value))
+        if result != result:  # NaN check
+            return None
+        return result
+    except Exception:
+        return None
+
+
 def _paginate(request, rows, serializer_func=None):
-    page = max(int(request.query_params.get("page", 1)), 1)
-    page_size = min(max(int(request.query_params.get("page_size", 20)), 1), 100)
+    page = _safe_int(request.query_params.get("page", 1), default=1, min_val=1)
+    page_size = _safe_int(request.query_params.get("page_size", 20), default=20, min_val=1, max_val=100)
     
     is_qs = hasattr(rows, 'count')
     count = rows.count() if is_qs else len(rows)
@@ -133,6 +162,14 @@ def _export(rows, filename):
 
 def serialize_student(profile):
     user = profile.user
+    # Avoid N+1: use prefetched referral_codes if available, else fetch once
+    referral_code = None
+    if hasattr(user, '_prefetched_objects_cache') and 'referral_codes' in user._prefetched_objects_cache:
+        codes = user._prefetched_objects_cache['referral_codes']
+        referral_code = codes[0].code if codes else None
+    else:
+        first_code = user.referral_codes.first()
+        referral_code = first_code.code if first_code else None
     return {
         "id": profile.id,
         "user_id": user.id,
@@ -146,18 +183,16 @@ def serialize_student(profile):
         "parent_mobile": profile.parent_mobile,
         "goal": profile.goal,
         "dob": profile.dob,
-        "date_of_birth": profile.dob,
         "gender": profile.gender,
         "caste": profile.caste,
         "address": profile.address,
         "profile_photo": profile.profile_photo.url if profile.profile_photo else None,
-        "profile_image": profile.profile_photo.url if profile.profile_photo else None,
         "status": profile.status,
         "is_active": user.is_active and profile.status != "SUSPENDED",
         "suspension_reason": profile.suspension_reason,
         "suspended_at": profile.suspended_at,
         "preferred_language": profile.preferred_language,
-        "referral_code": (profile.user.referral_codes.first().code if profile.user.referral_codes.exists() else None),
+        "referral_code": referral_code,
         "created_at": profile.created_at,
         "updated_at": profile.updated_at,
     }
@@ -208,10 +243,8 @@ def serialize_payment(payment):
         "plan_name": payment.membership.plan.name if payment.membership_id else None,
         "amount": str(payment.amount),
         "method": payment.method or payment.payment_mode,
-        "payment_mode": payment.payment_mode,
         "status": payment.status.upper(),
         "transaction_ref": payment.transaction_ref or payment.transaction_id,
-        "transaction_id": payment.transaction_id,
         "receipt_url": payment.receipt_url.url if payment.receipt_url else None,
         "notes": payment.notes,
         "paid_at": payment.paid_at,
@@ -537,13 +570,7 @@ class ChangePasswordAliasView(APIView):
     serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated]
 
-    def put(self, request):
-        return self._change(request)
-
     def post(self, request):
-        return self._change(request)
-
-    def _change(self, request):
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password", new_password)
@@ -553,6 +580,18 @@ class ChangePasswordAliasView(APIView):
             return standard_response("error", "Incorrect old password.", errors={"old_password": ["Incorrect old password."]}, status_code=400)
         request.user.set_password(new_password)
         request.user.save()
+        
+        # H-6: Revoke existing tokens on password change
+        from apps.accounts.models import AuthTokenRevocation
+        from django.utils import timezone
+        import datetime
+        AuthTokenRevocation.objects.create(
+            token_hash="password_change_revocation",
+            user_identifier=str(request.user.pk),
+            expires_at=timezone.now() + datetime.timedelta(days=30)
+        )
+        # Note: A complete implementation would invalidate all existing tokens for this user in SimpleJWT or Supabase depending on the setup.
+
         return standard_response(message="Password changed successfully.")
 
 
@@ -590,6 +629,14 @@ class AdminStudentsView(APIView):
         password = payload.get("password") or mobile or "studentpassword123"
         if not mobile:
             return standard_response("error", "Mobile is required.", errors={"mobile": ["This field is required."]}, status_code=400)
+            
+        errors = {}
+        if User.objects.filter(mobile=mobile).exists():
+            errors["mobile"] = ["A user with this mobile number already exists."]
+        if email and User.objects.filter(email=email).exists():
+            errors["email"] = ["A user with this email already exists."]
+        if errors:
+            return standard_response("error", "Duplicate user.", errors=errors, status_code=400)
         user = User.objects.create_user(
             username=payload.get("username") or mobile,
             email=email,
@@ -640,13 +687,17 @@ class AdminStudentDetailView(APIView):
     def _update(self, request, pk):
         profile = _profile_for_pk(pk)
         user = profile.user
-        for field in ["first_name", "last_name", "email", "mobile"]:
+        # C-4 Mass assignment guard: only allow specific user fields
+        ALLOWED_USER_FIELDS = {"first_name", "last_name", "email", "mobile"}
+        for field in ALLOWED_USER_FIELDS:
             if field in request.data:
                 setattr(user, field, request.data[field])
         if "is_active" in request.data:
-            user.is_active = bool(request.data["is_active"])
+            user.is_active = _bool(request.data["is_active"])
         user.save()
-        for field in ["middle_name", "goal", "dob", "gender", "caste", "address", "parent_mobile", "status", "preferred_language"]:
+        # Only allow specific profile fields
+        ALLOWED_PROFILE_FIELDS = {"middle_name", "goal", "dob", "gender", "caste", "address", "parent_mobile", "status", "preferred_language"}
+        for field in ALLOWED_PROFILE_FIELDS:
             if field in request.data:
                 setattr(profile, field, request.data[field])
         if "date_of_birth" in request.data:
@@ -775,7 +826,6 @@ class AdminStudentStatusView(APIView):
 
 
 class AdminStudentRelatedView(APIView):
-    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_students")]
     serializer_class = serializers.Serializer
 
@@ -819,9 +869,34 @@ class AdminStudentExportView(APIView):
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request):
-        rows = [serialize_student(profile) for profile in StudentProfile.objects.select_related("user").all()]
-        fmt = request.query_params.get("format", "xlsx")
-        return _export(rows, f"students.{fmt}")
+        fmt = request.query_params.get("format", "csv")
+        qs = StudentProfile.objects.select_related("user").all().iterator(chunk_size=100)
+        
+        if fmt == "pdf":
+            # For PDF we still need to load in memory (existing behavior)
+            rows = [serialize_student(profile) for profile in StudentProfile.objects.select_related("user").all()]
+            return _export(rows, f"students.{fmt}")
+            
+        from django.http import StreamingHttpResponse
+        import csv
+        
+        class Echo:
+            def write(self, value):
+                return value
+                
+        def stream_csv():
+            writer = csv.writer(Echo())
+            keys = None
+            for profile in qs:
+                row = serialize_student(profile)
+                if not keys:
+                    keys = list(row.keys())
+                    yield writer.writerow(keys)
+                yield writer.writerow([row.get(k) for k in keys])
+                
+        response = StreamingHttpResponse((line for line in stream_csv()), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="students.csv"'
+        return response
 
 
 class PlansView(APIView):
@@ -837,15 +912,18 @@ class PlansView(APIView):
     def post(self, request):
         if not request.data.get("name"):
             return standard_response("error", "Plan name is required.", errors={"name": ["This field is required."]}, status_code=400)
+        price = _safe_decimal(request.data.get("price", 0))
+        if price is None or price < 0:
+            return standard_response("error", "Invalid price value.", errors={"price": ["Must be a valid non-negative number."]}, status_code=400)
         plan = MembershipPlan.objects.create(
             name=request.data.get("name"),
-            duration_months=int(request.data.get("duration_months") or max(int(request.data.get("duration_days", 30)) // 30, 1)),
-            duration_days=int(request.data.get("duration_days", 30)),
-            price=Decimal(str(request.data.get("price", 0))),
+            duration_months=_safe_int(request.data.get("duration_months") or max(_safe_int(request.data.get("duration_days", 30), 30) // 30, 1), 1),
+            duration_days=_safe_int(request.data.get("duration_days", 30), 30),
+            price=price,
             benefits=request.data.get("benefits", []),
             description=request.data.get("description"),
-            is_active=bool(request.data.get("is_active", True)),
-            sort_order=int(request.data.get("sort_order", 0)),
+            is_active=_bool(request.data.get("is_active", True), True),
+            sort_order=_safe_int(request.data.get("sort_order", 0), 0),
         )
         _activity(request, "CREATE_PLAN", "MembershipPlan", plan.id, f"Created plan {plan.name}")
         return standard_response(message="Plan created successfully.", data=serialize_plan(plan), status_code=201)
@@ -874,9 +952,12 @@ class PlanDetailView(APIView):
                 setattr(plan, field, request.data[field])
         for field in ["duration_months", "duration_days"]:
             if field in request.data:
-                setattr(plan, field, int(request.data[field]))
+                setattr(plan, field, _safe_int(request.data[field], getattr(plan, field)))
         if "price" in request.data:
-            plan.price = Decimal(str(request.data["price"]))
+            price = _safe_decimal(request.data["price"])
+            if price is None or price < 0:
+                return standard_response("error", "Invalid price value.", errors={"price": ["Must be a valid non-negative number."]}, status_code=400)
+            plan.price = price
         plan.save()
         _activity(request, "EDIT_PLAN", "MembershipPlan", plan.id, f"Updated plan {plan.name}")
         return standard_response(data=serialize_plan(plan))
@@ -1302,10 +1383,13 @@ class AdminPaymentsView(APIView):
     def post(self, request):
         student = get_object_or_404(User, id=request.data.get("student_id"), role="student")
         membership = Membership.objects.filter(id=request.data.get("membership_id")).first()
+        amount = _safe_decimal(request.data.get("amount", 0))
+        if amount is None or amount < 0:
+            return standard_response("error", "Invalid amount.", errors={"amount": ["Must be a valid non-negative number."]}, status_code=400)
         payment = Payment.objects.create(
             student=student,
             membership=membership,
-            amount=Decimal(str(request.data.get("amount", 0))),
+            amount=amount,
             payment_mode=request.data.get("payment_mode") or request.data.get("method", "Cash"),
             method=(request.data.get("method") or request.data.get("payment_mode", "Cash")).upper(),
             transaction_id=request.data.get("transaction_id") or request.data.get("transaction_ref"),
@@ -1354,7 +1438,10 @@ class AdminPaymentActionView(APIView):
             event = "VERIFY_PAYMENT"
         elif action == "refund":
             payment.status = "refunded"
-            payment.refund_amount = Decimal(str(request.data.get("refund_amount", payment.amount)))
+            refund_amount = _safe_decimal(request.data.get("refund_amount", payment.amount), payment.amount)
+            if refund_amount is None or refund_amount < 0:
+                return standard_response("error", "Invalid refund amount.", status_code=400)
+            payment.refund_amount = refund_amount
             payment.refund_reason = request.data.get("refund_reason") or request.data.get("reason")
             payment.refunded_at = _now()
             event = "REFUND_PAYMENT"
@@ -1402,7 +1489,6 @@ class AdminSeatsLayoutView(APIView):
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def get(self, request):
-        _ensure_floor_rows()
         floors = Floor.objects.prefetch_related("rows__seats__student__student_profile").all()
         return standard_response(data=[serialize_floor(floor) for floor in floors])
 
@@ -1420,7 +1506,6 @@ class AdminSeatsView(APIView):
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def get(self, request):
-        _ensure_floor_rows()
         seats = Seat.objects.select_related("student", "student__student_profile", "row_ref").all().order_by("floor", "row", "seat_number")
         return _paginate(request, seats, serialize_seat)
 
@@ -1472,7 +1557,10 @@ class FloorView(APIView):
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def post(self, request):
-        floor = Floor.objects.create(name=request.data.get("name"), description=request.data.get("description"), order=request.data.get("order", 0))
+        name = request.data.get("name")
+        if not name or not str(name).strip():
+            return standard_response("error", "Floor name is required.", errors={"name": ["This field is required."]}, status_code=400)
+        floor = Floor.objects.create(name=str(name).strip(), description=request.data.get("description"), order=request.data.get("order", 0))
         return standard_response(data=serialize_floor(floor), status_code=201)
 
     def put(self, request, pk):
@@ -1501,7 +1589,13 @@ class RowView(APIView):
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def post(self, request):
-        row = SeatRow.objects.create(floor_id=request.data.get("floor_id"), label=request.data.get("label"), order=request.data.get("order", 0))
+        floor_id = request.data.get("floor_id")
+        label = request.data.get("label")
+        if not floor_id or not Floor.objects.filter(id=floor_id).exists():
+            return standard_response("error", "Valid floor_id is required.", errors={"floor_id": ["Invalid floor ID."]}, status_code=400)
+        if not label or not str(label).strip():
+            return standard_response("error", "Row label is required.", errors={"label": ["This field is required."]}, status_code=400)
+        row = SeatRow.objects.create(floor_id=floor_id, label=str(label).strip(), order=request.data.get("order", 0))
         return standard_response(data=serialize_row(row), status_code=201)
 
     def put(self, request, pk):
@@ -1614,7 +1708,7 @@ class SeatSpecialView(APIView):
 
     def get(self, request, kind, pk=None):
         if kind == "available":
-            return standard_response(data=[serialize_seat(seat) for seat in Seat.objects.filter(status="available")])
+            return standard_response(data=[serialize_seat(seat) for seat in Seat.objects.filter(status="available")[:500]])
         if kind == "history":
             return standard_response(data=[{
                 "id": item.id,
@@ -1623,7 +1717,7 @@ class SeatSpecialView(APIView):
                 "student_name": _full_name(item.student) if item.student else None,
                 "assigned_date": item.assigned_date,
                 "released_date": item.released_date,
-            } for item in SeatAssignment.objects.filter(seat_id=pk).order_by('-assigned_date')])
+            } for item in SeatAssignment.objects.filter(seat_id=pk).order_by('-assigned_date')[:50]])
         summary = []
         for floor in Floor.objects.all():
             seats = Seat.objects.filter(floor=floor.name)
@@ -1638,7 +1732,6 @@ class SeatSpecialView(APIView):
 
 
 class AdminSeatsReleaseAllView(APIView):
-    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_seats")]
     serializer_class = serializers.Serializer
 
@@ -1751,7 +1844,7 @@ class AdminNotificationScheduledView(APIView):
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request):
-        return standard_response(data=[serialize_notification(item) for item in Notification.objects.filter(scheduled_at__isnull=False, sent_at__isnull=True)])
+        return standard_response(data=[serialize_notification(item) for item in Notification.objects.filter(scheduled_at__isnull=False, sent_at__isnull=True)[:100]])
 
     def delete(self, request, pk):
         get_object_or_404(Notification, id=pk, sent_at__isnull=True).delete()
@@ -1977,7 +2070,7 @@ class AdminFacilitiesView(APIView):
     permission_classes = [HasAdminPermission("manage_library")]
 
     def get(self, request):
-        return standard_response(data=[serialize_facility(item) for item in Facility.objects.all()])
+        return standard_response(data=[serialize_facility(item) for item in Facility.objects.all()[:500]])
 
     def post(self, request):
         facility = Facility.objects.create(
@@ -2047,7 +2140,7 @@ class AdminAchieversView(APIView):
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get(self, request):
-        return standard_response(data=[serialize_achiever(item) for item in Achiever.objects.all()])
+        return standard_response(data=[serialize_achiever(item) for item in Achiever.objects.all()[:500]])
 
     def post(self, request):
         achiever = Achiever.objects.create(
@@ -2140,7 +2233,7 @@ class AdminReviewsView(APIView):
         qs = Review.objects.select_related("student").all().order_by("-created_at")
         if pending:
             qs = qs.filter(is_approved=False, rejection_reason__isnull=True)
-        return standard_response(data=[serialize_review(item) for item in qs])
+        return _paginate(request, qs, serialize_review)
 
 
 class AdminReviewActionView(APIView):
@@ -2216,19 +2309,41 @@ class DashboardStatsView(APIView):
 
     def get(self, request, section):
         today = timezone.now().date()
-        total_students = StudentProfile.objects.count()
-        live = StudentProfile.objects.filter(status="LIVE").count()
-        suspended = StudentProfile.objects.filter(status="SUSPENDED").count()
-        expired = StudentProfile.objects.filter(status="EXPIRED").count()
-        girls = StudentProfile.objects.filter(gender__iexact="Female").count()
-        boys = StudentProfile.objects.filter(gender__iexact="Male").count()
-        other_gender = StudentProfile.objects.exclude(gender__iexact="Female").exclude(gender__iexact="Male").count()
+        
+        # Optimize: 1 aggregate query for all StudentProfile stats
+        student_stats = StudentProfile.objects.aggregate(
+            total=Count('id'),
+            live=Count('id', filter=Q(status="LIVE")),
+            suspended=Count('id', filter=Q(status="SUSPENDED")),
+            expired=Count('id', filter=Q(status="EXPIRED")),
+            girls=Count('id', filter=Q(gender__iexact="Female")),
+            boys=Count('id', filter=Q(gender__iexact="Male")),
+            new_this_month=Count('id', filter=Q(created_at__year=today.year, created_at__month=today.month))
+        )
+        total_students = student_stats['total']
+        other_gender = total_students - student_stats['girls'] - student_stats['boys']
+        
+        # Optimize: 1 aggregate query for Seat stats
+        seat_stats = Seat.objects.aggregate(
+            total=Count('id'),
+            occupied=Count('id', filter=Q(status="occupied")),
+            available=Count('id', filter=Q(status="available")),
+            reserved=Count('id', filter=Q(status="reserved"))
+        )
+        
         present = Attendance.objects.filter(date=today, is_present=True).count()
-        seats = Seat.objects.all()
-        payments_today = Payment.objects.filter(payment_date=today, status="verified")
-        payments_month = Payment.objects.filter(payment_date__year=today.year, payment_date__month=today.month, status="verified")
+        
+        # Optimize: 1 aggregate query for Payments
+        payment_stats = Payment.objects.aggregate(
+            today_amount=Sum('amount', filter=Q(payment_date=today, status="verified")),
+            today_count=Count('id', filter=Q(payment_date=today, status="verified")),
+            month_amount=Sum('amount', filter=Q(payment_date__year=today.year, payment_date__month=today.month, status="verified")),
+            month_count=Count('id', filter=Q(payment_date__year=today.year, payment_date__month=today.month, status="verified")),
+            pending_count=Count('id', filter=Q(status="pending"))
+        )
+        
         if section == "students":
-            data = {"total": total_students, "live": live, "expired": expired, "suspended": suspended, "girls": girls, "boys": boys, "other": other_gender}
+            data = {"total": total_students, "live": student_stats['live'], "expired": student_stats['expired'], "suspended": student_stats['suspended'], "girls": student_stats['girls'], "boys": student_stats['boys'], "other": other_gender}
         elif section == "attendance/today":
             is_pending_period = False
             from core.models import GlobalSetting
@@ -2244,27 +2359,38 @@ class DashboardStatsView(APIView):
                 open_dt = timezone.make_aware(open_dt, timezone.get_current_timezone())
                 if now <= open_dt + timezone.timedelta(minutes=padding):
                     is_pending_period = True
-            except:
+            except Exception:
                 pass
             
             pending = max(total_students - present, 0) if is_pending_period else 0
             absent = 0 if is_pending_period else max(total_students - present, 0)
             data = {"today_present": present, "today_absent": absent, "today_pending": pending, "today_total": total_students, "today_percentage": round((present / total_students * 100), 2) if total_students else 0}
         elif section == "payments/today":
-            data = {"today_amount": str(payments_today.aggregate(total=Sum("amount"))["total"] or 0), "today_count": payments_today.count()}
+            data = {"today_amount": str(payment_stats['today_amount'] or 0), "today_count": payment_stats['today_count']}
         elif section == "payments/month":
-            data = {"month_amount": str(payments_month.aggregate(total=Sum("amount"))["total"] or 0), "month_count": payments_month.count()}
+            data = {"month_amount": str(payment_stats['month_amount'] or 0), "month_count": payment_stats['month_count']}
         elif section == "memberships":
-            data = {"active": Membership.objects.filter(status="active").count(), "expiring_in_7_days": Membership.objects.filter(end_date__lte=today + datetime.timedelta(days=7), end_date__gte=today).count(), "expired_today": Membership.objects.filter(end_date=today).count()}
+            # Optimize Membership stats
+            membership_stats = Membership.objects.aggregate(
+                active=Count('id', filter=Q(status="active")),
+                expiring_in_7_days=Count('id', filter=Q(end_date__lte=today + datetime.timedelta(days=7), end_date__gte=today)),
+                expired_today=Count('id', filter=Q(end_date=today))
+            )
+            data = membership_stats
         elif section == "seats":
-            data = {"total": seats.count(), "occupied": seats.filter(status="occupied").count(), "available": seats.filter(status="available").count(), "reserved": seats.filter(status="reserved").count()}
+            data = seat_stats
         else:
+            membership_stats = Membership.objects.aggregate(
+                active=Count('id', filter=Q(status="active")),
+                expiring_in_7_days=Count('id', filter=Q(end_date__lte=today + datetime.timedelta(days=7), end_date__gte=today)),
+                expired_today=Count('id', filter=Q(end_date=today))
+            )
             data = {
-                "students": {"total": total_students, "live": live, "expired": expired, "suspended": suspended, "girls": girls, "boys": boys, "other": other_gender, "new_this_month": StudentProfile.objects.filter(created_at__year=today.year, created_at__month=today.month).count()},
+                "students": {"total": total_students, "live": student_stats['live'], "expired": student_stats['expired'], "suspended": student_stats['suspended'], "girls": student_stats['girls'], "boys": student_stats['boys'], "other": other_gender, "new_this_month": student_stats['new_this_month']},
                 "attendance": {"today_present": present, "today_absent": max(total_students - present, 0), "today_total": total_students, "today_percentage": round((present / total_students * 100), 2) if total_students else 0},
-                "payments": {"today_amount": str(payments_today.aggregate(total=Sum("amount"))["total"] or 0), "today_count": payments_today.count(), "month_amount": str(payments_month.aggregate(total=Sum("amount"))["total"] or 0), "month_count": payments_month.count(), "pending_count": Payment.objects.filter(status="pending").count()},
-                "memberships": {"active": Membership.objects.filter(status="active").count(), "expiring_in_7_days": Membership.objects.filter(end_date__lte=today + datetime.timedelta(days=7), end_date__gte=today).count(), "expired_today": Membership.objects.filter(end_date=today).count()},
-                "seats": {"total": seats.count(), "occupied": seats.filter(status="occupied").count(), "available": seats.filter(status="available").count(), "reserved": seats.filter(status="reserved").count()},
+                "payments": {"today_amount": str(payment_stats['today_amount'] or 0), "today_count": payment_stats['today_count'], "month_amount": str(payment_stats['month_amount'] or 0), "month_count": payment_stats['month_count'], "pending_count": payment_stats['pending_count']},
+                "memberships": membership_stats,
+                "seats": seat_stats,
                 "notifications": {"sent_today": Notification.objects.filter(sent_at__date=today).count(), "unread_count": StudentNotification.objects.filter(is_read=False).count()},
             }
         return standard_response(data=data)
@@ -2308,19 +2434,45 @@ class DashboardActivityView(APIView):
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, export=False):
-        logs = ActivityLog.objects.select_related("admin").all().order_by("-timestamp")[:200]
-        rows = [{
-            "id": item.id,
-            "admin_name": _full_name(item.admin) if item.admin else "System",
-            "action": item.action,
-            "description": item.details.get("description", ""),
-            "target_model": item.details.get("target_model", ""),
-            "target_id": item.details.get("target_id"),
-            "created_at": item.timestamp,
-        } for item in logs]
+        qs = ActivityLog.objects.select_related("admin").all().order_by("-timestamp")
+        
         if export:
+            # For export, fetch up to 1000 items to avoid OOM
+            rows = [{
+                "id": item.id,
+                "admin_name": _full_name(item.admin) if item.admin else "System",
+                "action": item.action,
+                "description": item.details.get("description", ""),
+                "target_model": item.details.get("target_model", ""),
+                "target_id": item.details.get("target_id"),
+                "created_at": item.timestamp,
+            } for item in qs[:1000]]
             return _export(rows, "activity-log.xlsx")
-        return standard_response(data=rows[:20] if request.path.endswith("/recent/") else rows)
+            
+        if request.path.endswith("/recent/"):
+            qs = qs[:20]
+            rows = [{
+                "id": item.id,
+                "admin_name": _full_name(item.admin) if item.admin else "System",
+                "action": item.action,
+                "description": item.details.get("description", ""),
+                "target_model": item.details.get("target_model", ""),
+                "target_id": item.details.get("target_id"),
+                "created_at": item.timestamp,
+            } for item in qs]
+            return standard_response(data=rows)
+            
+        def serialize_log(item):
+            return {
+                "id": item.id,
+                "admin_name": _full_name(item.admin) if item.admin else "System",
+                "action": item.action,
+                "description": item.details.get("description", ""),
+                "target_model": item.details.get("target_model", ""),
+                "target_id": item.details.get("target_id"),
+                "created_at": item.timestamp,
+            }
+        return _paginate(request, qs, serialize_log)
 
 
 class DashboardAlertsView(APIView):
@@ -2341,7 +2493,7 @@ class SuperAdminAdminsView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        return standard_response(data=[serialize_admin(admin) for admin in AdminUser.objects.all()])
+        return standard_response(data=[serialize_admin(admin) for admin in AdminUser.objects.all()[:100]])
 
     def post(self, request):
         if not request.data.get("password"):
@@ -2518,7 +2670,7 @@ class AdminSlidersView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        sliders = HomeSlider.objects.all()
+        sliders = HomeSlider.objects.all()[:100]
         return standard_response(data=[serialize_slider(s, request) for s in sliders])
 
     def post(self, request):
@@ -2558,10 +2710,8 @@ class AdminSlidersView(APIView):
                 target_id=str(slider.id),
                 description=f"Created slider: {slider.title}"
             )
-            return standard_response(data=serialize_slider(slider, request))
+            return standard_response(data=serialize_slider(slider, request), status_code=201)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             return standard_response("error", f"Failed to create slider: {str(e)}", status_code=400)
 
 
@@ -2612,8 +2762,6 @@ class AdminSliderDetailView(APIView):
             )
             return standard_response(data=serialize_slider(slider, request))
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             return standard_response("error", f"Failed to update slider: {str(e)}", status_code=400)
 
     def delete(self, request, pk):

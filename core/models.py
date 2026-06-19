@@ -10,7 +10,12 @@ class ActivityLog(models.Model):
     details = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
-        return f"{self.user.username if self.user else 'System'} - {self.action} @ {self.timestamp}"
+        actor = 'System'
+        if self.user:
+            actor = self.user.username
+        elif self.admin:
+            actor = self.admin.username
+        return f"{actor} - {self.action} @ {self.timestamp}"
 
 
 class GlobalSetting(models.Model):
