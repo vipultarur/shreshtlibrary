@@ -1,8 +1,15 @@
 import os
+import threading
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+
+def _send_email_in_background(email):
+    try:
+        email.send(fail_silently=False)
+    except Exception as e:
+        print(f"Background email error: {e}")
 
 def send_transactional_email(email_type, profile, context=None):
     if context is None:
@@ -73,8 +80,12 @@ def send_transactional_email(email_type, profile, context=None):
             to=recipient_list
         )
         email.attach_alternative(html_message, "text/html")
-        email.send(fail_silently=False)
+        
+        # Send email asynchronously to prevent blocking/timeouts
+        threading.Thread(target=_send_email_in_background, args=(email,)).start()
+        
         return True
     except Exception as e:
-        print(f"Error sending email {email_type}: {e}")
+        print(f"Error preparing email {email_type}: {e}")
         return False
+
