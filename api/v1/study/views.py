@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,6 +13,7 @@ from apps.study.models import StudySession
 from .serializers import StudySessionSerializer
 
 class StartStudySessionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsStudent]
 
     @extend_schema(responses={201: StudySessionSerializer}, tags=['Study Features'])
@@ -127,8 +129,11 @@ class StudySessionHistoryView(APIView):
 
 class LeaderboardView(APIView):
     from rest_framework.permissions import IsAuthenticated
+    from rest_framework import serializers
     permission_classes = [IsAuthenticated]
+    serializer_class = serializers.Serializer
 
+    @extend_schema(responses={200: dict}, tags=['Study Features'])
     def get(self, request):
         from django.db.models import Sum
         import datetime

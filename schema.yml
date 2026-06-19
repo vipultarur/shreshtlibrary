@@ -1999,6 +1999,17 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/admin/search/:
+    get:
+      operationId: api_v1_admin_search_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/admin/seats/:
     get:
       operationId: api_v1_admin_seats_retrieve
@@ -2052,6 +2063,22 @@ paths:
       - BearerAuth: []
       responses:
         '200':
+          description: No response body
+    delete:
+      operationId: api_v1_admin_seats_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
           description: No response body
   /api/v1/admin/seats/{id}/assign/:
     post:
@@ -2204,6 +2231,28 @@ paths:
   /api/v1/admin/seats/layout/:
     get:
       operationId: api_v1_admin_seats_layout_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/release-all/:
+    post:
+      operationId: api_v1_admin_seats_release_all_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/seats/reserve-bulk/:
+    post:
+      operationId: api_v1_admin_seats_reserve_bulk_create
       tags:
       - api
       security:
@@ -2412,7 +2461,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2432,7 +2481,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2463,7 +2512,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2494,7 +2543,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2511,7 +2560,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       - in: path
         name: kind
@@ -2533,7 +2582,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2550,7 +2599,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2567,7 +2616,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2583,7 +2632,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -2600,7 +2649,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
       - api
@@ -3870,6 +3919,17 @@ paths:
                 items:
                   $ref: '#/components/schemas/ReferralHistory'
           description: ''
+  /api/v1/study/leaderboard/:
+    get:
+      operationId: api_v1_study_leaderboard_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/study/session/current/:
     get:
       operationId: api_v1_study_session_current_retrieve
@@ -3910,6 +3970,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StudySession'
+          description: ''
+  /api/v1/study/session/history/:
+    get:
+      operationId: api_v1_study_session_history_list
+      tags:
+      - Study Features
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudySession'
           description: ''
   /api/v1/study/session/start/:
     post:
@@ -4255,6 +4332,18 @@ components:
           type: string
           format: time
           readOnly: true
+        time_out:
+          type: string
+          format: time
+          nullable: true
+        late_mark:
+          type: boolean
+        under_time:
+          type: boolean
+        total_hours:
+          type: string
+          nullable: true
+          maxLength: 10
         is_present:
           type: boolean
         is_manual:
@@ -4291,6 +4380,18 @@ components:
         date:
           type: string
           format: date
+        time_out:
+          type: string
+          format: time
+          nullable: true
+        late_mark:
+          type: boolean
+        under_time:
+          type: boolean
+        total_hours:
+          type: string
+          nullable: true
+          maxLength: 10
         is_present:
           type: boolean
         is_manual:
@@ -4399,8 +4500,9 @@ components:
           type: boolean
         renewal_count:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         notes:
           type: string
           nullable: true
@@ -4436,12 +4538,14 @@ components:
           maxLength: 100
         duration_months:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         duration_days:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         price:
           type: string
           format: decimal
@@ -4454,8 +4558,9 @@ components:
           type: boolean
         sort_order:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         created_at:
           type: string
           format: date-time
@@ -4482,12 +4587,14 @@ components:
           maxLength: 100
         duration_months:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         duration_days:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         price:
           type: string
           format: decimal
@@ -4500,8 +4607,9 @@ components:
           type: boolean
         sort_order:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
       required:
       - duration_months
       - name
@@ -4528,8 +4636,9 @@ components:
           type: boolean
         renewal_count:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         notes:
           type: string
           nullable: true
@@ -4655,6 +4764,18 @@ components:
         date:
           type: string
           format: date
+        time_out:
+          type: string
+          format: time
+          nullable: true
+        late_mark:
+          type: boolean
+        under_time:
+          type: boolean
+        total_hours:
+          type: string
+          nullable: true
+          maxLength: 10
         is_present:
           type: boolean
         is_manual:
@@ -4683,12 +4804,14 @@ components:
           maxLength: 100
         duration_months:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         duration_days:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         price:
           type: string
           format: decimal
@@ -4701,8 +4824,9 @@ components:
           type: boolean
         sort_order:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
     PatchedMembershipRequest:
       type: object
       properties:
@@ -4725,8 +4849,9 @@ components:
           type: boolean
         renewal_count:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         notes:
           type: string
           nullable: true
@@ -4849,6 +4974,15 @@ components:
           type: string
           minLength: 1
           maxLength: 10
+        joining_date:
+          type: string
+          format: date
+        allowed_study_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
     Payment:
       type: object
       properties:
@@ -5111,8 +5245,9 @@ components:
           readOnly: true
         rating:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         comment:
           type: string
         created_at:
@@ -5131,8 +5266,9 @@ components:
       properties:
         rating:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         comment:
           type: string
           minLength: 1
@@ -5319,6 +5455,15 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        joining_date:
+          type: string
+          format: date
+        allowed_study_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
       required:
       - created_at
       - email
@@ -5378,6 +5523,15 @@ components:
           type: string
           minLength: 1
           maxLength: 10
+        joining_date:
+          type: string
+          format: date
+        allowed_study_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
     StudentProfileStatusEnum:
       enum:
       - LIVE
@@ -5406,12 +5560,14 @@ components:
           $ref: '#/components/schemas/StudySessionStatusEnum'
         duration_minutes:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         paused_minutes:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
       required:
       - id
       - start_time
@@ -5426,12 +5582,14 @@ components:
           $ref: '#/components/schemas/StudySessionStatusEnum'
         duration_minutes:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         paused_minutes:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
     StudySessionStatusEnum:
       enum:
       - starting

@@ -1,3 +1,4 @@
+from rest_framework import serializers
 import uuid
 import datetime
 from django.db.models import Q
@@ -37,6 +38,7 @@ def _generate_qr(request, method="MANUAL", validity_days=1):
     return qr
 
 class AdminQRView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_attendance")]
 
     def get(self, request, action=None, pk=None):
@@ -163,6 +165,7 @@ class AdminAttendanceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AdminAttendanceSummaryView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_attendance")]
 
     def get(self, request, kind):

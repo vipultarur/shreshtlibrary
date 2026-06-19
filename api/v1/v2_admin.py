@@ -1,3 +1,4 @@
+from rest_framework import serializers
 import datetime
 import json
 import uuid
@@ -454,6 +455,7 @@ def serialize_admin(admin):
 
 
 class AdminMeView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -470,6 +472,7 @@ class AdminMeView(APIView):
 
 
 class AdminProfileView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
@@ -517,6 +520,7 @@ class AdminProfileView(APIView):
 
 
 class FCMTokenUpdateView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -530,6 +534,7 @@ class FCMTokenUpdateView(APIView):
 
 
 class ChangePasswordAliasView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
@@ -655,6 +660,7 @@ class AdminStudentDetailView(APIView):
 
 
 class AdminStudentPhotoView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -681,6 +687,7 @@ class AdminStudentPhotoView(APIView):
 
 
 class AdminStudentAnalyticsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request, pk):
@@ -745,6 +752,7 @@ class AdminStudentAnalyticsView(APIView):
 
 
 class AdminStudentStatusView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def post(self, request, pk, action):
@@ -767,7 +775,9 @@ class AdminStudentStatusView(APIView):
 
 
 class AdminStudentRelatedView(APIView):
+    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_students")]
+    serializer_class = serializers.Serializer
 
     def get(self, request, pk, kind):
         profile = _profile_for_pk(pk)
@@ -787,6 +797,7 @@ class AdminStudentRelatedView(APIView):
 
 
 class AdminStudentCountsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request):
@@ -804,6 +815,7 @@ class AdminStudentCountsView(APIView):
 
 
 class AdminStudentExportView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request):
@@ -878,6 +890,7 @@ class PlanDetailView(APIView):
 
 
 class PlanToggleView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def patch(self, request, pk):
@@ -888,6 +901,7 @@ class PlanToggleView(APIView):
 
 
 class PlanStudentsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request, pk):
@@ -896,6 +910,7 @@ class PlanStudentsView(APIView):
 
 
 class PlanStatsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request):
@@ -924,6 +939,7 @@ class AdminMembershipsView(APIView):
 
 
 class AdminMembershipActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def post(self, request, action):
@@ -971,6 +987,7 @@ class AdminMembershipDetailView(APIView):
 
 
 class AdminMembershipSpecialView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request, kind):
@@ -1006,6 +1023,7 @@ def _generate_qr(request, method="MANUAL"):
 
 
 class StudentQRTodayView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsStudent]
 
     def get(self, request):
@@ -1018,6 +1036,7 @@ class StudentQRTodayView(APIView):
 
 
 class StudentQRScanView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsStudent]
 
     def post(self, request):
@@ -1043,6 +1062,7 @@ class StudentQRScanView(APIView):
 
 
 class AdminQRView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_attendance")]
 
     def get(self, request, action=None, pk=None):
@@ -1135,6 +1155,7 @@ class AdminAttendanceDetailView(APIView):
 
 
 class HolidayView(APIView):
+    serializer_class = serializers.Serializer
     def get_permissions(self):
         if self.request.method == "GET":
             return [IsAuthenticated()]
@@ -1213,6 +1234,7 @@ class HolidayView(APIView):
 
 
 class AdminAttendanceSummaryView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_attendance")]
 
     def get(self, request, kind):
@@ -1317,6 +1339,7 @@ class AdminPaymentDetailView(APIView):
 
 
 class AdminPaymentActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def post(self, request, pk, action):
@@ -1343,6 +1366,7 @@ class AdminPaymentActionView(APIView):
 
 
 class AdminPaymentReceiptView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def get(self, request, pk):
@@ -1351,6 +1375,7 @@ class AdminPaymentReceiptView(APIView):
 
 
 class AdminPaymentSpecialView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def get(self, request, kind):
@@ -1373,6 +1398,7 @@ class AdminPaymentSpecialView(APIView):
 
 
 class AdminSeatsLayoutView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def get(self, request):
@@ -1390,6 +1416,7 @@ def _ensure_floor_rows():
 
 
 class AdminSeatsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def get(self, request):
@@ -1414,7 +1441,9 @@ class AdminSeatsView(APIView):
 
 
 class AdminSeatDetailView(APIView):
+    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_seats")]
+    serializer_class = serializers.Serializer
 
     def get(self, request, pk):
         seat = get_object_or_404(Seat.objects.select_related("student", "student__student_profile", "row_ref"), id=pk)
@@ -1439,6 +1468,7 @@ class AdminSeatDetailView(APIView):
 
 
 class FloorView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def post(self, request):
@@ -1467,6 +1497,7 @@ class FloorView(APIView):
 
 
 class RowView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def post(self, request):
@@ -1490,6 +1521,7 @@ class RowView(APIView):
 
 
 class SeatActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def patch(self, request, pk, action):
@@ -1577,6 +1609,7 @@ class SeatActionView(APIView):
 
 
 class SeatSpecialView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_seats")]
 
     def get(self, request, kind, pk=None):
@@ -1605,7 +1638,9 @@ class SeatSpecialView(APIView):
 
 
 class AdminSeatsReleaseAllView(APIView):
+    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_seats")]
+    serializer_class = serializers.Serializer
 
     def post(self, request):
         from django.db import transaction
@@ -1636,7 +1671,9 @@ class AdminSeatsReleaseAllView(APIView):
 
 
 class AdminSeatsReserveBulkView(APIView):
+    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_seats")]
+    serializer_class = serializers.Serializer
 
     def post(self, request):
         seat_ids = request.data.get("seat_ids", [])
@@ -1649,6 +1686,7 @@ class AdminSeatsReserveBulkView(APIView):
         return standard_response(message="Seats reservation updated successfully.")
 
 class AdminNotificationsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request):
@@ -1656,6 +1694,7 @@ class AdminNotificationsView(APIView):
 
 
 class AdminNotificationSendView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
@@ -1667,6 +1706,7 @@ class AdminNotificationSendView(APIView):
 
 
 class AdminNotificationDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request, pk):
@@ -1674,6 +1714,7 @@ class AdminNotificationDetailView(APIView):
 
 
 class AdminNotificationRecipientsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request, pk):
@@ -1694,6 +1735,7 @@ class AdminNotificationRecipientsView(APIView):
 
 
 class AdminNotificationScheduleView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
@@ -1705,6 +1747,7 @@ class AdminNotificationScheduleView(APIView):
 
 
 class AdminNotificationScheduledView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request):
@@ -1716,6 +1759,7 @@ class AdminNotificationScheduledView(APIView):
 
 
 class AdminNotificationTemplatesView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_notifications")]
 
     def get(self, request):
@@ -1874,6 +1918,7 @@ def _notify_holiday(holiday, action="added", admin_user=None):
 
 
 class LibraryInfoAdminView(APIView):
+    serializer_class = serializers.Serializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_permissions(self):
@@ -1920,6 +1965,7 @@ def _library_info(create=False):
 
 
 class PublicFacilitiesView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -1927,6 +1973,7 @@ class PublicFacilitiesView(APIView):
 
 
 class AdminFacilitiesView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
 
     def get(self, request):
@@ -1947,6 +1994,7 @@ class AdminFacilitiesView(APIView):
 
 
 class AdminFacilityDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
 
     def put(self, request, pk):
@@ -1968,6 +2016,7 @@ class AdminFacilityDetailView(APIView):
 
 
 class AdminFacilityToggleView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
 
     def patch(self, request, pk=None):
@@ -1982,6 +2031,7 @@ class AdminFacilityToggleView(APIView):
 
 
 class AchieversPublicView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [AllowAny]
 
     def get(self, request, featured=False):
@@ -1992,6 +2042,7 @@ class AchieversPublicView(APIView):
 
 
 class AdminAchieversView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
@@ -2013,6 +2064,7 @@ class AdminAchieversView(APIView):
 
 
 class AdminAchieverDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
@@ -2039,6 +2091,7 @@ class AdminAchieverDetailView(APIView):
 
 
 class AdminAchieverToggleView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_library")]
 
     def patch(self, request, pk=None):
@@ -2053,18 +2106,25 @@ class AdminAchieverToggleView(APIView):
 
 
 class ReviewsSummaryView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [AllowAny]
 
     def get(self, request):
         qs = Review.objects.filter(is_approved=True)
+        aggs = qs.aggregate(avg=Avg("rating"), count=Count("id"))
+        
+        breakdown_qs = qs.values("rating").annotate(c=Count("id"))
+        breakdown_map = {item["rating"]: item["c"] for item in breakdown_qs}
+        
         return standard_response(data={
-            "average_rating": qs.aggregate(avg=Avg("rating"))["avg"] or 0,
-            "count": qs.count(),
-            "breakdown": {rating: qs.filter(rating=rating).count() for rating in range(1, 6)},
+            "average_rating": aggs["avg"] or 0,
+            "count": aggs["count"],
+            "breakdown": {rating: breakdown_map.get(rating, 0) for rating in range(1, 6)},
         })
 
 
 class PublicReviewsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -2073,6 +2133,7 @@ class PublicReviewsView(APIView):
 
 
 class AdminReviewsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_reviews")]
 
     def get(self, request, pending=False):
@@ -2083,6 +2144,7 @@ class AdminReviewsView(APIView):
 
 
 class AdminReviewActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_reviews")]
 
     def post(self, request, pk, action):
@@ -2104,6 +2166,7 @@ class AdminReviewActionView(APIView):
 
 
 class ReportsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, kind, export=False):
@@ -2148,6 +2211,7 @@ class ReportsView(APIView):
 
 
 class DashboardStatsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, section):
@@ -2207,6 +2271,7 @@ class DashboardStatsView(APIView):
 
 
 class DashboardChartView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, domain, chart):
@@ -2239,6 +2304,7 @@ class DashboardChartView(APIView):
 
 
 class DashboardActivityView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, export=False):
@@ -2258,6 +2324,7 @@ class DashboardActivityView(APIView):
 
 
 class DashboardAlertsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request):
@@ -2270,6 +2337,7 @@ class DashboardAlertsView(APIView):
 
 
 class SuperAdminAdminsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
@@ -2295,6 +2363,7 @@ class SuperAdminAdminsView(APIView):
 
 
 class SuperAdminAdminDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsSuperAdmin]
 
     def put(self, request, pk):
@@ -2313,6 +2382,7 @@ class SuperAdminAdminDetailView(APIView):
 
 
 class SuperAdminDeactivateView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsSuperAdmin]
 
     def post(self, request, pk):
@@ -2323,6 +2393,7 @@ class SuperAdminDeactivateView(APIView):
 
 
 class SuperAdminToolsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsSuperAdmin]
 
     def get(self, request, kind):
@@ -2366,6 +2437,7 @@ class SuperAdminToolsView(APIView):
 
 
 class AdminSettingsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request):
@@ -2441,6 +2513,7 @@ def serialize_slider(s, request=None):
 
 
 class AdminSlidersView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated, IsLibraryAdmin | HasAdminPermission('manage_library')]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
@@ -2493,6 +2566,7 @@ class AdminSlidersView(APIView):
 
 
 class AdminSliderDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsAuthenticated, IsLibraryAdmin | HasAdminPermission('manage_library')]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
@@ -2558,6 +2632,7 @@ class AdminSliderDetailView(APIView):
 
 
 class PublicSlidersView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [AllowAny]
 
     def get(self, request):

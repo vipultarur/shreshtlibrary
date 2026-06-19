@@ -1,3 +1,4 @@
+from rest_framework import serializers
 import datetime
 from django.db.models import Q
 from django.utils import timezone
@@ -181,6 +182,7 @@ class AdminStudentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AdminStudentPhotoView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
@@ -204,6 +206,7 @@ class AdminStudentPhotoView(APIView):
 
 
 class AdminStudentStatusView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def post(self, request, pk, action):
@@ -252,7 +255,9 @@ class AdminStudentStatusView(APIView):
 
 
 class AdminStudentRelatedView(APIView):
+    from rest_framework import serializers
     permission_classes = [HasAdminPermission("manage_students")]
+    serializer_class = serializers.Serializer
 
     def get(self, request, pk, kind):
         profile = get_student_profile(pk)
@@ -272,6 +277,7 @@ class AdminStudentRelatedView(APIView):
 
 
 class AdminStudentCountsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_students")]
 
     def get(self, request):

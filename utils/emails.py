@@ -1,15 +1,8 @@
 import os
-import threading
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
-
-def _send_email_in_background(email):
-    try:
-        email.send(fail_silently=False)
-    except Exception as e:
-        print(f"Background email error: {e}")
 
 def send_transactional_email(email_type, profile, context=None):
     if context is None:
@@ -23,14 +16,14 @@ def send_transactional_email(email_type, profile, context=None):
     }
     
     primary_color = "#4f46e5" # default indigo
-    image_url = "/images/emails/notification.png"
+    image_url = "https://shreshtlibrary.vercel.app/images/emails/notification.png"
     subject = "Shresht Library Update"
-    action_url = "https://shreshtlibrary.com"
+    action_url = "https://shreshtlibrary.vercel.app"
     
     if email_type == "SUSPEND_STUDENT":
         subject = "Action Required: Account Suspended ⚠️"
         primary_color = "#ef4444" # red-500
-        image_url = "/images/emails/suspended.png"
+        image_url = "https://shreshtlibrary.vercel.app/images/emails/suspended.png"
         template_data.update({
             "title": "Account Suspended",
             "subtitle": "Your library account has been suspended due to a policy violation or unpaid dues.",
@@ -44,7 +37,7 @@ def send_transactional_email(email_type, profile, context=None):
     elif email_type == "ACTIVATE_STUDENT":
         subject = "Your Subscription Details 📚" # Or something like "Account Reactivated"
         primary_color = "#10b981" # emerald-500
-        image_url = "/images/emails/congratulations.png" # No specific 'reactivate' in React, maybe 'congratulations' or 'receipt'
+        image_url = "https://shreshtlibrary.vercel.app/images/emails/congratulations.png" # No specific 'reactivate' in React, maybe 'congratulations' or 'receipt'
         template_data.update({
             "title": "Account Reactivated!",
             "subtitle": "Good news! Your Shresht Library account has been successfully reactivated. You can now access library facilities again.",
@@ -80,12 +73,8 @@ def send_transactional_email(email_type, profile, context=None):
             to=recipient_list
         )
         email.attach_alternative(html_message, "text/html")
-        
-        # Send email asynchronously to prevent blocking/timeouts
-        threading.Thread(target=_send_email_in_background, args=(email,)).start()
-        
+        email.send(fail_silently=False)
         return True
     except Exception as e:
-        print(f"Error preparing email {email_type}: {e}")
+        print(f"Error sending email {email_type}: {e}")
         return False
-

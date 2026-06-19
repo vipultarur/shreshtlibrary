@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from django.db.models import Sum, Count
 from django.utils import timezone
 from django.core.cache import cache
@@ -18,6 +19,7 @@ from api.v1.admin.serializers import StudentProfileSerializer
 from api.v1.v2_admin import _full_name
 
 class DashboardStatsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, section):
@@ -91,6 +93,7 @@ class DashboardStatsView(APIView):
         return standard_response(data=data)
 
 class DashboardChartView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request, domain, chart):
@@ -145,6 +148,7 @@ class DashboardChartView(APIView):
         return standard_response(data=data)
 
 class AdminInboxView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def get(self, request):
@@ -221,6 +225,7 @@ class AdminInboxView(APIView):
         return standard_response(data=data)
 
 class AdminInboxNotificationDetailView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsLibraryAdmin]
 
     def post(self, request, pk, action):
@@ -246,7 +251,9 @@ class AdminInboxNotificationDetailView(APIView):
         return standard_response(message='Notification deleted')
 
 class GlobalSearchView(APIView):
+    from rest_framework import serializers
     permission_classes = [IsLibraryAdmin]
+    serializer_class = serializers.Serializer
 
     def get(self, request):
         query = request.query_params.get("q", "").strip()

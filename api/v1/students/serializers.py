@@ -14,6 +14,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
         fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'goal', 'dob', 'caste', 'address', 'profile_photo', 'parent_mobile']
+        ref_name = "AppStudentProfile"
 
     def update(self, instance, validated_data):
         # Update nested user fields

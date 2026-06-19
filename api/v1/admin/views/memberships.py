@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from decimal import Decimal
 from django.db.models import Q
 from django.utils import timezone
@@ -78,6 +79,7 @@ class PlanDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class PlanToggleView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def patch(self, request, pk):
@@ -88,6 +90,7 @@ class PlanToggleView(APIView):
 
 
 class PlanStudentsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request, pk):
@@ -100,6 +103,7 @@ class PlanStudentsView(APIView):
 
 
 class PlanStatsView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request):
@@ -124,6 +128,7 @@ class AdminMembershipsView(generics.ListAPIView):
 
 
 class AdminMembershipActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def post(self, request, action):
@@ -174,6 +179,7 @@ class AdminMembershipDetailView(generics.RetrieveUpdateAPIView):
 
 
 class AdminMembershipSpecialView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_plans")]
 
     def get(self, request, kind):

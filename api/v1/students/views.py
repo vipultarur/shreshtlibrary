@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -40,6 +41,7 @@ class StudentProfileUpdateView(APIView):
 
 
 class StudentProfilePhotoView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [IsStudent]
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=['Student Profile'])

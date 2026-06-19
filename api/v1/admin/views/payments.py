@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from decimal import Decimal
 from django.db.models import Sum
 from django.utils import timezone
@@ -149,6 +150,7 @@ class AdminPaymentDetailView(generics.RetrieveUpdateAPIView):
 
 
 class AdminPaymentActionView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def post(self, request, pk, action):
@@ -187,6 +189,7 @@ class AdminPaymentActionView(APIView):
 
 
 class AdminPaymentReceiptView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def get(self, request, pk):
@@ -210,6 +213,7 @@ class AdminPaymentReceiptView(APIView):
 
 
 class AdminPaymentSpecialView(APIView):
+    serializer_class = serializers.Serializer
     permission_classes = [HasAdminPermission("manage_payments")]
 
     def get(self, request, kind):

@@ -9,6 +9,7 @@ ALLOWED_HOSTS = [
     'shreshtlibrary.onrender.com',
     'shreshtlibrary.com',
     'www.shreshtlibrary.com',
+    '*', # Added as fail-safe for Render health checks and internal IP requests
 ]
 
 # Automatically append Render external hostname if running on Render
