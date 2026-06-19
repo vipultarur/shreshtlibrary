@@ -215,12 +215,26 @@ class AdminStudentStatusView(APIView):
             profile.suspended_by = _admin_user(request)
             event = "SUSPEND_STUDENT"
             self._unassign_seat(profile.user, request)
+            
+            try:
+                from utils.emails import send_transactional_email
+                send_transactional_email("SUSPEND_STUDENT", profile)
+            except Exception as e:
+                print(f"Error sending suspend email: {e}")
+
         else:
             profile.status = "LIVE"
             profile.suspension_reason = None
             profile.suspended_at = None
             profile.suspended_by = None
             event = "ACTIVATE_STUDENT"
+            
+            try:
+                from utils.emails import send_transactional_email
+                send_transactional_email("ACTIVATE_STUDENT", profile)
+            except Exception as e:
+                print(f"Error sending reactivate email: {e}")
+
         profile.save()
         _activity(request, event, "StudentProfile", profile.id, f"{event} {profile.student_id}")
         return standard_response(data=StudentProfileSerializer(profile, context={'request': request}).data)

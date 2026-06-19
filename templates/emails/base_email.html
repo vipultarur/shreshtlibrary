@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ content.title }}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased;">
+
+  <!-- Wrapper -->
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#f1f5f9" style="background-color: #f1f5f9; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        
+        <!-- Main Card -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+          
+          <!-- Top Accent Line -->
+          <tr>
+            <td height="8" style="background-color: {{ primary_color|default:'#4f46e5' }};"></td>
+          </tr>
+
+          <!-- Header Branding -->
+          <tr>
+            <td align="center" style="padding: 24px 24px 8px 24px;">
+              <table border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center" valign="middle" width="32" height="32" style="background-color: #4f46e5; border-radius: 8px; color: #ffffff; font-weight: bold; font-size: 14px; text-align: center;">
+                    SL
+                  </td>
+                  <td width="10"></td>
+                  <td align="left" valign="middle" style="font-weight: bold; font-size: 18px; color: #1e293b; letter-spacing: -0.5px;">
+                    ShreshtLibrary
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td align="center" style="padding: 24px 32px 32px 32px;">
+              
+              <!-- Illustration / Icon Box -->
+              <table border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <img src="https://shreshtlibrary.com{{ image_url }}" alt="{{ content.title }}" width="160" height="160" style="display: block; width: 160px; height: 160px; object-fit: contain; border: none; outline: none; text-decoration: none;">
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Title & Subtitle -->
+              <h1 style="margin: 0 0 12px 0; font-size: 24px; font-weight: bold; color: #0f172a; text-align: center;">{{ content.title }}</h1>
+              
+              <p style="margin: 0 0 32px 0; font-size: 14px; line-height: 1.6; color: #64748b; text-align: center; max-width: 280px;">
+                {% if user.first_name %}Hello {{ user.first_name }},<br/><br/>{% endif %}
+                {{ content.subtitle }}
+              </p>
+
+              <!-- Optional Highlight (e.g. OTP) -->
+              {% if content.highlight %}
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                <tr>
+                  <td align="center" style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px;">
+                    <span style="font-size: 28px; font-family: monospace; font-weight: bold; letter-spacing: 8px; color: #1e293b;">
+                      {{ content.highlight }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+
+              <!-- Optional Reward Box -->
+              {% if content.reward %}
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 32px; background-color: #f0fdf4; border: 1px solid #dcfce3; border-radius: 12px;">
+                <tr>
+                  <td width="56" align="center" style="padding: 16px 0 16px 16px;">
+                    <div style="width: 40px; height: 40px; background-color: #dcfce3; border-radius: 20px; display: inline-block; line-height: 40px; text-align: center; color: #16a34a; font-size: 20px;">🎉</div>
+                  </td>
+                  <td align="left" style="padding: 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: #16a34a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Unlocked</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #1e293b;">{{ content.reward }}</div>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+
+              <!-- Optional Stats List -->
+              {% if content.stats %}
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                {% for stat in content.stats %}
+                <tr>
+                  <td align="left" style="padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span style="font-size: 14px; color: #475569; font-weight: 500;">{{ stat.label }}</span>
+                  </td>
+                  <td align="right" style="padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span style="font-size: 14px; color: #0f172a; font-weight: bold;">{{ stat.value }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </table>
+              {% endif %}
+
+              <!-- CTA Button -->
+              {% if content.actionText %}
+              <table border="0" cellspacing="0" cellpadding="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <a href="{{ action_url|default:'https://shreshtlibrary.com' }}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: {{ primary_color|default:'#4f46e5' }}; color: #ffffff; text-decoration: none; padding: 16px 24px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center;">
+                      {{ content.actionText }}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 32px; text-align: center;">
+              
+              <p style="margin: 0 0 24px 0; font-size: 14px; font-weight: 500; color: #475569;">
+                {{ content.footer }}
+              </p>
+              
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #94a3b8; max-width: 300px; margin-left: auto; margin-right: auto;">
+                If you would like to no longer receive updates, you may <a href="#" style="color: #94a3b8; text-decoration: underline;">unsubscribe</a>.
+              </p>
+
+            </td>
+          </tr>
+
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
