@@ -299,6 +299,8 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/", () => Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" }));
+
 app.MapControllers();
 
 app.Run();
