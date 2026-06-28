@@ -299,7 +299,27 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" }));
+app.MapGet("/", () => Results.Content(@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Shresht Library API</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f1f5f9; color: #0f172a; text-align: center; padding: 20px; }
+        h1 { font-size: 3rem; margin-bottom: 0.5rem; color: #4f46e5; }
+        p { font-size: 1.25rem; color: #64748b; margin-bottom: 2rem; max-width: 500px; }
+        a { background-color: #4f46e5; color: white; padding: 0.875rem 1.75rem; border-radius: 0.75rem; text-decoration: none; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06); transition: all 0.2s; }
+        a:hover { background-color: #4338ca; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); }
+    </style>
+</head>
+<body>
+    <h1>Shresht Library</h1>
+    <p>The backend API services are online and running perfectly.</p>
+    <a href='https://shreshtlibrary.com'>Go to Main Application</a>
+</body>
+</html>", "text/html"));
 
 app.MapControllers();
 
