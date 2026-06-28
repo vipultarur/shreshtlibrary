@@ -320,7 +320,7 @@ namespace WebApplication1.Services
                 .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive)
                 .Select(u => new {
                     user_id = u.Id,
-                    student_id = u.StudentId,
+                    student_id = u.StudentsStudentprofile != null ? u.StudentsStudentprofile.StudentId : null,
                     first_name = u.FirstName,
                     last_name = u.LastName,
                     mobile = u.Mobile,

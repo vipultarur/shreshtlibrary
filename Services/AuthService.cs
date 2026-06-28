@@ -471,7 +471,7 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
 
                 // In production, integrate email sending here
-                System.Console.WriteLine($"Reset link: https://yourdomain.com/reset-password?token={resetToken}");
+                System.Console.WriteLine($"Reset link: https://shreshtlibrary.onrender.com/reset-password?token={resetToken}");
 
                 return new OkObjectResult(new { success = true, status = "success", message = "Password reset link sent to your email." });
             }
