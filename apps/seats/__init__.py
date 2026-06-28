@@ -1,1 +1,0 @@
-# Seats feature app package

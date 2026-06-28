@@ -1,27 +1,15 @@
-# Django
-*.log
-*.pot
-*.pyc
-__pycache__/
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-# Allow tracking media files since we are serving them from Render
-!media/
-static/
-.env
-node_modules/
-.next/
-eslint-output.txt
-tsconfig.tsbuildinfo
-
-
 # Environments
-.env/
-venv/
-ENV/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
 
-# IDEs
-.idea/
+# Build and IDE
+bin/
+obj/
+.vs/
 .vscode/
-*.swp
+*.user
+*.suo

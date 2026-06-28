@@ -1,0 +1,138 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Data;
+using WebApplication1.Models;
+
+namespace WebApplication1.Services
+{
+    public class ReportsService : IReportsService
+    {
+        private readonly ApplicationDbContext _context;
+
+        public ReportsService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<ServiceResult<object>> GetAttendanceReportAsync(int page, int pageSize, CancellationToken ct = default)
+        {
+            var query = _context.AttendanceAttendances.AsNoTracking().Include(a => a.Student);
+            
+            var totalCount = await query.CountAsync(ct);
+            var items = await query.OrderByDescending(a => a.Date)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new {
+                    id = a.Id,
+                    date = a.Date.ToString("yyyy-MM-dd"),
+                    student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : "Unknown",
+                    is_present = a.IsPresent,
+                    time_in = a.TimeIn,
+                    time_out = a.TimeOut,
+                    total_hours = a.TotalHours
+                })
+                .ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(new { count = totalCount, data = items });
+        }
+
+        public async Task<ServiceResult<object>> GetPaymentsReportAsync(int page, int pageSize, CancellationToken ct = default)
+        {
+            var query = _context.PaymentsPayments.AsNoTracking().Include(p => p.Student);
+            
+            var totalCount = await query.CountAsync(ct);
+            var items = await query.OrderByDescending(p => p.PaymentDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new {
+                    id = p.Id,
+                    date = p.PaymentDate.ToString("yyyy-MM-dd"),
+                    student_name = p.Student != null ? p.Student.FirstName + " " + p.Student.LastName : "Unknown",
+                    amount = p.Amount,
+                    status = p.Status,
+                    payment_mode = p.PaymentMode
+                })
+                .ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(new { count = totalCount, data = items });
+        }
+
+        public async Task<ServiceResult<object>> GetStudentsReportAsync(int page, int pageSize, CancellationToken ct = default)
+        {
+            var query = _context.StudentsStudentprofiles.AsNoTracking().Include(s => s.User);
+            
+            var totalCount = await query.CountAsync(ct);
+            var items = await query.OrderByDescending(s => s.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new {
+                    id = s.Id,
+                    student_id = s.StudentId,
+                    name = s.User.FirstName + " " + s.User.LastName,
+                    status = s.Status,
+                    joining_date = s.JoiningDate
+                })
+                .ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(new { count = totalCount, data = items });
+        }
+
+        public async Task<ServiceResult<object>> GetMembershipsReportAsync(int page, int pageSize, CancellationToken ct = default)
+        {
+            var query = _context.MembershipsMemberships.AsNoTracking().Include(m => m.Student).Include(m => m.Plan);
+            
+            var totalCount = await query.CountAsync(ct);
+            var items = await query.OrderByDescending(m => m.StartDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new {
+                    id = m.Id,
+                    student_name = m.Student != null ? m.Student.FirstName + " " + m.Student.LastName : "Unknown",
+                    plan_name = m.Plan != null ? m.Plan.Name : m.PlanNameSnapshot,
+                    start_date = m.StartDate.ToString("yyyy-MM-dd"),
+                    end_date = m.EndDate.ToString("yyyy-MM-dd"),
+                    status = m.Status,
+                    price = m.PriceSnapshot
+                })
+                .ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(new { count = totalCount, data = items });
+        }
+
+        public async Task<ServiceResult<object>> GetDailySummaryAsync(CancellationToken ct = default)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            
+            var activeStudents = await _context.AccountsCustomusers.CountAsync(u => u.Role == "student" && u.IsActive, ct);
+            var presentToday = await _context.AttendanceAttendances.CountAsync(a => a.Date == today && a.IsPresent, ct);
+            var collectedToday = await _context.PaymentsPayments.Where(p => p.Status == "completed" && p.PaymentDate == today).SumAsync(p => p.Amount, ct);
+            
+            return ServiceResult<object>.Ok(new {
+                active_students = activeStudents,
+                present_today = presentToday,
+                collected_today = collectedToday,
+                date = today.ToString("yyyy-MM-dd")
+            });
+        }
+
+        public async Task<ServiceResult<object>> GetSeatsReportAsync(CancellationToken ct = default)
+        {
+            var totalSeats = await _context.SeatsSeats.CountAsync(ct);
+            var occupiedSeats = await _context.SeatsSeatassignments.CountAsync(s => s.ReleasedDate == null, ct);
+            
+            return ServiceResult<object>.Ok(new {
+                total_seats = totalSeats,
+                occupied_seats = occupiedSeats,
+                available_seats = totalSeats - occupiedSeats
+            });
+        }
+
+        public async Task<ServiceResult<object>> ExportReportAsync(string kind, CancellationToken ct = default)
+        {
+            return ServiceResult<object>.Ok(new { url = $"/media/exports/{kind}_{DateTime.UtcNow.Ticks}.csv" });
+        }
+    }
+}

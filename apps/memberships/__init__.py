@@ -1,1 +1,0 @@
-# Memberships feature app package
