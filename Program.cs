@@ -299,9 +299,26 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
+app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnvironment env) =>
+{
+    var path = System.IO.Path.Combine(env.ContentRootPath, "landing.html");
+    if (!System.IO.File.Exists(path))
+    {
+        return Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" });
+    }
 
+    var html = await System.IO.File.ReadAllTextAsync(path);
+    
+    var totalSeats = await db.SeatsSeats.CountAsync();
+    var occupiedSeats = await db.SeatsSeats.CountAsync(s => s.Status == "Occupied");
+    var availableSeats = totalSeats - occupiedSeats;
+
+    html = html.Replace("{{ total_seats }}", totalSeats.ToString())
+               .Replace("{{ occupied_seats }}", occupiedSeats.ToString())
+               .Replace("{{ available_seats }}", availableSeats.ToString());
+
+    return Results.Content(html, "text/html");
+});
 app.MapControllers();
 
 app.Run();
