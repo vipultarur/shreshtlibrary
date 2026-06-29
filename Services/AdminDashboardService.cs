@@ -309,19 +309,28 @@ namespace WebApplication1.Services
         public async Task<object> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
             var nowUtc = _dateTimeProvider.UtcNow;
-            var today = DateOnly.FromDateTime(nowUtc);
+            var days = 7;
+            var minDate = DateOnly.FromDateTime(nowUtc.AddDays(-days));
+            var maxDate = DateOnly.FromDateTime(nowUtc);
             
-            var presentCount = await _context.AttendanceAttendances
-                .Where(a => a.Date == today && a.IsPresent)
-                .CountAsync(ct);
-                
-            var absentCount = await _context.AttendanceAttendances
-                .Where(a => a.Date == today && !a.IsPresent)
-                .CountAsync(ct);
+            var attGroups = await _context.AttendanceAttendances
+                .Where(a => a.Date >= minDate && a.Date <= maxDate && a.IsPresent)
+                .GroupBy(a => a.Date)
+                .Select(g => new { Date = g.Key, Count = g.Count() })
+                .ToListAsync(ct);
+
+            var labels = new System.Collections.Generic.List<string>();
+            var data = new System.Collections.Generic.List<int>();
+            for(int i=days-1; i>=0; i--)
+            {
+                var d = DateOnly.FromDateTime(nowUtc.AddDays(-i));
+                labels.Add(d.ToString("MMM dd"));
+                data.Add(attGroups.FirstOrDefault(g => g.Date == d)?.Count ?? 0);
+            }
 
             return new {
-                labels = new[] { "Present", "Absent" },
-                present = new[] { presentCount, absentCount }
+                labels = labels,
+                present = data
             };
         }
 
