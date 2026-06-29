@@ -952,16 +952,16 @@ namespace WebApplication1.Services
             
             var subject = $"Payment Receipt - {payment.PaymentId ?? payment.TransactionRef ?? $"TXN{payment.Id}"}";
             var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
-            var htmlMessage = $@"
-            <div style='font-family: sans-serif; padding: 20px; color: #333;'>
-                <h2>Thank you for your payment!</h2>
-                <p>Hi {studentName},</p>
-                <p>We have successfully received your payment of ₹{payment.Amount:0.00}.</p>
-                <p>Your payment receipt is attached to this email as a PDF document.</p>
-                <br/>
-                <p>Best Regards,</p>
-                <p><strong>Shresht Library</strong></p>
-            </div>";
+            var htmlMessage = EmailTemplateBuilder.BuildTemplate(
+                title: "Payment Successful!",
+                subtitle: $"Hi {studentName},<br/><br/>We have successfully received your payment of <b>₹{payment.Amount:0.00}</b>. Your payment receipt is attached to this email as a PDF document.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/congratulations.png",
+                colorStart: "#10b981", // emerald-500
+                colorEnd: "#059669",   // emerald-600
+                highlight: $"₹{payment.Amount:0.00}",
+                actionText: "Go to Dashboard",
+                footer: "Thank you for choosing Shresht Library!"
+            );
 
             await _emailService.SendEmailWithAttachmentAsync(
                 payment.Student.Email,

@@ -32,6 +32,10 @@ namespace WebApplication1.Services
             var pass = _config["EmailSettings:SmtpPass"];
             var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
             var fromEmail = _config["EmailSettings:FromEmail"];
+            if (string.IsNullOrEmpty(fromEmail))
+            {
+                fromEmail = user;
+            }
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
             {
@@ -49,7 +53,7 @@ namespace WebApplication1.Services
                 EnableSsl = true
             };
 
-            var mailMessage = new MailMessage
+            using var mailMessage = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
@@ -77,6 +81,10 @@ namespace WebApplication1.Services
             var pass = _config["EmailSettings:SmtpPass"];
             var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
             var fromEmail = _config["EmailSettings:FromEmail"];
+            if (string.IsNullOrEmpty(fromEmail))
+            {
+                fromEmail = user;
+            }
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
             {
@@ -93,7 +101,7 @@ namespace WebApplication1.Services
                 EnableSsl = true
             };
 
-            var mailMessage = new MailMessage
+            using var mailMessage = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
@@ -212,7 +220,7 @@ namespace WebApplication1.Services
 
                 {highlightHtml}
 
-                <a href='https://shreshtlibrary.onrender.com' style='display: inline-block; width: 100%; padding: 14px 0; background: linear-gradient(to right, {colorStart}, {colorEnd}); color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px;'>
+                <a href='https://shreshtlibrary.onrender.com' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
                     {actionText}
                 </a>
             </div>
