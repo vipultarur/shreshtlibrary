@@ -12,7 +12,7 @@ namespace WebApplication1.Services
         Task<object?> UpdateAdminProfileAsync(long userId, AdminProfileUpdateDto request, string scheme, string host, CancellationToken ct);
         Task<object> GetStatsOverviewAsync(string section, CancellationToken ct);
         Task<object> GetDashboardChartsAsync(string range, CancellationToken ct);
-        Task<object> GetAdminInboxAsync(CancellationToken ct);
+
         Task<object> GetDashboardAlertsAsync(CancellationToken ct);
         Task<object> GetRecentActivityAsync(CancellationToken ct);
         Task<object> GetAttendanceOverviewChartsAsync(CancellationToken ct);

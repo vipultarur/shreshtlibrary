@@ -259,23 +259,7 @@ namespace WebApplication1.Services
             };
         }
 
-        public async Task<object> GetAdminInboxAsync(CancellationToken ct)
-        {
-            var inbox = await _context.NotificationsAdmininboxnotifications
-                .AsNoTracking()
-                .OrderByDescending(n => n.CreatedAt)
-                .Take(20)
-                .Select(n => new {
-                    id = n.Id,
-                    title = n.Title,
-                    message = n.Message,
-                    type = n.Type,
-                    is_read = n.IsRead,
-                    created_at = n.CreatedAt
-                })
-                .ToListAsync(ct);
-            return inbox;
-        }
+
 
         public async Task<object> GetDashboardAlertsAsync(CancellationToken ct)
         {

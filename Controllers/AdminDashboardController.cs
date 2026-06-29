@@ -102,12 +102,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(data));
         }
 
-        [HttpGet("inbox")]
-        public async Task<IActionResult> GetAdminInboxAsync(CancellationToken ct)
-        {
-            var data = await _adminDashboardService.GetAdminInboxAsync(ct);
-            return Ok(ApiResponse<object>.Ok(data));
-        }
+
 
         [HttpGet("/api/v1/dashboard/alerts")]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
