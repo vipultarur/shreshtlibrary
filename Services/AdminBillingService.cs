@@ -985,7 +985,7 @@ namespace WebApplication1.Services
                     page.Size(PageSizes.A5);
                     page.Margin(30);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily(Fonts.Arial));
+                    page.DefaultTextStyle(x => x.FontSize(11));
 
                     page.Content().Column(col =>
                     {
