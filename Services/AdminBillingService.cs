@@ -6,16 +6,21 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace WebApplication1.Services
 {
     public class AdminBillingService : IAdminBillingService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public AdminBillingService(ApplicationDbContext context)
+        public AdminBillingService(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<ServiceResult<object>> GetPlanStatsAsync(CancellationToken ct = default)
@@ -742,6 +747,19 @@ namespace WebApplication1.Services
                 var payment = await _context.PaymentsPayments.FindAsync(new object[] { id }, ct);
                 if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
 
+                if (payment.MembershipId.HasValue)
+                {
+                    var membershipCheck = await _context.MembershipsMemberships.FindAsync(new object[] { payment.MembershipId.Value }, ct);
+                    if (membershipCheck != null)
+                    {
+                        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                        if (membershipCheck.EndDate < today || membershipCheck.Status.ToLower() == "expired" || membershipCheck.Status.ToLower() == "completed")
+                        {
+                            return ServiceResult<object>.Fail("Cannot refund payment for an expired or completed plan.");
+                        }
+                    }
+                }
+
                 payment.Status = "refunded";
                 payment.RefundAmount = payload.refund_amount ?? payment.Amount;
                 payment.RefundReason = payload.refund_reason;
@@ -888,7 +906,7 @@ namespace WebApplication1.Services
             return await AssignMembershipAsync(payload, ct);
         }
 
-        public async Task<ServiceResult<object>> GetPaymentReceiptAsync(long id, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetPaymentReceiptPdfAsync(long id, CancellationToken ct = default)
         {
             var payment = await _context.PaymentsPayments
                 .AsNoTracking()
@@ -896,19 +914,142 @@ namespace WebApplication1.Services
                 .Include(p => p.Membership)
                     .ThenInclude(m => m!.Plan)
                 .Where(p => p.Id == id)
-                .Select(p => new {
-                    receipt_no = p.PaymentId,
-                    date = p.PaymentDate.ToString("yyyy-MM-dd"),
-                    student_name = p.Student != null ? (p.Student.FirstName + " " + p.Student.LastName).Trim() : "",
-                    plan_name = p.Membership != null && p.Membership.Plan != null ? p.Membership.Plan.Name : "Custom",
-                    amount = p.Amount.ToString(),
-                    payment_mode = p.PaymentMode,
-                    transaction_ref = p.TransactionRef
-                })
                 .FirstOrDefaultAsync(ct);
 
             if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
-            return ServiceResult<object>.Ok(payment);
+
+            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            return ServiceResult<object>.Ok(pdfBytes);
+        }
+
+        public async Task<ServiceResult<object>> SendPaymentReceiptEmailAsync(long id, CancellationToken ct = default)
+        {
+            var payment = await _context.PaymentsPayments
+                .AsNoTracking()
+                .Include(p => p.Student)
+                .Include(p => p.Membership)
+                    .ThenInclude(m => m!.Plan)
+                .Where(p => p.Id == id)
+                .FirstOrDefaultAsync(ct);
+
+            if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
+            if (payment.Student == null || string.IsNullOrEmpty(payment.Student.Email))
+                return ServiceResult<object>.Fail("Student email not found.");
+
+            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            
+            var subject = $"Payment Receipt - {payment.PaymentId ?? payment.TransactionRef ?? $"TXN{payment.Id}"}";
+            var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
+            var htmlMessage = $@"
+            <div style='font-family: sans-serif; padding: 20px; color: #333;'>
+                <h2>Thank you for your payment!</h2>
+                <p>Hi {studentName},</p>
+                <p>We have successfully received your payment of ₹{payment.Amount:0.00}.</p>
+                <p>Your payment receipt is attached to this email as a PDF document.</p>
+                <br/>
+                <p>Best Regards,</p>
+                <p><strong>Shresht Library</strong></p>
+            </div>";
+
+            await _emailService.SendEmailWithAttachmentAsync(
+                payment.Student.Email,
+                subject,
+                htmlMessage,
+                pdfBytes,
+                $"Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf"
+            );
+
+            return ServiceResult<object>.Ok(new { success = true });
+        }
+
+        private byte[] GenerateReceiptPdf(PaymentsPayment payment)
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A5);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily(Fonts.Arial));
+
+                    page.Content().Column(col =>
+                    {
+                        // Checkmark SVG
+                        var checkmarkSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#10b981\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>";
+                        
+                        col.Item().AlignCenter().Width(40).Height(40).Svg(checkmarkSvg);
+                        
+                        col.Item().PaddingTop(15).AlignCenter().Text("Successful").FontSize(18).Bold().FontColor(Colors.Grey.Darken4);
+                        
+                        var studentName = payment.Student != null ? payment.Student.FirstName : "Student";
+                        col.Item().PaddingTop(5).PaddingBottom(25).AlignCenter()
+                            .Text($"{studentName}, your receipt has been generated.").FontSize(11).FontColor(Colors.Grey.Medium);
+                        
+                        // Details
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Receipt ID").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text(payment.PaymentId ?? payment.TransactionRef ?? $"TXN{payment.Id}").Bold();
+                        });
+
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Plan").FontColor(Colors.Grey.Medium);
+                            var planName = payment.Membership?.Plan?.Name ?? payment.Membership?.PlanNameSnapshot ?? "Standalone Payment";
+                            row.RelativeItem().AlignRight().Text(planName).Bold();
+                        });
+
+                        col.Item().PaddingBottom(20).Row(row =>
+                        {
+                            row.RelativeItem().Text("Date").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text(payment.PaymentDate.ToString("MMM dd, yyyy - h:mm tt")).Bold();
+                        });
+
+                        col.Item().PaddingBottom(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+
+                        // Breakdown
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Plan fee").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text($"Rs. {payment.Amount:0.00}").Bold();
+                        });
+
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Discount/Tax").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text($"Rs. 0.00").Bold();
+                        });
+
+                        col.Item().PaddingBottom(20).Row(row =>
+                        {
+                            row.RelativeItem().Text("Total charge").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text($"Rs. {payment.Amount:0.00}").FontSize(12).Bold().FontColor(Colors.Grey.Darken4);
+                        });
+
+                        col.Item().PaddingBottom(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+
+                        // Payment info
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Payment method").FontColor(Colors.Grey.Medium);
+                            row.RelativeItem().AlignRight().Text(payment.PaymentMode ?? "N/A").Bold();
+                        });
+
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Text("Payment status").FontColor(Colors.Grey.Medium);
+                            var statusColor = payment.Status.ToLower() == "verified" ? Colors.Green.Medium : 
+                                              (payment.Status.ToLower() == "pending" ? Colors.Amber.Medium : Colors.Red.Medium);
+                            row.RelativeItem().AlignRight().Text($"• {payment.Status.ToUpper()}").FontColor(statusColor).Bold();
+                        });
+                    });
+                });
+            });
+
+            return document.GeneratePdf();
         }
     }
 }

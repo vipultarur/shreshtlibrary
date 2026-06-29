@@ -31,6 +31,10 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ExportStudentsAsync(CancellationToken ct)
         {
             var result = await _studentAdminService.ExportStudentsAsync(ct);
+            if (result.Data is byte[] bytes)
+            {
+                return File(bytes, "text/csv", "students.csv");
+            }
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 

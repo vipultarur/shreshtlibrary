@@ -112,7 +112,17 @@ namespace WebApplication1.Services
                     preferred_language = s.PreferredLanguage,
                     created_at = s.CreatedAt,
                     updated_at = s.UpdatedAt,
-                    joining_date = s.JoiningDate
+                    joining_date = s.JoiningDate,
+                    membership_start_date = _context.MembershipsMemberships
+                        .Where(m => m.StudentId == s.UserId && m.Status == "active")
+                        .OrderByDescending(m => m.EndDate)
+                        .Select(m => (DateOnly?)m.StartDate)
+                        .FirstOrDefault(),
+                    membership_end_date = _context.MembershipsMemberships
+                        .Where(m => m.StudentId == s.UserId && m.Status == "active")
+                        .OrderByDescending(m => m.EndDate)
+                        .Select(m => (DateOnly?)m.EndDate)
+                        .FirstOrDefault()
                 })
                 .ToListAsync(ct);
 
@@ -141,7 +151,9 @@ namespace WebApplication1.Services
                     preferred_language = s.preferred_language,
                     created_at = s.created_at,
                     updated_at = s.updated_at,
-                    joining_date = s.joining_date
+                    joining_date = s.joining_date,
+                    membership_start_date = s.membership_start_date?.ToString("yyyy-MM-dd"),
+                    membership_end_date = s.membership_end_date?.ToString("yyyy-MM-dd")
             }).ToList();
 
             return ServiceResult<object>.Ok(new {
@@ -585,18 +597,45 @@ namespace WebApplication1.Services
                 .Include(s => s.User)
                 .OrderByDescending(s => s.CreatedAt)
                 .Select(s => new {
-                    user_id = s.UserId,
                     student_id = s.StudentId,
+                    username = s.User.Username,
                     first_name = s.User.FirstName,
+                    middle_name = s.MiddleName,
                     last_name = s.User.LastName,
                     mobile = s.User.Mobile,
                     email = s.User.Email,
+                    gender = s.Gender,
+                    dob = s.Dob,
+                    goal = s.Goal,
+                    caste = s.Caste,
+                    address = s.Address,
+                    parent_mobile = s.ParentMobile,
+                    preferred_language = s.PreferredLanguage,
                     status = s.Status,
                     joining_date = s.JoiningDate
                 })
                 .ToListAsync(ct);
 
-            return ServiceResult<object>.Ok(students);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Student ID,Username,First Name,Middle Name,Last Name,Mobile,Email,Gender,Date of Birth,Goal,Caste,Address,Parent Mobile,Preferred Language,Status,Joining Date");
+            foreach(var s in students)
+            {
+                var fName = s.first_name?.Replace(",", " ") ?? "";
+                var mName = s.middle_name?.Replace(",", " ") ?? "";
+                var lName = s.last_name?.Replace(",", " ") ?? "";
+                var address = s.address?.Replace(",", " ")?.Replace("\n", " ")?.Replace("\r", "") ?? "";
+                var email = s.email?.Replace(",", " ") ?? "";
+                var status = s.status ?? "";
+                var goal = s.goal?.Replace(",", " ") ?? "";
+                var dob = s.dob.HasValue ? s.dob.Value.ToString("yyyy-MM-dd") : "";
+                var joinDate = s.joining_date.ToString("yyyy-MM-dd");
+                var uName = s.username?.Replace(",", " ") ?? "";
+
+                sb.AppendLine($"{s.student_id},{uName},{fName},{mName},{lName},{s.mobile},{email},{s.gender},{dob},{goal},{s.caste},{address},{s.parent_mobile},{s.preferred_language},{status},{joinDate}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+            return ServiceResult<object>.Ok(bytes);
         }
     }
 }

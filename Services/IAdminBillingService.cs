@@ -33,6 +33,7 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> VerifyPaymentAsync(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> RefundPaymentAsync(long id, AdminBillingController.RefundPayload payload, CancellationToken ct = default);
         Task<ServiceResult<object>> UpdatePaymentAsync(long id, AdminBillingController.PaymentUpdateDto payload, CancellationToken ct = default);
-        Task<ServiceResult<object>> GetPaymentReceiptAsync(long id, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetPaymentReceiptPdfAsync(long id, CancellationToken ct = default);
+        Task<ServiceResult<object>> SendPaymentReceiptEmailAsync(long id, CancellationToken ct = default);
     }
 }

@@ -276,9 +276,17 @@ namespace WebApplication1.Controllers
         [HttpGet("payments/{pk}/receipt")]
         public async Task<IActionResult> PaymentReceiptAsync(long pk, CancellationToken ct)
         {
-            var result = await _billingService.GetPaymentReceiptAsync(pk, ct);
+            var result = await _billingService.GetPaymentReceiptPdfAsync(pk, ct);
             if (!result.Success) return NotFound(new { success = false, message = result.Message });
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return File((byte[])result.Data!, "application/pdf", $"receipt-{pk}.pdf");
+        }
+
+        [HttpPost("payments/{pk}/send-receipt")]
+        public async Task<IActionResult> SendPaymentReceiptAsync(long pk, CancellationToken ct)
+        {
+            var result = await _billingService.SendPaymentReceiptEmailAsync(pk, ct);
+            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
+            return Ok(ApiResponse<object>.Ok(new { message = "Receipt sent successfully" }));
         }
     }
 }

@@ -9,6 +9,7 @@ namespace WebApplication1.Services
     public interface IEmailService
     {
         Task SendEmailAsync(string toEmail, string subject, string htmlMessage);
+        Task SendEmailWithAttachmentAsync(string toEmail, string subject, string htmlMessage, byte[] attachmentData, string attachmentName);
         Task SendWelcomeEmailAsync(string toEmail, string firstName, string lastName);
         Task SendSuspendedEmailAsync(string toEmail, string reason);
         Task SendActivatedEmailAsync(string toEmail);
@@ -56,6 +57,56 @@ namespace WebApplication1.Services
                 IsBodyHtml = true
             };
             mailMessage.To.Add(toEmail);
+
+            try
+            {
+                await client.SendMailAsync(mailMessage);
+                Console.WriteLine($"Email successfully sent to {toEmail} with subject '{subject}'.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending email to {toEmail}: {ex.Message}");
+            }
+        }
+
+        public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string htmlMessage, byte[] attachmentData, string attachmentName)
+        {
+            var host = _config["EmailSettings:SmtpHost"];
+            var portString = _config["EmailSettings:SmtpPort"];
+            var user = _config["EmailSettings:SmtpUser"];
+            var pass = _config["EmailSettings:SmtpPass"];
+            var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
+            var fromEmail = _config["EmailSettings:FromEmail"];
+
+            if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
+            {
+                Console.WriteLine("Email not sent. SMTP not configured in appsettings.");
+                return;
+            }
+
+            int port = 587;
+            if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
+
+            using var client = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(user, pass),
+                EnableSsl = true
+            };
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(fromEmail, fromName),
+                Subject = subject,
+                Body = htmlMessage,
+                IsBodyHtml = true
+            };
+            mailMessage.To.Add(toEmail);
+
+            if (attachmentData != null && attachmentData.Length > 0 && !string.IsNullOrEmpty(attachmentName))
+            {
+                var stream = new System.IO.MemoryStream(attachmentData);
+                mailMessage.Attachments.Add(new Attachment(stream, attachmentName, "application/pdf"));
+            }
 
             try
             {

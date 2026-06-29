@@ -100,12 +100,28 @@ namespace WebApplication1.Services
             var fullName = $"{profile.User.FirstName} {profile.User.LastName}".Trim();
             var status = profile.Status ?? "PENDING";
 
+            var todayDate = System.DateOnly.FromDateTime(System.DateTime.UtcNow);
             var activeMembership = await _context.MembershipsMemberships
-                .AsNoTracking()
                 .Include(m => m.Plan)
                 .Where(m => m.StudentId == userId && m.Status.ToLower() == "active")
                 .OrderByDescending(m => m.EndDate)
                 .FirstOrDefaultAsync(ct);
+
+            if (activeMembership != null && activeMembership.EndDate < todayDate)
+            {
+                activeMembership.Status = "expired";
+                activeMembership.IsActive = false;
+                
+                var prof = await _context.StudentsStudentprofiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
+                if (prof != null)
+                {
+                    prof.Status = "EXPIRED";
+                    status = "EXPIRED";
+                }
+                
+                await _context.SaveChangesAsync(ct);
+                activeMembership = null;
+            }
 
             string membershipPlan = "No Plan";
             int membershipDaysLeft = 0;
@@ -147,10 +163,49 @@ namespace WebApplication1.Services
             }
             else if (status == "EXPIRED" || (!isPremium && status != "PENDING"))
             {
-                restrictedFeatures.AddRange(new[] { "attendance", "study", "seats" });
+                var appConfig = await _context.LibraryAppconfigs.FirstOrDefaultAsync(ct);
+                bool premiumGating = appConfig?.IsPremiumGatingEnabled ?? true;
+                
+                if (premiumGating)
+                {
+                    // By default, restrict all major features
+                    var allFeatures = new System.Collections.Generic.HashSet<string> { "attendance", "study", "seats", "payments", "sliders", "notifications" };
+                    var allowedFeatures = new System.Collections.Generic.HashSet<string>();
+
+                    if (appConfig != null)
+                    {
+                        if (appConfig.AllowNonPremiumNotifications) allowedFeatures.Add("notifications");
+                        if (appConfig.AllowNonPremiumSliders) allowedFeatures.Add("sliders");
+
+                        if (!string.IsNullOrEmpty(appConfig.ExpiredStudentPermissions))
+                        {
+                            try
+                            {
+                                var parsedPerms = System.Text.Json.JsonDocument.Parse(appConfig.ExpiredStudentPermissions);
+                                if (parsedPerms.RootElement.TryGetProperty("allowed_paths", out var allowedPaths))
+                                {
+                                    var paths = allowedPaths.EnumerateArray().Select(x => x.GetString() ?? "").ToList();
+                                    if (paths.Contains("/api/v1/payments/")) allowedFeatures.Add("payments");
+                                    if (paths.Contains("/api/v1/study/leaderboard/")) allowedFeatures.Add("study");
+                                    if (paths.Contains("/api/v1/notifications/")) allowedFeatures.Add("notifications");
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+                    foreach (var feat in allFeatures)
+                    {
+                        if (!allowedFeatures.Contains(feat))
+                        {
+                            restrictedFeatures.Add(feat);
+                        }
+                    }
+                }
+
                 membershipStatus = "EXPIRED";
-                expiryDialogTitle = "Membership Expired";
-                expiryDialogMessage = "Your membership has expired. Please renew your plan to continue accessing all features.";
+                expiryDialogTitle = appConfig?.ExpiryDialogTitle ?? "Membership Expired";
+                expiryDialogMessage = appConfig?.ExpiryDialogMessage ?? "Your membership has expired. Please renew your plan to continue accessing all features.";
             }
 
             var today = System.DateOnly.FromDateTime(System.DateTime.UtcNow);
