@@ -432,6 +432,7 @@ namespace WebApplication1.Services
             var payments = await _context.PaymentsPayments
                 .AsNoTracking()
                 .Include(p => p.Student)
+                    .ThenInclude(s => s!.StudentsStudentprofile)
                 .Include(p => p.Membership)
                     .ThenInclude(m => m!.Plan)
                 .Where(p => p.Status.ToLower() == "pending")
@@ -441,6 +442,7 @@ namespace WebApplication1.Services
                     payment_id = p.PaymentId,
                     student = p.StudentId,
                     student_name = p.Student != null ? (p.Student.FirstName + " " + p.Student.LastName).Trim() : "",
+                    student_profile_photo = p.Student != null && p.Student.StudentsStudentprofile != null ? p.Student.StudentsStudentprofile.ProfilePhoto : null,
                     membership = p.MembershipId,
                     plan_name = p.Membership != null && p.Membership.Plan != null ? p.Membership.Plan.Name : null,
                     plan_start = p.Membership != null ? p.Membership.StartDate.ToString("yyyy-MM-dd") : null,
@@ -471,6 +473,7 @@ namespace WebApplication1.Services
             var payments = await _context.PaymentsPayments
                 .AsNoTracking()
                 .Include(p => p.Student)
+                    .ThenInclude(s => s!.StudentsStudentprofile)
                 .Include(p => p.Membership)
                     .ThenInclude(m => m!.Plan)
                 .Where(p => p.Status.ToLower() == "pending" && p.PaymentDate < today)
@@ -480,6 +483,7 @@ namespace WebApplication1.Services
                     payment_id = p.PaymentId,
                     student = p.StudentId,
                     student_name = p.Student != null ? (p.Student.FirstName + " " + p.Student.LastName).Trim() : "",
+                    student_profile_photo = p.Student != null && p.Student.StudentsStudentprofile != null ? p.Student.StudentsStudentprofile.ProfilePhoto : null,
                     membership = p.MembershipId,
                     plan_name = p.Membership != null && p.Membership.Plan != null ? p.Membership.Plan.Name : null,
                     plan_start = p.Membership != null ? p.Membership.StartDate.ToString("yyyy-MM-dd") : null,
@@ -509,6 +513,7 @@ namespace WebApplication1.Services
             var query = _context.PaymentsPayments
                 .AsNoTracking()
                 .Include(p => p.Student)
+                    .ThenInclude(s => s!.StudentsStudentprofile)
                 .Include(p => p.Membership)
                     .ThenInclude(m => m!.Plan)
                 .AsQueryable();
@@ -540,6 +545,7 @@ namespace WebApplication1.Services
                     payment_id = p.PaymentId,
                     student = p.StudentId,
                     student_name = p.Student != null ? (p.Student.FirstName + " " + p.Student.LastName).Trim() : "",
+                    student_profile_photo = p.Student != null && p.Student.StudentsStudentprofile != null ? p.Student.StudentsStudentprofile.ProfilePhoto : null,
                     membership = p.MembershipId,
                     plan_name = p.Membership != null && p.Membership.Plan != null ? p.Membership.Plan.Name : null,
                     plan_start = p.Membership != null ? p.Membership.StartDate.ToString("yyyy-MM-dd") : null,
