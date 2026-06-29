@@ -1017,7 +1017,7 @@ namespace WebApplication1.Services
                         col.Item().PaddingBottom(20).Row(row =>
                         {
                             row.RelativeItem().Text("Date").FontColor(Colors.Grey.Medium);
-                            row.RelativeItem().AlignRight().Text(payment.PaymentDate.ToString("MMM dd, yyyy - h:mm tt")).Bold();
+                            row.RelativeItem().AlignRight().Text(payment.PaymentDate.ToString("MMM dd, yyyy")).Bold();
                         });
 
                         col.Item().PaddingBottom(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
