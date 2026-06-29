@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Data;
 using WebApplication1.Models;
 
@@ -12,10 +14,12 @@ namespace WebApplication1.Services
     public class AdminSeatService : IAdminSeatService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public AdminSeatService(ApplicationDbContext context)
+        public AdminSeatService(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<ServiceResult<object>> GetSeatsLayoutAsync(CancellationToken ct = default)
@@ -248,6 +252,27 @@ namespace WebApplication1.Services
             seat.Status = "OCCUPIED";
             seat.AssignedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
+
+            var studentUser = await _context.AccountsCustomusers.FindAsync(new object[] { studentId }, ct);
+            if (studentUser != null && !string.IsNullOrWhiteSpace(studentUser.Email))
+            {
+                string zone = $"{seat.Floor} - Row {seat.Row}";
+                string timing = "Standard Timing"; // Or fetch from student's plan if available
+                var email = studentUser.Email;
+                var seatNumber = seat.SeatNumber;
+                
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
+                    }
+                    catch { }
+                });
+            }
+
             return ServiceResult<object>.Ok(seat);
         }
 

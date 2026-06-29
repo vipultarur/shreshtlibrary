@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
@@ -494,7 +496,16 @@ namespace WebApplication1.Services
             {
                 var email = student.Email!;
                 var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
-                await _emailService.SendSuspendedEmailAsync(email, suspensionReason);
+                _ = Task.Run(async () => 
+                {
+                    try
+                    {
+                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
+                    }
+                    catch { }
+                });
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Suspended });
@@ -513,7 +524,16 @@ namespace WebApplication1.Services
             if (!string.IsNullOrWhiteSpace(student.Email))
             {
                 var email = student.Email!;
-                await _emailService.SendActivatedEmailAsync(email);
+                _ = Task.Run(async () => 
+                {
+                    try
+                    {
+                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendActivatedEmailAsync(email);
+                    }
+                    catch { }
+                });
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Live });

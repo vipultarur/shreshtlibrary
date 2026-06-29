@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Models.DTOs.Attendance;
@@ -13,10 +15,12 @@ namespace WebApplication1.Services
     public class AdminAttendanceService : IAdminAttendanceService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public AdminAttendanceService(ApplicationDbContext context)
+        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<ServiceResult<object>> GetCurrentQrAsync(CancellationToken ct = default)
@@ -591,6 +595,107 @@ namespace WebApplication1.Services
 
             if (attendance == null) return ServiceResult<object>.NotFound("Attendance record not found");
             return ServiceResult<object>.Ok(attendance);
+        }
+
+        public async Task<ServiceResult<object>> CreateHolidayAsync(HolidayDto dto, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Date) || !DateOnly.TryParse(dto.Date, out var date))
+            {
+                return ServiceResult<object>.Fail("Invalid date format.");
+            }
+
+            var holiday = new AttendanceHoliday
+            {
+                Date = date,
+                Title = dto.Title ?? "Holiday",
+                Description = dto.Description ?? "",
+                IsActive = dto.IsActive ?? true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.AttendanceHolidays.Add(holiday);
+            await _context.SaveChangesAsync(ct);
+
+            // Fire and forget email notification to all active students
+            _ = Task.Run(async () =>
+            {
+                using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                var activeStudents = await dbContext.AccountsCustomusers
+                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
+                    .Select(u => new { u.Email, Name = u.FirstName + " " + u.LastName })
+                    .ToListAsync();
+
+                foreach (var student in activeStudents)
+                {
+                    try
+                    {
+                        await emailService.SendHolidayAnnouncementEmailAsync(
+                            student.Email,
+                            holiday.Title,
+                            holiday.Date.ToString("yyyy-MM-dd")
+                        );
+                    }
+                    catch
+                    {
+                        // Ignore individual email failures to continue processing
+                    }
+                }
+            });
+
+            return ServiceResult<object>.Ok(new
+            {
+                id = holiday.Id,
+                date = holiday.Date.ToString("yyyy-MM-dd"),
+                title = holiday.Title,
+                description = holiday.Description,
+                is_active = holiday.IsActive,
+                created_at = holiday.CreatedAt,
+                updated_at = holiday.UpdatedAt
+            });
+        }
+
+        public async Task<ServiceResult<object>> UpdateHolidayAsync(long pk, HolidayDto dto, CancellationToken ct = default)
+        {
+            var holiday = await _context.AttendanceHolidays.FindAsync(new object[] { pk }, ct);
+            if (holiday == null) return ServiceResult<object>.NotFound("Holiday not found");
+
+            if (!string.IsNullOrWhiteSpace(dto.Date) && DateOnly.TryParse(dto.Date, out var date))
+            {
+                holiday.Date = date;
+            }
+            if (dto.Title != null) holiday.Title = dto.Title;
+            if (dto.Description != null) holiday.Description = dto.Description;
+            if (dto.IsActive.HasValue) holiday.IsActive = dto.IsActive.Value;
+            
+            holiday.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(ct);
+
+            return ServiceResult<object>.Ok(new
+            {
+                id = holiday.Id,
+                date = holiday.Date.ToString("yyyy-MM-dd"),
+                title = holiday.Title,
+                description = holiday.Description,
+                is_active = holiday.IsActive,
+                created_at = holiday.CreatedAt,
+                updated_at = holiday.UpdatedAt
+            });
+        }
+
+        public async Task<ServiceResult<bool>> DeleteHolidayAsync(long pk, CancellationToken ct = default)
+        {
+            var holiday = await _context.AttendanceHolidays.FindAsync(new object[] { pk }, ct);
+            if (holiday == null) return ServiceResult<bool>.NotFound("Holiday not found");
+
+            _context.AttendanceHolidays.Remove(holiday);
+            await _context.SaveChangesAsync(ct);
+
+            return ServiceResult<bool>.Ok(true);
         }
     }
 }

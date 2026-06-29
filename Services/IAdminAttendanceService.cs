@@ -24,6 +24,9 @@ namespace WebApplication1.Services
         Task<ServiceResult<bool>> RecordManualAttendanceAsync(WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto dto, CancellationToken ct = default);
         Task<ServiceResult<object>> RecordManualBulkAttendanceAsync(List<WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto> dtos, CancellationToken ct = default);
         Task<ServiceResult<object>> GetHolidayDetailAsync(long pk, CancellationToken ct = default);
+        Task<ServiceResult<object>> CreateHolidayAsync(WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct = default);
+        Task<ServiceResult<object>> UpdateHolidayAsync(long pk, WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct = default);
+        Task<ServiceResult<bool>> DeleteHolidayAsync(long pk, CancellationToken ct = default);
         Task<ServiceResult<object>> GetAttendanceDetailAsync(long pk, CancellationToken ct = default);
     }
 }

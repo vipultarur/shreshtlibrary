@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -648,6 +650,26 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
+                // Fire and forget receipt email
+                _ = Task.Run(async () => 
+                {
+                    try 
+                    {
+                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        var st = await db.AccountsCustomusers.FindAsync(payload.student_id);
+                        if (st != null && !string.IsNullOrWhiteSpace(st.Email))
+                        {
+                            var amtStr = "₹" + amount.ToString("0.00");
+                            var planName = plan != null ? plan.Name : "Custom Payment";
+                            var validUntil = payload.duration_days > 0 ? DateTime.UtcNow.AddDays(payload.duration_days).ToString("dd MMM yyyy") : "N/A";
+                            await emailSvc.SendReceiptEmailAsync(st.Email, amtStr, planName, validUntil);
+                        }
+                    }
+                    catch { }
+                });
+
                 return ServiceResult<object>.Ok(new { id = payment.Id });
             }
             catch (Exception)
@@ -733,6 +755,31 @@ namespace WebApplication1.Services
                 
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
+
+                // Fire and forget receipt email
+                _ = Task.Run(async () => 
+                {
+                    try 
+                    {
+                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        
+                        var p = await db.PaymentsPayments
+                            .Include(x => x.Student)
+                            .Include(x => x.Membership).ThenInclude(m => m.Plan)
+                            .FirstOrDefaultAsync(x => x.Id == id);
+                            
+                        if (p?.Student != null && !string.IsNullOrWhiteSpace(p.Student.Email))
+                        {
+                            var amtStr = "₹" + p.Amount.ToString("0.00");
+                            var planName = p.Membership?.Plan?.Name ?? "Custom Payment";
+                            var validUntil = p.Membership != null ? p.Membership.EndDate.ToString("dd MMM yyyy") : "N/A";
+                            await emailSvc.SendReceiptEmailAsync(p.Student.Email, amtStr, planName, validUntil);
+                        }
+                    }
+                    catch { }
+                });
 
                 return ServiceResult<object>.Ok(new {
                     id = payment.Id,

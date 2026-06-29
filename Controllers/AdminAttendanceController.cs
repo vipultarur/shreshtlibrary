@@ -98,6 +98,31 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [HttpPost("holidays")]
+        public async Task<IActionResult> CreateHolidayAsync([FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
+        {
+            var result = await _adminAttendanceService.CreateHolidayAsync(dto, ct);
+            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+        }
+
+        [HttpPut("holidays/{pk}")]
+        public async Task<IActionResult> UpdateHolidayAsync(int pk, [FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
+        {
+            var result = await _adminAttendanceService.UpdateHolidayAsync(pk, dto, ct);
+            if (result.IsNotFound) return NotFound(new { success = false, message = result.Message });
+            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+        }
+
+        [HttpDelete("holidays/{pk}")]
+        public async Task<IActionResult> DeleteHolidayAsync(int pk, CancellationToken ct)
+        {
+            var result = await _adminAttendanceService.DeleteHolidayAsync(pk, ct);
+            if (result.IsNotFound) return NotFound(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }));
+        }
+
         [HttpGet("attendance/daily-summary")]
         public async Task<IActionResult> AttendanceDailySummaryAsync(CancellationToken ct, [FromQuery] string? date = null)
         {

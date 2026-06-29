@@ -13,6 +13,15 @@ namespace WebApplication1.Services
         Task SendWelcomeEmailAsync(string toEmail, string firstName, string lastName);
         Task SendSuspendedEmailAsync(string toEmail, string reason);
         Task SendActivatedEmailAsync(string toEmail);
+        Task SendCongratulationsEmailAsync(string toEmail, string reward);
+        Task SendReminderEmailAsync(string toEmail, string daysActive, string studyHours, string points);
+        Task SendNotificationEmailAsync(string toEmail, string newBooks, string upcomingEvents);
+        Task SendPlanDetailsEmailAsync(string toEmail, string planType, string validUntil, string seat);
+        Task SendOtpEmailAsync(string toEmail, string otp);
+        Task SendForgotPasswordEmailAsync(string toEmail, string resetLink);
+        Task SendReceiptEmailAsync(string toEmail, string amountPaid, string planName, string validUntil);
+        Task SendSeatAllocatedEmailAsync(string toEmail, string seatNumber, string zone, string timing);
+        Task SendHolidayAnnouncementEmailAsync(string toEmail, string occasion, string date);
     }
 
     public class EmailService : IEmailService
@@ -177,11 +186,192 @@ namespace WebApplication1.Services
             );
             await SendEmailAsync(toEmail, subject, html);
         }
+
+        public async Task SendCongratulationsEmailAsync(string toEmail, string reward)
+        {
+            var subject = "Congratulations! You've unlocked a reward 🎉";
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Congratulations!",
+                subtitle: "Thank you for being with us, you have unlocked:",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/congratulations.png",
+                colorStart: "#6366f1", // indigo-500
+                colorEnd: "#9333ea",   // purple-600
+                actionText: "Redeem Reward",
+                footer: "Thanks for being awesome!",
+                reward: reward
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendReminderEmailAsync(string toEmail, string daysActive, string studyHours, string points)
+        {
+            var subject = "We miss you! ⏰";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Days Active", daysActive },
+                { "Study Hours", studyHours },
+                { "Points", points }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "We miss you ...!",
+                subtitle: $"It has been {daysActive} days since we last saw you.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/reminder.png",
+                colorStart: "#3b82f6", // blue-500
+                colorEnd: "#06b6d4",   // cyan-500
+                actionText: "Come Back Now",
+                footer: "We hope to see you soon!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendNotificationEmailAsync(string toEmail, string newBooks, string upcomingEvents)
+        {
+            var subject = "Here is a quick update 📋";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "New Books", newBooks },
+                { "Upcoming Events", upcomingEvents }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Here is a quick update",
+                subtitle: "Check out what's new in your library dashboard.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/notification.png",
+                colorStart: "#a855f7", // purple-500
+                colorEnd: "#6366f1",   // indigo-500
+                actionText: "View Dashboard",
+                footer: "Stay updated with Shresht Library",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendPlanDetailsEmailAsync(string toEmail, string planType, string validUntil, string seat)
+        {
+            var subject = "Your Subscription Details 📚";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Plan Type", planType },
+                { "Valid Until", validUntil },
+                { "Seat", seat }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Your Premium Plan",
+                subtitle: "Here are the details of your active membership:",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/plan_details.png",
+                colorStart: "#34d399", // emerald-400
+                colorEnd: "#14b8a6",   // teal-500
+                actionText: "Manage Plan",
+                footer: "Enjoy your premium benefits!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendOtpEmailAsync(string toEmail, string otp)
+        {
+            var subject = "Your OTP Code 🔐";
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Verify Your Login",
+                subtitle: "Use the following OTP to complete your sign in. Valid for 10 mins.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/otp.png",
+                colorStart: "#fb923c", // orange-400
+                colorEnd: "#ef4444",   // red-500
+                highlight: string.Join(" ", otp.ToCharArray()),
+                actionText: "Verify Now",
+                footer: "If you didn't request this, please ignore this email."
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendForgotPasswordEmailAsync(string toEmail, string resetLink)
+        {
+            var subject = "Reset Your Password 🔑";
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Reset Password",
+                subtitle: "We received a request to reset your password. Click the button below to choose a new one.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/forgot_password.png",
+                colorStart: "#fb7185", // rose-400
+                colorEnd: "#ec4899",   // pink-500
+                actionText: "Reset Password",
+                footer: "If you didn't request a reset, you can safely ignore this email."
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendReceiptEmailAsync(string toEmail, string amountPaid, string planName, string validUntil)
+        {
+            var subject = "Payment Receipt & Plan Activated ✅";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Amount Paid", amountPaid },
+                { "Plan Name", planName },
+                { "Valid Until", validUntil }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Plan Activated!",
+                subtitle: "Your payment was successful and your premium plan is now active.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/receipt.png",
+                colorStart: "#10b981", // emerald-500
+                colorEnd: "#16a34a",   // green-600
+                actionText: "View Dashboard",
+                footer: "Thank you for choosing Shresht Library!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendSeatAllocatedEmailAsync(string toEmail, string seatNumber, string zone, string timing)
+        {
+            var subject = "Your Seat is Ready! 🪑";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Zone", zone },
+                { "Timing", timing }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Seat Allocated",
+                subtitle: "A desk has been assigned to you. Here are your seating details:",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/seat_allocated.png",
+                colorStart: "#fbbf24", // amber-400
+                colorEnd: "#f97316",   // orange-500
+                highlight: seatNumber,
+                actionText: "Check Guidelines",
+                footer: "Please ensure you follow the seating rules.",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendHolidayAnnouncementEmailAsync(string toEmail, string occasion, string date)
+        {
+            var subject = "Notice: Library Holiday 🌴";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Occasion", occasion },
+                { "Date", date }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Holiday Notice",
+                subtitle: "The library will remain closed on account of the upcoming public holiday.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/holiday.png",
+                colorStart: "#38bdf8", // sky-400
+                colorEnd: "#3b82f6",   // blue-500
+                actionText: "View Calendar",
+                footer: "Plan your study schedule accordingly!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
     }
 
     public static class EmailTemplateBuilder
     {
-        public static string BuildTemplate(string title, string subtitle, string imageUrl, string colorStart, string colorEnd, string highlight = null, string actionText = "View Dashboard", string footer = "Thanks for being awesome!")
+        public static string BuildTemplate(
+            string title, 
+            string subtitle, 
+            string imageUrl, 
+            string colorStart, 
+            string colorEnd, 
+            string highlight = null, 
+            string actionText = "View Dashboard", 
+            string footer = "Thanks for being awesome!",
+            string reward = null,
+            System.Collections.Generic.Dictionary<string, string> stats = null)
         {
             string highlightHtml = "";
             if (!string.IsNullOrEmpty(highlight))
@@ -192,6 +382,34 @@ namespace WebApplication1.Services
                         {highlight}
                     </span>
                 </div>";
+            }
+
+            string rewardHtml = "";
+            if (!string.IsNullOrEmpty(reward))
+            {
+                rewardHtml = $@"
+                <div style='background-color: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;'>
+                    <div style='width: 32px; height: 32px; background-color: rgba(34, 197, 94, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #16a34a; font-size: 14px; flex-shrink: 0; margin-right: 12px;'>🎉</div>
+                    <div style='text-align: left;'>
+                        <div style='font-size: 11px; font-weight: 600; color: #16a34a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;'>Unlocked</div>
+                        <div style='font-size: 13px; font-weight: bold; color: #0f172a;'>{reward}</div>
+                    </div>
+                </div>";
+            }
+
+            string statsHtml = "";
+            if (stats != null && stats.Count > 0)
+            {
+                statsHtml = "<div style='width: 100%; margin-bottom: 24px; text-align: left;'>";
+                foreach (var stat in stats)
+                {
+                    statsHtml += $@"
+                        <div style='display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;'>
+                            <span style='font-size: 13px; color: #64748b; font-weight: 500;'>{stat.Key}</span>
+                            <span style='font-weight: bold; font-size: 13px; color: #0f172a;'>{stat.Value}</span>
+                        </div>";
+                }
+                statsHtml += "</div>";
             }
 
             return $@"
@@ -223,6 +441,8 @@ namespace WebApplication1.Services
                 </p>
 
                 {highlightHtml}
+                {rewardHtml}
+                {statsHtml}
 
                 <a href='https://shreshtlibrary.onrender.com' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
                     {actionText}
