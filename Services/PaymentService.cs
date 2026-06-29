@@ -93,7 +93,10 @@ namespace WebApplication1.Services
             var pricePerDay = plan.Price / baseDuration;
             var amount = Math.Round(pricePerDay * payload.duration_days, 2);
 
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
             PaymentsPayment payment;
             try
             {
@@ -139,6 +142,7 @@ namespace WebApplication1.Services
                 new { id = payment.Id, status = payment.Status, amount = payment.Amount },
                 "Payment transaction initiated successfully. Pending admin approval."
             );
+            });
         }
 
         public async Task<ServiceResult<object>> GetPaymentHistoryAsync(long studentId, CancellationToken ct = default)

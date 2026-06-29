@@ -69,22 +69,19 @@ namespace WebApplication1.Services
                 var fileName = $"admin_{userId}_{Guid.NewGuid()}{ext}";
                 var filePath = System.IO.Path.Combine(mediaDir, fileName);
 
-                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
+                {
+                    await request.profile_image.CopyToAsync(stream, ct);
+                }
+
                 try
                 {
-                    using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
-                    {
-                        await request.profile_image.CopyToAsync(stream, ct);
-                    }
-
                     user.ProfileImage = $"admins/{fileName}";
                     await _context.SaveChangesAsync(ct);
-                    await transaction.CommitAsync(ct);
                 }
                 catch
                 {
                     if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
-                    await transaction.RollbackAsync(ct);
                     throw;
                 }
             }

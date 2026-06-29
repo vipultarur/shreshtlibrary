@@ -250,5 +250,27 @@ namespace WebApplication1.Services
 
             return ServiceResult<object>.Ok(recipients);
         }
+
+        public async Task<ServiceResult<object>> GetInboxNotificationsAsync(CancellationToken ct = default)
+        {
+            var notifications = await _context.NotificationsAdmininboxnotifications
+                .Include(n => n.Student)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(50)
+                .Select(n => new {
+                    id = n.Id,
+                    title = n.Title,
+                    message = n.Message,
+                    type = n.Type,
+                    is_read = n.IsRead,
+                    related_id = n.RelatedId,
+                    student_id = n.StudentId,
+                    student_name = n.Student != null ? $"{n.Student.FirstName} {n.Student.LastName}" : null,
+                    student_avatar = (string?)null, // No avatar field
+                    created_at = n.CreatedAt
+                }).ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(notifications);
+        }
     }
 }

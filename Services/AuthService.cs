@@ -36,8 +36,11 @@ namespace WebApplication1.Services
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Email already registered.", errors = new { email = new[] { "Email already registered." } } });
             }
 
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 var user = new AccountsCustomuser
                 {
@@ -100,6 +103,7 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 return new ObjectResult(new { success = false, status = "error", message = "Internal server error during registration.", errors = new { non_field_errors = new[] { "Internal server error during registration." } } }) { StatusCode = 500 };
             }
+            });
         }
 
         public async Task<IActionResult> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)

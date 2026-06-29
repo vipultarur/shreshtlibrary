@@ -224,8 +224,11 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<bool>> ClearAllQrAsync(CancellationToken ct = default)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 await _context.AttendanceAttendances.ExecuteDeleteAsync(ct);
                 await _context.AttendanceQrcodes.ExecuteDeleteAsync(ct);
@@ -237,6 +240,7 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> GetQrScansAsync(long pk, CancellationToken ct = default)

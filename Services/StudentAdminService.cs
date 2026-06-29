@@ -269,8 +269,11 @@ namespace WebApplication1.Services
                 Password = Utils.PasswordHasher.HashDjangoPassword(string.IsNullOrWhiteSpace(payload.Password) ? "shresht@123" : payload.Password)
             };
 
-            var isRelational = _context.Database.IsRelational();
-            var transaction = isRelational ? await _context.Database.BeginTransactionAsync(ct) : null;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                var isRelational = _context.Database.IsRelational();
+                var transaction = isRelational ? await _context.Database.BeginTransactionAsync(ct) : null;
             try
             {
                 _context.AccountsCustomusers.Add(newUser);
@@ -302,7 +305,10 @@ namespace WebApplication1.Services
 
                 if (!string.IsNullOrWhiteSpace(payload.Email))
                 {
-                    await _emailService.SendWelcomeEmailAsync(payload.Email!, payload.FirstName ?? "", payload.LastName ?? "");
+                    var email = payload.Email!;
+                    var fName = payload.FirstName ?? "";
+                    var lName = payload.LastName ?? "";
+                    _ = Task.Run(() => _emailService.SendWelcomeEmailAsync(email, fName, lName));
                 }
 
                 return ServiceResult<object>.Ok(new { id = newProfile.Id, user_id = newUser.Id, student_id = newProfile.StudentId });
@@ -316,6 +322,7 @@ namespace WebApplication1.Services
             {
                 if (transaction != null) await transaction.DisposeAsync();
             }
+            });
         }
 
         public async Task<ServiceResult<object>> UpdateStudentAsync(string pk, AdminStudentsController.StudentPayload payload, CancellationToken ct = default)
@@ -386,8 +393,11 @@ namespace WebApplication1.Services
 
             var userId = student.Id;
             
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 // Nullify foreign keys that shouldn't be deleted
                 await _context.SeatsSeats.Where(s => s.StudentId == userId)
@@ -431,6 +441,7 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> GetStudentAnalyticsAsync(string pk, CancellationToken ct = default)
@@ -469,7 +480,9 @@ namespace WebApplication1.Services
 
             if (!string.IsNullOrWhiteSpace(student.Email))
             {
-                await _emailService.SendSuspendedEmailAsync(student.Email!, student.StudentsStudentprofile?.SuspensionReason ?? "");
+                var email = student.Email!;
+                var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
+                _ = Task.Run(() => _emailService.SendSuspendedEmailAsync(email, suspensionReason));
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Suspended });
@@ -487,7 +500,8 @@ namespace WebApplication1.Services
 
             if (!string.IsNullOrWhiteSpace(student.Email))
             {
-                await _emailService.SendActivatedEmailAsync(student.Email);
+                var email = student.Email!;
+                _ = Task.Run(() => _emailService.SendActivatedEmailAsync(email));
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Live });

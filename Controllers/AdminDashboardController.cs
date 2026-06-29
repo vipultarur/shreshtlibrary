@@ -11,7 +11,6 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
     public class AdminDashboardController : ControllerBase
     {
         private readonly IAdminDashboardService _adminDashboardService;
@@ -58,6 +57,8 @@ namespace WebApplication1.Controllers
 
             return Ok(ApiResponse<object>.Ok(updatedProfile));
         }
+
+
 
         [HttpGet("/api/v1/dashboard/stats")]
         [HttpGet("/api/v1/dashboard/stats/{section}")]

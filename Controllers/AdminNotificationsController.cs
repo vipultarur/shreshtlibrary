@@ -83,5 +83,12 @@ namespace WebApplication1.Controllers
             var result = await _adminNotificationService.GetNotificationRecipientsAsync(pk, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
+
+        [HttpGet("inbox")]
+        public async Task<IActionResult> InboxNotificationsAsync(CancellationToken ct)
+        {
+            var result = await _adminNotificationService.GetInboxNotificationsAsync(ct);
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+        }
     }
 }

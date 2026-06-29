@@ -249,8 +249,11 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> AssignMembershipAsync(AdminBillingController.MembershipAssignPayload payload, CancellationToken ct = default)
         {
-            await using var tx = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 var student = await _context.AccountsCustomusers.FindAsync(new object[] { payload.student_id }, ct);
                 if (student == null) return ServiceResult<object>.NotFound("Student not found");
@@ -301,6 +304,7 @@ namespace WebApplication1.Services
                 await tx.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> GetMembershipsListAsync(int page, int pageSize, string search, string status, long? studentId, string nextTemplate, string prevTemplate, CancellationToken ct = default)
@@ -574,8 +578,11 @@ namespace WebApplication1.Services
                 }
             }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 long? membershipId = null;
                 if (plan != null)
@@ -631,6 +638,7 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> GetPaymentDetailAsync(long id, CancellationToken ct = default)
@@ -671,8 +679,11 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> VerifyPaymentAsync(long id, CancellationToken ct = default)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 var payment = await _context.PaymentsPayments.FindAsync(new object[] { id }, ct);
                 if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
@@ -717,12 +728,16 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> RefundPaymentAsync(long id, AdminBillingController.RefundPayload payload, CancellationToken ct = default)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
             {
                 var payment = await _context.PaymentsPayments.FindAsync(new object[] { id }, ct);
                 if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
@@ -758,6 +773,7 @@ namespace WebApplication1.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+            });
         }
 
         public async Task<ServiceResult<object>> UpdatePaymentAsync(long id, AdminBillingController.PaymentUpdateDto payload, CancellationToken ct = default)

@@ -120,14 +120,24 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetSeatsReportAsync(CancellationToken ct = default)
         {
-            var totalSeats = await _context.SeatsSeats.CountAsync(ct);
-            var occupiedSeats = await _context.SeatsSeatassignments.CountAsync(s => s.ReleasedDate == null, ct);
-            
-            return ServiceResult<object>.Ok(new {
-                total_seats = totalSeats,
-                occupied_seats = occupiedSeats,
-                available_seats = totalSeats - occupiedSeats
-            });
+            var seats = await _context.SeatsSeats.AsNoTracking().ToListAsync(ct);
+            var assignments = await _context.SeatsSeatassignments.AsNoTracking().Where(a => a.ReleasedDate == null).ToListAsync(ct);
+
+            var report = seats.GroupBy(s => s.Floor).Select(g => {
+                var floorSeats = g.ToList();
+                var floorOccupied = floorSeats.Count(s => assignments.Any(a => a.SeatId == s.Id));
+                var floorReserved = floorSeats.Count(s => s.Status == "reserved" || s.IsReservedForGirls == true);
+
+                return new {
+                    floor = g.Key,
+                    total = floorSeats.Count,
+                    occupied = floorOccupied,
+                    reserved = floorReserved,
+                    available = floorSeats.Count - floorOccupied - floorReserved
+                };
+            }).ToList();
+
+            return ServiceResult<object>.Ok(report);
         }
 
         public async Task<ServiceResult<object>> ExportReportAsync(string kind, CancellationToken ct = default)

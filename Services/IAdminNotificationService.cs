@@ -43,5 +43,6 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> GetNotificationsListAsync(int page, int pageSize, CancellationToken ct = default);
         Task<ServiceResult<object>> GetNotificationDetailAsync(long pk, CancellationToken ct = default);
         Task<ServiceResult<object>> GetNotificationRecipientsAsync(long pk, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetInboxNotificationsAsync(CancellationToken ct = default);
     }
 }
