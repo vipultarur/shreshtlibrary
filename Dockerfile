@@ -18,5 +18,6 @@ COPY --from=publish /app/publish .
 # Expose port for Render
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_SYSTEM_NET_DISABLEIPV6=1
 
 ENTRYPOINT ["dotnet", "WebApplication1.dll"]
