@@ -253,22 +253,25 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetInboxNotificationsAsync(CancellationToken ct = default)
         {
-            var notifications = await _context.NotificationsAdmininboxnotifications
+            var dbNotifications = await _context.NotificationsAdmininboxnotifications
                 .Include(n => n.Student)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(50)
-                .Select(n => new {
-                    id = n.Id,
-                    title = n.Title,
-                    message = n.Message,
-                    type = n.Type,
-                    is_read = n.IsRead,
-                    related_id = n.RelatedId,
-                    student_id = n.StudentId,
-                    student_name = n.Student != null ? $"{n.Student.FirstName} {n.Student.LastName}" : null,
-                    student_avatar = (string?)null, // No avatar field
-                    created_at = n.CreatedAt
-                }).ToListAsync(ct);
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            var notifications = dbNotifications.Select(n => new {
+                id = n.Id,
+                title = n.Title,
+                message = n.Message,
+                type = n.Type,
+                is_read = n.IsRead,
+                related_id = n.RelatedId,
+                student_id = n.StudentId,
+                student_name = n.Student != null ? $"{n.Student.FirstName} {n.Student.LastName}" : null,
+                student_avatar = (string?)null,
+                created_at = n.CreatedAt
+            }).ToList();
 
             return ServiceResult<object>.Ok(notifications);
         }
