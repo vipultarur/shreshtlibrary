@@ -494,7 +494,7 @@ namespace WebApplication1.Services
             {
                 var email = student.Email!;
                 var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
-                _ = Task.Run(() => _emailService.SendSuspendedEmailAsync(email, suspensionReason));
+                await _emailService.SendSuspendedEmailAsync(email, suspensionReason);
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Suspended });
@@ -513,7 +513,7 @@ namespace WebApplication1.Services
             if (!string.IsNullOrWhiteSpace(student.Email))
             {
                 var email = student.Email!;
-                _ = Task.Run(() => _emailService.SendActivatedEmailAsync(email));
+                await _emailService.SendActivatedEmailAsync(email);
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Live });

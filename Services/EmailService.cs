@@ -146,13 +146,17 @@ namespace WebApplication1.Services
         public async Task SendSuspendedEmailAsync(string toEmail, string reason)
         {
             var subject = "Action Required: Account Suspended ⚠️";
+            var subtitleText = string.IsNullOrEmpty(reason) 
+                ? "Your library account has been suspended due to a policy violation or unpaid dues." 
+                : $"Your library account has been suspended. Reason: {reason}";
+                
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: "Account Suspended",
-                subtitle: "Your library account has been suspended due to a policy violation or unpaid dues.",
+                subtitle: subtitleText,
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/suspended.png",
                 colorStart: "#ef4444", // red-500
                 colorEnd: "#e11d48",   // rose-600
-                highlight: string.IsNullOrEmpty(reason) ? "SUSPENDED" : reason,
+                highlight: null,
                 actionText: "Contact Support",
                 footer: "Please reach out to resolve this issue."
             );
