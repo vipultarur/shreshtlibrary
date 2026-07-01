@@ -46,12 +46,37 @@ namespace WebApplication1.Services
             if (!Directory.Exists(_mediaDir)) Directory.CreateDirectory(_mediaDir);
             var ext = Path.GetExtension(file.FileName);
             var fileName = $"img_{Guid.NewGuid()}{ext}";
+            var relativePath = $"library/{fileName}";
             var filePath = Path.Combine(_mediaDir, fileName);
+            
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var fileData = memoryStream.ToArray();
+
+            // Save to disk
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
             {
-                await file.CopyToAsync(stream);
+                await stream.WriteAsync(fileData, 0, fileData.Length);
             }
-            return $"library/{fileName}";
+
+            // Save to DB
+            try
+            {
+                var dbFile = new LibraryDatabasefile
+                {
+                    Name = relativePath,
+                    Data = fileData,
+                    ContentType = file.ContentType ?? "application/octet-stream",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.LibraryDatabasefiles.Add(dbFile);
+            }
+            catch
+            {
+                // Ignore DB save errors to not break the flow if table doesn't exist
+            }
+
+            return relativePath;
         }
 
         public async Task<ServiceResult<object>> GetLibraryInfo(CancellationToken ct = default)

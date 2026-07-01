@@ -594,14 +594,31 @@ namespace WebApplication1.Services
                 System.IO.Directory.CreateDirectory(uploadsFolder);
 
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + photo.FileName;
+            var relativePath = "student_photos/" + uniqueFileName;
             var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+
+            using var memoryStream = new System.IO.MemoryStream();
+            await photo.CopyToAsync(memoryStream, ct);
+            var fileData = memoryStream.ToArray();
 
             using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
             {
-                await photo.CopyToAsync(fileStream, ct);
+                await fileStream.WriteAsync(fileData, 0, fileData.Length, ct);
             }
 
-            var relativePath = "student_photos/" + uniqueFileName;
+            try
+            {
+                var dbFile = new LibraryDatabasefile
+                {
+                    Name = relativePath,
+                    Data = fileData,
+                    ContentType = photo.ContentType ?? "application/octet-stream",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.LibraryDatabasefiles.Add(dbFile);
+            }
+            catch {}
+
             student.StudentsStudentprofile!.ProfilePhoto = relativePath;
             student.StudentsStudentprofile.UpdatedAt = DateTime.UtcNow;
 

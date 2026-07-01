@@ -60,12 +60,30 @@ namespace WebApplication1.Services
                 if (!allowedExtensions.Contains(ext)) return ServiceResult<object>.Fail("Invalid image format.");
 
                 var fileName = $"slider_{Guid.NewGuid()}{ext}";
+                var relativePath = $"sliders/{fileName}";
                 var filePath = System.IO.Path.Combine(mediaDir, fileName);
+
+                using var memoryStream = new System.IO.MemoryStream();
+                await dto.Image.CopyToAsync(memoryStream, ct);
+                var fileData = memoryStream.ToArray();
 
                 using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
                 {
-                    await dto.Image.CopyToAsync(stream, ct);
+                    await stream.WriteAsync(fileData, 0, fileData.Length, ct);
                 }
+
+                try
+                {
+                    var dbFile = new LibraryDatabasefile
+                    {
+                        Name = relativePath,
+                        Data = fileData,
+                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.LibraryDatabasefiles.Add(dbFile);
+                }
+                catch {}
 
                 slider.Image = $"sliders/{fileName}";
             }
@@ -107,12 +125,30 @@ namespace WebApplication1.Services
                 if (!allowedExtensions.Contains(ext)) return ServiceResult<object>.Fail("Invalid image format.");
 
                 var fileName = $"slider_{Guid.NewGuid()}{ext}";
+                var relativePath = $"sliders/{fileName}";
                 var filePath = System.IO.Path.Combine(mediaDir, fileName);
+
+                using var memoryStream = new System.IO.MemoryStream();
+                await dto.Image.CopyToAsync(memoryStream, ct);
+                var fileData = memoryStream.ToArray();
 
                 using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
                 {
-                    await dto.Image.CopyToAsync(stream, ct);
+                    await stream.WriteAsync(fileData, 0, fileData.Length, ct);
                 }
+
+                try
+                {
+                    var dbFile = new LibraryDatabasefile
+                    {
+                        Name = relativePath,
+                        Data = fileData,
+                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.LibraryDatabasefiles.Add(dbFile);
+                }
+                catch {}
 
                 slider.Image = $"sliders/{fileName}";
             }
