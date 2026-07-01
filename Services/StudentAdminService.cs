@@ -80,7 +80,9 @@ namespace WebApplication1.Services
                 var likeSearch = $"%{search}%";
                 query = query.Where(s => EF.Functions.ILike(s.User.FirstName, likeSearch) || 
                                          EF.Functions.ILike(s.User.LastName, likeSearch) || 
-                                         (s.User.Mobile != null && EF.Functions.ILike(s.User.Mobile, likeSearch)));
+                                         (s.User.Email != null && EF.Functions.ILike(s.User.Email, likeSearch)) ||
+                                         (s.User.Mobile != null && EF.Functions.ILike(s.User.Mobile, likeSearch)) ||
+                                         EF.Functions.ILike(s.StudentId, likeSearch));
             }
 
             var totalCount = await query.CountAsync(ct);
@@ -298,7 +300,7 @@ namespace WebApplication1.Services
                     UserId = newUser.Id,
                     StudentId = $"SHR-{newUser.Id:D4}",
                     Goal = payload.Goal ?? "",
-                    Gender = payload.Gender ?? "Other",
+                    Gender = payload.Gender ?? "Male",
                     Status = string.IsNullOrWhiteSpace(payload.Status) ? WebApplication1.Utils.Constants.StudentStatus.Pending : payload.Status,
                     JoiningDate = DateOnly.FromDateTime(DateTime.UtcNow),
                     PreferredLanguage = payload.PreferredLanguage ?? "English",
