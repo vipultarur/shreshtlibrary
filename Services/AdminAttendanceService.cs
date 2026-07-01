@@ -320,7 +320,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetAttendanceAbsenteesAsync(string? date, CancellationToken ct = default)
         {
-            if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
 
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
             var presentIds = records.Where(r => r.IsPresent).Select(r => r.StudentId).ToHashSet();
@@ -342,7 +342,9 @@ namespace WebApplication1.Services
             var result = new List<object>();
             foreach(var stu in allStudents)
             {
-                if (DateOnly.FromDateTime(stu.date_joined) > targetDate)
+                var utcJoinDate = stu.date_joined.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(stu.date_joined, DateTimeKind.Utc) : stu.date_joined.ToUniversalTime();
+                var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(utcJoinDate, _dateTimeProvider.IstTimeZone);
+                if (DateOnly.FromDateTime(istJoinDate) > targetDate)
                 {
                     result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = "not_joined" });
                     continue;
@@ -361,7 +363,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetAttendanceStreakAsync(CancellationToken ct = default)
         {
-            var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var thirtyDaysAgo = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date.AddDays(-30));
             var attendances = await _context.AttendanceAttendances
                 .AsNoTracking()
                 .Where(a => a.Date >= thirtyDaysAgo && a.IsPresent)
@@ -454,8 +456,8 @@ namespace WebApplication1.Services
                 targetStudentId = student.Id;
             }
 
-            var studentExists = await _context.AccountsCustomusers.AnyAsync(u => u.Id == targetStudentId && u.Role.ToLower() == "student", ct);
-            if (!studentExists)
+            var targetStudent = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Id == targetStudentId && u.Role.ToLower() == "student", ct);
+            if (targetStudent == null)
                 return ServiceResult<bool>.NotFound("Student not found");
 
             if (!DateOnly.TryParse(dto.Date, out var targetDate))
@@ -467,6 +469,10 @@ namespace WebApplication1.Services
 
             if (await _context.AttendanceHolidays.AnyAsync(h => h.Date == targetDate, ct))
                 return ServiceResult<bool>.Fail("Cannot modify attendance on a declared holiday.");
+
+            var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(targetStudent.DateJoined.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(targetStudent.DateJoined, DateTimeKind.Utc) : targetStudent.DateJoined.ToUniversalTime(), _dateTimeProvider.IstTimeZone);
+            if (DateOnly.FromDateTime(istJoinDate) > targetDate)
+                return ServiceResult<bool>.Fail("Attendance cannot be recorded before the student joined the library.");
 
             var isPresent = dto.IsPresent ?? true;
 
@@ -526,6 +532,26 @@ namespace WebApplication1.Services
 
             if (await _context.AttendanceHolidays.AnyAsync(h => parsedDates.Contains(h.Date), ct))
                 return ServiceResult<object>.Fail("Cannot modify attendance on a declared holiday.");
+
+            var allTargetStudents = studentsById.Concat(studentsByMobile).DistinctBy(s => s.Id).ToList();
+            var earliestAllowedDate = parsedDates.Min();
+
+            foreach (var student in allTargetStudents)
+            {
+                var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(student.DateJoined.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(student.DateJoined, DateTimeKind.Utc) : student.DateJoined.ToUniversalTime(), _dateTimeProvider.IstTimeZone);
+                if (DateOnly.FromDateTime(istJoinDate) > earliestAllowedDate)
+                {
+                    // Check if any specific requested date for this student is before they joined
+                    var requestedDatesForStudent = dtos.Where(d => (d.StudentId != null && d.StudentId == student.Id) || (!string.IsNullOrEmpty(d.StudentMobile) && d.StudentMobile == student.Mobile)).Select(d => DateOnly.TryParse(d.Date, out var dt) ? dt : DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date));
+                    foreach (var reqDate in requestedDatesForStudent)
+                    {
+                        if (DateOnly.FromDateTime(istJoinDate) > reqDate)
+                        {
+                            return ServiceResult<object>.Fail($"Attendance cannot be recorded for {student.FirstName} before their join date.");
+                        }
+                    }
+                }
+            }
 
             var existingRecords = await _context.AttendanceAttendances
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
