@@ -16,11 +16,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService)
+        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
             _emailService = emailService;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<ServiceResult<object>> GetCurrentQrAsync(CancellationToken ct = default)
@@ -332,13 +334,20 @@ namespace WebApplication1.Services
                     first_name = u.FirstName,
                     last_name = u.LastName,
                     mobile = u.Mobile,
-                    username = u.Username
+                    username = u.Username,
+                    date_joined = u.DateJoined
                 })
                 .ToListAsync(ct);
 
             var result = new List<object>();
             foreach(var stu in allStudents)
             {
+                if (DateOnly.FromDateTime(stu.date_joined) > targetDate)
+                {
+                    result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = "not_joined" });
+                    continue;
+                }
+
                 if (presentIds.Contains(stu.user_id)) continue;
                 if (absentIds.Contains(stu.user_id)) {
                     result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = "absent" });
@@ -450,7 +459,14 @@ namespace WebApplication1.Services
                 return ServiceResult<bool>.NotFound("Student not found");
 
             if (!DateOnly.TryParse(dto.Date, out var targetDate))
-                targetDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
+
+            var diffDays = (_dateTimeProvider.IstNow.Date - targetDate.ToDateTime(TimeOnly.MinValue)).TotalDays;
+            if (diffDays < 0 || diffDays > 2)
+                return ServiceResult<bool>.Fail("Attendance can only be edited for today and the previous 2 days.");
+
+            if (await _context.AttendanceHolidays.AnyAsync(h => h.Date == targetDate, ct))
+                return ServiceResult<bool>.Fail("Cannot modify attendance on a declared holiday.");
 
             var isPresent = dto.IsPresent ?? true;
 
@@ -501,7 +517,15 @@ namespace WebApplication1.Services
 
             var allValidStudentIds = studentsById.Select(s => s.Id).Concat(studentsByMobile.Select(s => s.Id)).ToHashSet();
             
-            var parsedDates = dtos.Select(d => DateOnly.TryParse(d.Date, out var date) ? date : DateOnly.FromDateTime(DateTime.UtcNow)).Distinct().ToList();
+            var parsedDates = dtos.Select(d => DateOnly.TryParse(d.Date, out var date) ? date : DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date)).Distinct().ToList();
+
+            foreach(var date in parsedDates) {
+                var diffDays = (_dateTimeProvider.IstNow.Date - date.ToDateTime(TimeOnly.MinValue)).TotalDays;
+                if (diffDays < 0 || diffDays > 2) return ServiceResult<object>.Fail("Attendance can only be edited for today and the previous 2 days.");
+            }
+
+            if (await _context.AttendanceHolidays.AnyAsync(h => parsedDates.Contains(h.Date), ct))
+                return ServiceResult<object>.Fail("Cannot modify attendance on a declared holiday.");
 
             var existingRecords = await _context.AttendanceAttendances
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
@@ -604,6 +628,9 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Fail("Invalid date format.");
             }
 
+            if (date < DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date))
+                return ServiceResult<object>.Fail("Cannot create holidays for past dates.");
+
             var holiday = new AttendanceHoliday
             {
                 Date = date,
@@ -663,6 +690,9 @@ namespace WebApplication1.Services
             var holiday = await _context.AttendanceHolidays.FindAsync(new object[] { pk }, ct);
             if (holiday == null) return ServiceResult<object>.NotFound("Holiday not found");
 
+            if (holiday.Date < DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date))
+                return ServiceResult<object>.Fail("Past holidays cannot be edited.");
+
             if (!string.IsNullOrWhiteSpace(dto.Date) && DateOnly.TryParse(dto.Date, out var date))
             {
                 holiday.Date = date;
@@ -691,6 +721,9 @@ namespace WebApplication1.Services
         {
             var holiday = await _context.AttendanceHolidays.FindAsync(new object[] { pk }, ct);
             if (holiday == null) return ServiceResult<bool>.NotFound("Holiday not found");
+
+            if (holiday.Date < DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date))
+                return ServiceResult<bool>.Fail("Past holidays cannot be deleted.");
 
             _context.AttendanceHolidays.Remove(holiday);
             await _context.SaveChangesAsync(ct);
