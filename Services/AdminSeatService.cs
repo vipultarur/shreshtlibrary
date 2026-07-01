@@ -149,7 +149,15 @@ namespace WebApplication1.Services
             };
             _context.SeatsSeats.Add(draft);
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(draft);
+            return ServiceResult<object>.Ok(new {
+                id = draft.Id,
+                floor = draft.Floor,
+                row = draft.Row,
+                seat_number = draft.SeatNumber,
+                status = draft.Status,
+                is_reserved_for_girls = draft.IsReservedForGirls,
+                row_ref = draft.RowRefId
+            });
         }
 
         public async Task<ServiceResult<bool>> DeleteSeatAsync(long pk, CancellationToken ct = default)
@@ -225,7 +233,16 @@ namespace WebApplication1.Services
             if (rowRefId.HasValue) seat.RowRefId = rowRefId;
 
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(seat);
+            return ServiceResult<object>.Ok(new {
+                id = seat.Id,
+                floor = seat.Floor,
+                row = seat.Row,
+                seat_number = seat.SeatNumber,
+                status = seat.Status,
+                student = seat.StudentId,
+                is_reserved_for_girls = seat.IsReservedForGirls,
+                row_ref = seat.RowRefId
+            });
         }
 
         public async Task<ServiceResult<object>> UpdateSeatStatusAsync(long pk, string status, string? reason, CancellationToken ct = default)
@@ -240,7 +257,12 @@ namespace WebApplication1.Services
                 seat.AssignedAt = null;
             }
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(seat);
+            return ServiceResult<object>.Ok(new {
+                id = seat.Id,
+                status = seat.Status,
+                student = seat.StudentId,
+                assigned_at = seat.AssignedAt
+            });
         }
 
         public async Task<ServiceResult<object>> AssignSeatAsync(long pk, long studentId, CancellationToken ct = default)
@@ -273,7 +295,12 @@ namespace WebApplication1.Services
                 });
             }
 
-            return ServiceResult<object>.Ok(seat);
+            return ServiceResult<object>.Ok(new {
+                id = seat.Id,
+                status = seat.Status,
+                student = seat.StudentId,
+                assigned_at = seat.AssignedAt
+            });
         }
 
         public async Task<ServiceResult<object>> UnassignSeatAsync(long pk, string? reason, CancellationToken ct = default)
@@ -285,7 +312,12 @@ namespace WebApplication1.Services
             seat.Status = "AVAILABLE";
             seat.AssignedAt = null;
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(seat);
+            return ServiceResult<object>.Ok(new {
+                id = seat.Id,
+                status = seat.Status,
+                student = seat.StudentId,
+                assigned_at = seat.AssignedAt
+            });
         }
 
         public async Task<ServiceResult<object>> GetFloorsListAsync(CancellationToken ct = default)
