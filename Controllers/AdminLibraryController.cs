@@ -126,12 +126,27 @@ namespace WebApplication1.Controllers
 
         public class LibraryInfoUpdateDto
         {
-            public string? Name { get; set; }
-            public string? ContactEmail { get; set; }
-            public string? ContactPhone { get; set; }
-            public string? Address { get; set; }
-            public string? TimingInfo { get; set; }
-            public IFormFile? Logo { get; set; }
+            [FromForm(Name = "name")] public string? Name { get; set; }
+            [FromForm(Name = "tagline")] public string? Tagline { get; set; }
+            [FromForm(Name = "phone_primary")] public string? PhonePrimary { get; set; }
+            [FromForm(Name = "phone_secondary")] public string? PhoneSecondary { get; set; }
+            [FromForm(Name = "email")] public string? Email { get; set; }
+            [FromForm(Name = "address")] public string? Address { get; set; }
+            [FromForm(Name = "google_maps_url")] public string? GoogleMapsUrl { get; set; }
+            [FromForm(Name = "facebook_url")] public string? FacebookUrl { get; set; }
+            [FromForm(Name = "instagram_url")] public string? InstagramUrl { get; set; }
+            [FromForm(Name = "website")] public string? Website { get; set; }
+            [FromForm(Name = "open_time")] public string? OpenTime { get; set; }
+            [FromForm(Name = "close_time")] public string? CloseTime { get; set; }
+            [FromForm(Name = "off_days")] public string? OffDays { get; set; }
+            [FromForm(Name = "about")] public string? About { get; set; }
+            [FromForm(Name = "description")] public string? Description { get; set; }
+            [FromForm(Name = "rules")] public string? Rules { get; set; }
+            [FromForm(Name = "facilities")] public string? Facilities { get; set; }
+            
+            [FromForm(Name = "feature_image")] public IFormFile? FeatureImage { get; set; }
+            [FromForm(Name = "logo_square")] public IFormFile? LogoSquare { get; set; }
+            [FromForm(Name = "logo_rectangle")] public IFormFile? LogoRectangle { get; set; }
         }
 
         public class FacilityDto

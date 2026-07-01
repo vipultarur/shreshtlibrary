@@ -94,14 +94,28 @@ namespace WebApplication1.Services
             }
 
             if (dto.Name != null) info.Name = dto.Name;
-            if (dto.ContactEmail != null) info.Email = dto.ContactEmail;
-            if (dto.ContactPhone != null) info.PhonePrimary = dto.ContactPhone;
+            if (dto.Tagline != null) info.Tagline = dto.Tagline;
+            if (dto.PhonePrimary != null) info.PhonePrimary = dto.PhonePrimary;
+            if (dto.PhoneSecondary != null) info.PhoneSecondary = dto.PhoneSecondary;
+            if (dto.Email != null) info.Email = dto.Email;
             if (dto.Address != null) info.Address = dto.Address;
+            if (dto.GoogleMapsUrl != null) info.GoogleMapsUrl = dto.GoogleMapsUrl;
+            if (dto.FacebookUrl != null) info.FacebookUrl = dto.FacebookUrl;
+            if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
+            if (dto.Website != null) info.Website = dto.Website;
+            
+            if (!string.IsNullOrEmpty(dto.OpenTime) && TimeSpan.TryParse(dto.OpenTime, out var ot)) info.OpenTime = ot;
+            if (!string.IsNullOrEmpty(dto.CloseTime) && TimeSpan.TryParse(dto.CloseTime, out var ct)) info.CloseTime = ct;
+            
+            if (dto.OffDays != null) info.OffDays = dto.OffDays;
+            if (dto.About != null) info.About = dto.About;
+            if (dto.Description != null) info.Description = dto.Description;
+            if (dto.Rules != null) info.Rules = dto.Rules;
+            if (dto.Facilities != null) info.Facilities = dto.Facilities;
 
-            if (dto.Logo != null)
-            {
-                info.LogoSquare = await SaveImageAsync(dto.Logo);
-            }
+            if (dto.FeatureImage != null) info.FeatureImage = await SaveImageAsync(dto.FeatureImage) ?? info.FeatureImage;
+            if (dto.LogoSquare != null) info.LogoSquare = await SaveImageAsync(dto.LogoSquare) ?? info.LogoSquare;
+            if (dto.LogoRectangle != null) info.LogoRectangle = await SaveImageAsync(dto.LogoRectangle) ?? info.LogoRectangle;
 
             await _context.SaveChangesAsync(ct);
             return ServiceResult<object>.Ok("Library info updated.");
