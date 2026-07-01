@@ -103,7 +103,7 @@ namespace WebApplication1.Services
             var fullName = $"{profile.User.FirstName} {profile.User.LastName}".Trim();
             var status = profile.Status ?? "PENDING";
 
-            var todayDate = System.DateOnly.FromDateTime(System.DateTime.UtcNow);
+            var todayDate = System.DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             var activeMembership = await _context.MembershipsMemberships
                 .Include(m => m.Plan)
                 .Where(m => m.StudentId == userId && m.Status.ToLower() == "active")

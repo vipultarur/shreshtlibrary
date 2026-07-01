@@ -76,14 +76,24 @@ namespace WebApplication1.Services
                             !context.AttendanceAttendances.Any(a => a.StudentId == u.Id && a.Date == today))
                 .ToListAsync(stoppingToken);
 
-            if (!activeStudentsWithoutAttendance.Any()) return;
+            var validStudents = new System.Collections.Generic.List<AccountsCustomuser>();
+            foreach (var student in activeStudentsWithoutAttendance)
+            {
+                var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(student.DateJoined.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(student.DateJoined, DateTimeKind.Utc) : student.DateJoined.ToUniversalTime(), _dateTimeProvider.IstTimeZone);
+                if (DateOnly.FromDateTime(istJoinDate) <= today)
+                {
+                    validStudents.Add(student);
+                }
+            }
 
-            _logger.LogInformation($"Auto-marking {activeStudentsWithoutAttendance.Count} students as Absent for {today}.");
+            if (!validStudents.Any()) return;
+
+            _logger.LogInformation($"Auto-marking {validStudents.Count} students as Absent for {today}.");
 
             var now = _dateTimeProvider.UtcNow;
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
             
-            foreach (var student in activeStudentsWithoutAttendance)
+            foreach (var student in validStudents)
             {
                 var record = new AttendanceAttendance
                 {
