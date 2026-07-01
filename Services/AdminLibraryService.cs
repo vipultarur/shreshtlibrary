@@ -104,8 +104,8 @@ namespace WebApplication1.Services
             if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
             if (dto.Website != null) info.Website = dto.Website;
             
-            if (!string.IsNullOrEmpty(dto.OpenTime) && TimeSpan.TryParse(dto.OpenTime, out var ot)) info.OpenTime = ot;
-            if (!string.IsNullOrEmpty(dto.CloseTime) && TimeSpan.TryParse(dto.CloseTime, out var ct)) info.CloseTime = ct;
+            if (!string.IsNullOrEmpty(dto.OpenTime) && TimeOnly.TryParse(dto.OpenTime, out var ot)) info.OpenTime = ot;
+            if (!string.IsNullOrEmpty(dto.CloseTime) && TimeOnly.TryParse(dto.CloseTime, out var closeT)) info.CloseTime = closeT;
             
             if (dto.OffDays != null) info.OffDays = dto.OffDays;
             if (dto.About != null) info.About = dto.About;
@@ -144,7 +144,7 @@ namespace WebApplication1.Services
                 Name = dto.Name,
                 Description = dto.Description ?? "",
                 Image = iconPath ?? "",
-                IconKey = "default",
+                IconKey = dto.IconKey ?? "default",
                 Order = dto.Order ?? 0,
                 IsActive = dto.IsActive ?? true
             };
@@ -160,6 +160,7 @@ namespace WebApplication1.Services
 
             if (dto.Name != null) facility.Name = dto.Name;
             if (dto.Description != null) facility.Description = dto.Description;
+            if (dto.IconKey != null) facility.IconKey = dto.IconKey;
             if (dto.Order.HasValue) facility.Order = dto.Order.Value;
             if (dto.IsActive.HasValue) facility.IsActive = dto.IsActive.Value;
             if (dto.Image != null)
@@ -196,7 +197,9 @@ namespace WebApplication1.Services
                 id = a.Id,
                 name = a.Name,
                 achievement = a.Achievement,
-                exam_name = a.Goal,
+                goal = a.Goal,
+                year = a.Year,
+                is_featured = a.IsFeatured,
                 photo = !string.IsNullOrEmpty(a.Photo) ? $"/media/{a.Photo}" : null,
                 order = a.Order,
                 is_active = a.IsActive
@@ -211,7 +214,9 @@ namespace WebApplication1.Services
             {
                 Name = dto.Name,
                 Achievement = dto.Achievement ?? "",
-                Goal = dto.ExamName ?? "",
+                Goal = dto.Goal ?? "",
+                Year = dto.Year ?? DateTime.Now.Year,
+                IsFeatured = dto.IsFeatured ?? false,
                 Photo = imagePath ?? "",
                 Order = dto.Order ?? 0,
                 IsActive = dto.IsActive ?? true
@@ -228,7 +233,9 @@ namespace WebApplication1.Services
 
             if (dto.Name != null) achiever.Name = dto.Name;
             if (dto.Achievement != null) achiever.Achievement = dto.Achievement;
-            if (dto.ExamName != null) achiever.Goal = dto.ExamName;
+            if (dto.Goal != null) achiever.Goal = dto.Goal;
+            if (dto.Year.HasValue) achiever.Year = dto.Year.Value;
+            if (dto.IsFeatured.HasValue) achiever.IsFeatured = dto.IsFeatured.Value;
             if (dto.Order.HasValue) achiever.Order = dto.Order.Value;
             if (dto.IsActive.HasValue) achiever.IsActive = dto.IsActive.Value;
             if (dto.Photo != null)
