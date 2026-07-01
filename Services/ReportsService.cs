@@ -121,12 +121,11 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> GetSeatsReportAsync(CancellationToken ct = default)
         {
             var seats = await _context.SeatsSeats.AsNoTracking().ToListAsync(ct);
-            var assignments = await _context.SeatsSeatassignments.AsNoTracking().Where(a => a.ReleasedDate == null).ToListAsync(ct);
 
             var report = seats.GroupBy(s => s.Floor).Select(g => {
                 var floorSeats = g.ToList();
-                var floorOccupied = floorSeats.Count(s => assignments.Any(a => a.SeatId == s.Id));
-                var floorReserved = floorSeats.Count(s => s.Status == "reserved" || s.IsReservedForGirls == true);
+                var floorOccupied = floorSeats.Count(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED");
+                var floorReserved = floorSeats.Count(s => (s.Status != null && s.Status.ToUpper() == "RESERVED") || s.IsReservedForGirls == true);
 
                 return new {
                     floor = g.Key,

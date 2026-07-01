@@ -149,7 +149,7 @@ namespace WebApplication1.Services
             var pendingPayments = await _context.PaymentsPayments.CountAsync(p => p.Status.ToLower() == "pending", ct);
 
             var totalSeats = await _context.SeatsSeats.CountAsync(ct);
-            var occupiedSeats = await _context.SeatsSeatassignments.CountAsync(s => s.ReleasedDate == null, ct);
+            var occupiedSeats = await _context.SeatsSeats.CountAsync(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED", ct);
             var availableSeats = totalSeats - occupiedSeats;
             
             var genderGroups = await _context.StudentsStudentprofiles.GroupBy(s => s.Gender).Select(g => new { Gender = g.Key, Count = g.Count() }).ToListAsync(ct);
@@ -247,7 +247,7 @@ namespace WebApplication1.Services
             }
 
             var totalSeatsCount = await _context.SeatsSeats.CountAsync(ct);
-            var occupied = await _context.SeatsSeatassignments.CountAsync(s => s.ReleasedDate == null, ct);
+            var occupied = await _context.SeatsSeats.CountAsync(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED", ct);
             var available = totalSeatsCount - occupied;
 
             return new
