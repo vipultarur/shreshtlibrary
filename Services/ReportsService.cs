@@ -140,9 +140,65 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(report);
         }
 
-        public async Task<ServiceResult<object>> ExportReportAsync(string kind, CancellationToken ct = default)
+        public async Task<byte[]> ExportReportCsvAsync(string kind, CancellationToken ct = default)
         {
-            return ServiceResult<object>.Ok(new { url = $"/media/exports/{kind}_{DateTime.UtcNow.Ticks}.csv" });
+            var sb = new System.Text.StringBuilder();
+
+            switch (kind.ToLower())
+            {
+                case "attendance":
+                    sb.AppendLine("Id,Date,Student,IsPresent,TimeIn,TimeOut,TotalHours");
+                    var attendances = await _context.AttendanceAttendances.AsNoTracking().Include(a => a.Student).OrderByDescending(a => a.Date).Take(1000).ToListAsync(ct);
+                    foreach (var a in attendances)
+                    {
+                        var name = a.Student != null ? $"{a.Student.FirstName} {a.Student.LastName}" : "Unknown";
+                        sb.AppendLine($"{a.Id},{a.Date:yyyy-MM-dd},{EscapeCsv(name)},{a.IsPresent},{a.TimeIn},{a.TimeOut},{a.TotalHours}");
+                    }
+                    break;
+                case "payments":
+                    sb.AppendLine("Id,Date,Student,Amount,Status,PaymentMode");
+                    var payments = await _context.PaymentsPayments.AsNoTracking().Include(p => p.Student).OrderByDescending(p => p.PaymentDate).Take(1000).ToListAsync(ct);
+                    foreach (var p in payments)
+                    {
+                        var name = p.Student != null ? $"{p.Student.FirstName} {p.Student.LastName}" : "Unknown";
+                        sb.AppendLine($"{p.Id},{p.PaymentDate:yyyy-MM-dd},{EscapeCsv(name)},{p.Amount},{p.Status},{p.PaymentMode}");
+                    }
+                    break;
+                case "students":
+                    sb.AppendLine("Id,StudentId,Name,Status,JoiningDate");
+                    var students = await _context.StudentsStudentprofiles.AsNoTracking().Include(s => s.User).OrderByDescending(s => s.CreatedAt).Take(1000).ToListAsync(ct);
+                    foreach (var s in students)
+                    {
+                        var name = s.User != null ? $"{s.User.FirstName} {s.User.LastName}" : "Unknown";
+                        sb.AppendLine($"{s.Id},{s.StudentId},{EscapeCsv(name)},{s.Status},{s.JoiningDate}");
+                    }
+                    break;
+                case "memberships":
+                    sb.AppendLine("Id,Student,Plan,StartDate,EndDate,Status,Price");
+                    var memberships = await _context.MembershipsMemberships.AsNoTracking().Include(m => m.Student).Include(m => m.Plan).OrderByDescending(m => m.StartDate).Take(1000).ToListAsync(ct);
+                    foreach (var m in memberships)
+                    {
+                        var name = m.Student != null ? $"{m.Student.FirstName} {m.Student.LastName}" : "Unknown";
+                        var plan = m.Plan != null ? m.Plan.Name : m.PlanNameSnapshot;
+                        sb.AppendLine($"{m.Id},{EscapeCsv(name)},{EscapeCsv(plan)},{m.StartDate:yyyy-MM-dd},{m.EndDate:yyyy-MM-dd},{m.Status},{m.PriceSnapshot}");
+                    }
+                    break;
+                default:
+                    sb.AppendLine("Unknown Report Type");
+                    break;
+            }
+
+            return System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        private string EscapeCsv(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            {
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            }
+            return value;
         }
     }
 }

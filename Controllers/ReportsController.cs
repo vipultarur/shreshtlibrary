@@ -62,8 +62,9 @@ namespace WebApplication1.Controllers
         [HttpGet("export/{kind}")]
         public async Task<IActionResult> ReportsExportAsync(string kind, CancellationToken ct)
         {
-            var result = await _reportsService.ExportReportAsync(kind, ct);
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+            var fileBytes = await _reportsService.ExportReportCsvAsync(kind, ct);
+            if (fileBytes == null) return NotFound();
+            return File(fileBytes, "text/csv", $"{kind}_report.csv");
         }
     }
 }

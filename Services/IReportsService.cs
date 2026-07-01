@@ -12,6 +12,6 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> GetMembershipsReportAsync(int page, int pageSize, CancellationToken ct = default);
         Task<ServiceResult<object>> GetDailySummaryAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> GetSeatsReportAsync(CancellationToken ct = default);
-        Task<ServiceResult<object>> ExportReportAsync(string kind, CancellationToken ct = default);
+        Task<byte[]> ExportReportCsvAsync(string kind, CancellationToken ct = default);
     }
 }

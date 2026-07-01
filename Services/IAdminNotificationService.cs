@@ -46,4 +46,5 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> GetInboxNotificationsAsync(CancellationToken ct = default);
         Task<ServiceResult<bool>> MarkInboxActionAsync(long pk, string action, CancellationToken ct = default);
         Task<ServiceResult<bool>> DeleteInboxNotificationAsync(long pk, CancellationToken ct = default);
+    }
 }
