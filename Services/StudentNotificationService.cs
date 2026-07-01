@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
@@ -33,23 +34,37 @@ namespace WebApplication1.Services
             var query = _context.NotificationsStudentnotifications
                 .AsNoTracking()
                 .Include(sn => sn.Notification)
+                    .ThenInclude(n => n.NotificationsNotificationimages)
                 .Where(sn => sn.StudentId == userId && sn.Notification.SentAt != null)
                 .OrderByDescending(sn => sn.Notification.CreatedAt);
 
             var totalCount = await query.CountAsync(ct);
             var totalPages = (int)Math.Ceiling((double)totalCount / page_size);
 
-            var data = await query.Skip((page - 1) * page_size).Take(page_size)
-                .Select(sn => new {
-                    id = sn.NotificationId,
-                    title = sn.Notification.Title,
-                    body = sn.Notification.Body,
-                    type = sn.Notification.Type,
-                    is_read = sn.IsRead,
-                    read_at = sn.ReadAt,
-                    created_at = sn.Notification.CreatedAt,
-                    link_url = sn.Notification.LinkUrl
-                }).ToListAsync(ct);
+            var dbRows = await query.Skip((page - 1) * page_size).Take(page_size).ToListAsync(ct);
+
+            var data = dbRows.Select(sn => new Dictionary<string, object?> {
+                    { "id", sn.NotificationId },
+                    { "title", sn.Notification.Title },
+                    { "body", sn.Notification.Body },
+                    { "type", sn.Notification.Type },
+                    { "is_read", sn.IsRead },
+                    { "read_at", sn.ReadAt },
+                    { "created_at", sn.Notification.CreatedAt },
+                    { "sent_at", sn.Notification.SentAt },
+                    { "subtitle", string.IsNullOrEmpty(sn.Notification.Subtitle) ? null : sn.Notification.Subtitle },
+                    { "description", string.IsNullOrEmpty(sn.Notification.Description) ? null : sn.Notification.Description },
+                    { "link_url", string.IsNullOrEmpty(sn.Notification.LinkUrl) ? null : sn.Notification.LinkUrl },
+                    { "link_button_text", string.IsNullOrEmpty(sn.Notification.LinkButtonText) ? null : sn.Notification.LinkButtonText },
+                    { "layout", sn.Notification.Layout },
+                    { "display_mode", sn.Notification.DisplayMode },
+                    { "background_image", string.IsNullOrEmpty(sn.Notification.BackgroundImage) ? null : $"/media/{sn.Notification.BackgroundImage}" },
+                    { "event_date", sn.Notification.EventDate?.ToString("yyyy-MM-dd") },
+                    { "images", sn.Notification.NotificationsNotificationimages
+                        .Select(img => $"/media/{img.Image}")
+                        .Where(path => !string.IsNullOrEmpty(path))
+                        .ToList() }
+                }).ToList();
 
             return ServiceResult<object>.Ok(new { data = data, count = totalCount, total_pages = totalPages == 0 ? 1 : totalPages, current_page = page });
         }

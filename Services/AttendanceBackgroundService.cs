@@ -16,6 +16,7 @@ namespace WebApplication1.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<AttendanceBackgroundService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -31,6 +32,7 @@ namespace WebApplication1.Services
             {
                 try
                 {
+                    await AutoGenerateQrAsync(stoppingToken);
                     await ProcessPendingAttendanceAsync(stoppingToken);
                 }
                 catch (Exception ex)
@@ -39,6 +41,75 @@ namespace WebApplication1.Services
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
+        }
+
+        private async Task AutoGenerateQrAsync(CancellationToken stoppingToken)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastQrGeneratedDate >= today) return; // Already generated for today
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var nowUtc = DateTime.UtcNow;
+
+            // 1. Expire any QRs that have naturally passed their ExpiresAt time
+            var expiredQrs = await context.AttendanceQrcodes
+                .Where(q => !q.IsExpired && q.IsActive && q.ExpiresAt <= nowUtc)
+                .ToListAsync(stoppingToken);
+
+            foreach (var ex in expiredQrs)
+            {
+                ex.IsExpired = true;
+                ex.IsActive = false;
+            }
+            if (expiredQrs.Any())
+            {
+                await context.SaveChangesAsync(stoppingToken);
+            }
+
+            // 2. Check if a valid, unexpired QR still exists (e.g. a 1-month QR)
+            var activeQrExists = await context.AttendanceQrcodes
+                .AnyAsync(q => !q.IsExpired && q.IsActive && q.ExpiresAt > nowUtc, stoppingToken);
+
+            if (activeQrExists)
+            {
+                _lastQrGeneratedDate = today;
+                return; // We have a valid QR, no need to generate a new one
+            }
+
+            // Check if today is a holiday — don't generate QR on holidays
+            var isHoliday = await context.AttendanceHolidays
+                .AnyAsync(h => h.Date == today && h.IsActive, stoppingToken);
+
+            if (isHoliday)
+            {
+                _lastQrGeneratedDate = today;
+                _logger.LogInformation("Skipping QR auto-generation for {Date} — holiday.", today);
+                return;
+            }
+
+            // Generate new QR for today with 1-day expiry
+            var expiresAt = DateTime.UtcNow.AddDays(1);
+            var qr = new AttendanceQrcode
+            {
+                Code = Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
+                Token = Guid.NewGuid(),
+                ValidDate = today,
+                IsExpired = false,
+                IsActive = true,
+                GenerationMethod = "auto",
+                CreatedAt = DateTime.UtcNow,
+                ExpiryTimestamp = expiresAt,
+                ExpiresAt = expiresAt,
+                QrHash = Guid.NewGuid().ToString()
+            };
+
+            context.AttendanceQrcodes.Add(qr);
+            await context.SaveChangesAsync(stoppingToken);
+
+            _lastQrGeneratedDate = today;
+            _logger.LogInformation("Auto-generated QR code for {Date}.", today);
         }
 
         private async Task ProcessPendingAttendanceAsync(CancellationToken stoppingToken)

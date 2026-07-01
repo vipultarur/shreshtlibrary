@@ -213,19 +213,17 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<bool>> DeleteQrAsync(long pk, CancellationToken ct = default)
         {
             var qr = await _context.AttendanceQrcodes.FindAsync(new object[] { pk }, ct);
-            if (qr != null)
-            {
-                var relatedAttendances = _context.AttendanceAttendances.Where(a => a.QrCodeId == qr.Id);
-                foreach (var attendance in relatedAttendances)
-                {
-                    attendance.QrCodeId = null;
-                }
+            if (qr == null)
+                return ServiceResult<bool>.NotFound("QR not found");
 
-                _context.AttendanceQrcodes.Remove(qr);
-                await _context.SaveChangesAsync(ct);
-                return ServiceResult<bool>.Ok(true);
-            }
-            return ServiceResult<bool>.NotFound("QR not found");
+            // Batch-null the FK in a single SQL statement instead of loading entities
+            await _context.AttendanceAttendances
+                .Where(a => a.QrCodeId == qr.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.QrCodeId, (long?)null), ct);
+
+            _context.AttendanceQrcodes.Remove(qr);
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<bool>.Ok(true);
         }
 
         public async Task<ServiceResult<bool>> ClearAllQrAsync(CancellationToken ct = default)

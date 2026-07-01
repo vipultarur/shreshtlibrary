@@ -20,10 +20,10 @@ namespace WebApplication1.Services
 
         public async Task<object?> GetTodayQrAsync(CancellationToken ct)
         {
-            var today = DateOnly.FromDateTime(_dateTimeProvider.UtcNow);
+            var nowUtc = DateTime.UtcNow;
             var qr = await _context.AttendanceQrcodes
                 .AsNoTracking()
-                .Where(q => q.IsActive && !q.IsExpired && q.ValidDate == today)
+                .Where(q => q.IsActive && !q.IsExpired && q.ExpiresAt > nowUtc)
                 .OrderByDescending(q => q.CreatedAt)
                 .FirstOrDefaultAsync(ct);
 
@@ -44,8 +44,9 @@ namespace WebApplication1.Services
 
         public async Task<object?> ScanQrAsync(long userId, string qrHash, CancellationToken ct)
         {
+            var nowUtc = DateTime.UtcNow;
             var qr = await _context.AttendanceQrcodes
-                .FirstOrDefaultAsync(q => q.QrHash == qrHash && q.IsActive && !q.IsExpired, ct);
+                .FirstOrDefaultAsync(q => q.QrHash == qrHash && q.IsActive && !q.IsExpired && q.ExpiresAt > nowUtc, ct);
 
             if (qr == null)
             {
@@ -54,6 +55,14 @@ namespace WebApplication1.Services
 
             var today = DateOnly.FromDateTime(_dateTimeProvider.UtcNow);
             
+            // Block scanning on holidays
+            var isHoliday = await _context.AttendanceHolidays
+                .AnyAsync(h => h.Date == today && h.IsActive, ct);
+            if (isHoliday)
+            {
+                throw new InvalidOperationException("Attendance cannot be marked on a holiday.");
+            }
+
             var existing = await _context.AttendanceAttendances
                 .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
 

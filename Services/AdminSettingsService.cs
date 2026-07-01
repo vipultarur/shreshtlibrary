@@ -45,8 +45,12 @@ namespace WebApplication1.Services
 
             string paddingTime = paddingSetting?.Value ?? "60";
 
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+
             return ServiceResult<object>.Ok(new
             {
+                library_open_time = openTime.ToString(@"HH\:mm"),
                 attendance_padding_time = paddingTime,
                 is_premium_gating_enabled = appConfig.IsPremiumGatingEnabled,
                 expiry_dialog_title = appConfig.ExpiryDialogTitle,

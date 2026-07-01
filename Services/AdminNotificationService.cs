@@ -38,14 +38,17 @@ namespace WebApplication1.Services
                 .OrderBy(n => n.ScheduledAt)
                 .ToListAsync(ct);
             
-            var data = dbData.Select(n => new Dictionary<string, object> {
+            var data = dbData.Select(n => new Dictionary<string, object?> {
                 { "id", n.Id },
                 { "title", n.Title },
                 { "message", n.Body },
                 { "body", n.Body },
                 { "type", n.Type },
                 { "notification_type", n.Type },
-                { "scheduled_at", n.ScheduledAt! },
+                { "target_group", n.TargetGroup },
+                { "audience", n.Audience },
+                { "total_recipients", n.TotalRecipients },
+                { "scheduled_at", n.ScheduledAt },
                 { "created_at", n.CreatedAt }
             }).ToList();
             
@@ -115,6 +118,29 @@ namespace WebApplication1.Services
 
             _context.NotificationsNotifications.Add(notification);
             await _context.SaveChangesAsync(ct);
+
+            // Handle gallery images for half_image / full_image layouts
+            if (dto.Images != null && dto.Images.Count > 0)
+            {
+                var mediaPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"));
+                int sortOrder = 0;
+                foreach (var img in dto.Images)
+                {
+                    var fileName = $"notifications/img_{Guid.NewGuid()}{System.IO.Path.GetExtension(img.FileName)}";
+                    var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
+                    using var imgStream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
+                    await img.CopyToAsync(imgStream, ct);
+
+                    _context.NotificationsNotificationimages.Add(new NotificationsNotificationimage
+                    {
+                        NotificationId = notification.Id,
+                        Image = fileName,
+                        SortOrder = sortOrder++
+                    });
+                }
+                await _context.SaveChangesAsync(ct);
+            }
 
             var studentIds = new List<long>();
             var query = _context.StudentsStudentprofiles.AsQueryable();
@@ -205,7 +231,7 @@ namespace WebApplication1.Services
             
             var dbData = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
             
-            var data = dbData.Select(n => new Dictionary<string, object> {
+            var data = dbData.Select(n => new Dictionary<string, object?> {
                 { "id", n.Id },
                 { "title", n.Title },
                 { "body", n.Body },
@@ -213,10 +239,14 @@ namespace WebApplication1.Services
                 { "target", n.TargetGroup },
                 { "target_group", n.TargetGroup },
                 { "created_at", n.CreatedAt },
-                { "sent_at", n.SentAt! },
+                { "sent_at", n.SentAt },
+                { "scheduled_at", n.ScheduledAt },
                 { "success_count", n.SuccessCount },
                 { "failure_count", n.FailureCount },
-                { "total_recipients", n.TotalRecipients }
+                { "total_recipients", n.TotalRecipients },
+                { "send_push", n.SendPush },
+                { "send_email", n.SendEmail },
+                { "send_sms", n.SendSms }
             }).ToList();
             
             return ServiceResult<object>.Ok(new {

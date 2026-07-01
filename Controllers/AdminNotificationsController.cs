@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.AspNetCore.Authorization;
@@ -43,6 +44,12 @@ namespace WebApplication1.Controllers
         [HttpPost("notifications/schedule")]
         public async Task<IActionResult> NotificationScheduleAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { success = false, message = "Validation failed", errors });
+            }
             var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: true, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
@@ -50,6 +57,12 @@ namespace WebApplication1.Controllers
         [HttpPost("notifications/send")]
         public async Task<IActionResult> NotificationSendAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { success = false, message = "Validation failed", errors });
+            }
             var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: false, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
