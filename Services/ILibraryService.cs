@@ -7,7 +7,7 @@ namespace WebApplication1.Services
     public interface ILibraryService
     {
         Task<ServiceResult<object>> GetLibraryInfoAsync(CancellationToken ct = default);
-        Task<ServiceResult<object>> GetFacilitiesAsync(CancellationToken ct = default);
+        Task<ServiceResult<object>> GetFacilitiesAsync(string mediaBaseUrl, CancellationToken ct = default);
         Task<ServiceResult<object>> GetAchieversAsync(bool? featured, string mediaBaseUrl, CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviewsAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviewsSummaryAsync(CancellationToken ct = default);

@@ -39,7 +39,8 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetFacilitiesAsync(CancellationToken ct)
         {
-            var result = await _libraryService.GetFacilitiesAsync(ct);
+            var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var result = await _libraryService.GetFacilitiesAsync(mediaBaseUrl, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 

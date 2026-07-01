@@ -65,6 +65,7 @@ builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
 // Add Notification Services
 builder.Services.AddSingleton<WebApplication1.Services.INotificationService, WebApplication1.Services.FirebaseNotificationService>();
 builder.Services.AddHostedService<WebApplication1.Services.NotificationBackgroundService>();
+builder.Services.AddHostedService<WebApplication1.Services.AttendanceBackgroundService>();
 
 // Add Email Service
 builder.Services.AddScoped<WebApplication1.Services.IEmailService, WebApplication1.Services.EmailService>();

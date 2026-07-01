@@ -7,6 +7,7 @@ using WebApplication1.Models.DTOs.Student;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using System;
+using WebApplication1.Models;
 
 namespace WebApplication1.Services
 {
@@ -209,8 +210,11 @@ namespace WebApplication1.Services
             }
 
             var today = System.DateOnly.FromDateTime(System.DateTime.UtcNow);
-            var markedAttendanceToday = await _context.AttendanceAttendances
-                .AnyAsync(a => a.StudentId == userId && a.Date == today && a.IsPresent, ct);
+            var attendanceRecord = await _context.AttendanceAttendances
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
+
+            bool markedAttendanceToday = attendanceRecord != null && attendanceRecord.IsPresent;
 
             string assignedSeat = "—";
             string assignedSeatFloor = "—";
@@ -227,9 +231,66 @@ namespace WebApplication1.Services
                 assignedSeatFloor = seatAssignment.Seat.Floor;
             }
 
-            bool isHoliday = false;
-            string? holidayTitle = null;
-            string? holidayDescription = null;
+            var holidayRecord = await _context.AttendanceHolidays
+                .AsNoTracking()
+                .FirstOrDefaultAsync(h => h.Date == today && h.IsActive, ct);
+
+            bool isHoliday = holidayRecord != null;
+            string? holidayTitle = holidayRecord?.Title;
+            string? holidayDescription = holidayRecord?.Description;
+
+            string attendanceStatus = "Pending";
+            string? attendanceTime = null;
+            
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            
+            var openTime = libraryInfo?.OpenTime ?? new System.TimeOnly(10, 0);
+            int paddingMinutes = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
+            {
+                paddingMinutes = parsedPadding;
+            }
+            
+            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var currentTime = System.TimeOnly.FromDateTime(System.DateTime.UtcNow.AddHours(5).AddMinutes(30)); // IST Time
+            bool allowQrScan = false;
+
+            if (isHoliday)
+            {
+                attendanceStatus = "Holiday";
+            }
+            else if (attendanceRecord != null)
+            {
+                if (attendanceRecord.IsPresent)
+                {
+                    attendanceTime = attendanceRecord.TimeIn.ToString("hh:mm tt");
+                    if (attendanceRecord.TimeIn > cutoffTime || attendanceRecord.LateMark)
+                    {
+                        attendanceStatus = "Arrived late";
+                    }
+                    else
+                    {
+                        attendanceStatus = "Present";
+                    }
+                }
+                else
+                {
+                    attendanceStatus = "Absent";
+                }
+            }
+            else
+            {
+                if (currentTime > cutoffTime)
+                {
+                    attendanceStatus = "Absent";
+                }
+                else
+                {
+                    attendanceStatus = "Pending";
+                    allowQrScan = true;
+                }
+            }
 
             var razorpayKeySetting = await _context.CoreGlobalsettings
                 .FirstOrDefaultAsync(s => s.Key == "RAZORPAY_KEY", ct);
@@ -251,6 +312,9 @@ namespace WebApplication1.Services
                 is_holiday = isHoliday,
                 holiday_title = holidayTitle,
                 holiday_description = holidayDescription,
+                attendance_status = attendanceStatus,
+                attendance_time = attendanceTime,
+                allow_qr_scan = allowQrScan,
                 razorpay_key = razorpayKey
             });
         }

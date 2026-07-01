@@ -50,7 +50,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(responseData);
         }
 
-        public async Task<ServiceResult<object>> GetFacilitiesAsync(CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetFacilitiesAsync(string mediaBaseUrl, CancellationToken ct = default)
         {
             const string cacheKey = "LibraryFacilities";
             if (_cache.TryGetValue(cacheKey, out object? cachedFacilities))
@@ -65,10 +65,10 @@ namespace WebApplication1.Services
                 .Select(f => new
                 {
                     id = f.Id,
-                    title = f.Name,
+                    name = f.Name,
                     description = f.Description,
-                    icon_name = f.IconKey,
-                    is_active = f.IsActive
+                    icon_key = f.IconKey,
+                    image = !string.IsNullOrEmpty(f.Image) ? $"{mediaBaseUrl}/media/{f.Image}" : null
                 })
                 .ToListAsync(ct);
 
@@ -89,11 +89,11 @@ namespace WebApplication1.Services
                 .Select(a => new
                 {
                     id = a.Id,
-                    student_name = a.Name,
-                    achievement_title = a.Achievement,
-                    description = a.Goal,
-                    image = !string.IsNullOrEmpty(a.Photo) ? $"{mediaBaseUrl}/media/{a.Photo}" : null,
-                    achievement_date = a.Year.ToString()
+                    name = a.Name,
+                    achievement = a.Achievement,
+                    goal = a.Goal,
+                    photo = !string.IsNullOrEmpty(a.Photo) ? $"{mediaBaseUrl}/media/{a.Photo}" : null,
+                    year = a.Year
                 })
                 .ToListAsync(ct);
 

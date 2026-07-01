@@ -62,6 +62,24 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException("Attendance already marked for today");
             }
 
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int paddingMinutes = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
+            {
+                paddingMinutes = parsedPadding;
+            }
+            
+            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var currentTime = TimeOnly.FromDateTime(DateTime.UtcNow.AddHours(5).AddMinutes(30)); // IST Time
+
+            if (currentTime > cutoffTime)
+            {
+                throw new InvalidOperationException("Attendance window has expired for today.");
+            }
+
             var attendance = new WebApplication1.Models.AttendanceAttendance
             {
                 Date = today,
