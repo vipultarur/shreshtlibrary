@@ -73,7 +73,7 @@ namespace WebApplication1.Services
             }
             
             var cutoffTime = openTime.AddMinutes(paddingMinutes);
-            var currentTime = TimeOnly.FromDateTime(DateTime.UtcNow.AddHours(5).AddMinutes(30)); // IST Time
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
             if (currentTime > cutoffTime)
             {

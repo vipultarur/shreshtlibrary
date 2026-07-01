@@ -15,11 +15,13 @@ namespace WebApplication1.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<AttendanceBackgroundService> _logger;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger)
+        public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,7 +46,7 @@ namespace WebApplication1.Services
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             
             var holidayRecord = await context.AttendanceHolidays
                 .AsNoTracking()
@@ -64,7 +66,7 @@ namespace WebApplication1.Services
             }
             
             var cutoffTime = openTime.AddMinutes(paddingMinutes);
-            var currentTime = TimeOnly.FromDateTime(DateTime.UtcNow.AddHours(5).AddMinutes(30)); // IST Time
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
             if (currentTime <= cutoffTime) return; // Window is still open
 
@@ -78,7 +80,9 @@ namespace WebApplication1.Services
 
             _logger.LogInformation($"Auto-marking {activeStudentsWithoutAttendance.Count} students as Absent for {today}.");
 
-            var now = DateTime.UtcNow;
+            var now = _dateTimeProvider.UtcNow;
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            
             foreach (var student in activeStudentsWithoutAttendance)
             {
                 var record = new AttendanceAttendance
@@ -93,6 +97,38 @@ namespace WebApplication1.Services
                     Method = "SYSTEM"
                 };
                 context.AttendanceAttendances.Add(record);
+                
+                // Add Notification
+                var notification = new NotificationsNotification
+                {
+                    Title = "Attendance Update",
+                    Body = "You have been marked Absent for today because you did not check in by the cutoff time.",
+                    Type = "ATTENDANCE",
+                    TargetGroup = "all",
+                    Target = "ALL",
+                    Audience = "selected",
+                    DisplayMode = "persistent",
+                    Layout = "text_only",
+                    Subtitle = "",
+                    Description = "",
+                    LinkButtonText = "",
+                    CreatedAt = now,
+                    ScheduledAt = now,
+                    SendPush = true,
+                    LinkUrl = "/attendance",
+                    FailureCount = 0,
+                    SuccessCount = 0,
+                    TotalRecipients = 1
+                };
+                context.NotificationsNotifications.Add(notification);
+                
+                var studentNotification = new NotificationsStudentnotification
+                {
+                    StudentId = student.Id,
+                    Notification = notification,
+                    IsRead = false
+                };
+                context.NotificationsStudentnotifications.Add(studentNotification);
             }
 
             await context.SaveChangesAsync(stoppingToken);

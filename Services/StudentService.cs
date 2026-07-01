@@ -14,10 +14,12 @@ namespace WebApplication1.Services
     public class StudentService : IStudentService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public StudentService(ApplicationDbContext context)
+        public StudentService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<ApiResponse<object>?> GetProfileAsync(long userId, string scheme, string host, CancellationToken ct = default)
@@ -209,7 +211,7 @@ namespace WebApplication1.Services
                 expiryDialogMessage = appConfig?.ExpiryDialogMessage ?? "Your membership has expired. Please renew your plan to continue accessing all features.";
             }
 
-            var today = System.DateOnly.FromDateTime(System.DateTime.UtcNow);
+            var today = System.DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             var attendanceRecord = await _context.AttendanceAttendances
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
@@ -253,7 +255,7 @@ namespace WebApplication1.Services
             }
             
             var cutoffTime = openTime.AddMinutes(paddingMinutes);
-            var currentTime = System.TimeOnly.FromDateTime(System.DateTime.UtcNow.AddHours(5).AddMinutes(30)); // IST Time
+            var currentTime = System.TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
             bool allowQrScan = false;
 
             if (isHoliday)
