@@ -15,17 +15,17 @@ namespace WebApplication1.Controllers
     public class StudyController : ControllerBase
     {
         private readonly IStudyService _studyService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public StudyController(IStudyService studyService)
+        public StudyController(IStudyService studyService, ICurrentUserService currentUserService)
         {
             _studyService = studyService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpPost("session/start")]

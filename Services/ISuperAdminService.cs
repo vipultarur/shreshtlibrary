@@ -18,6 +18,7 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> CreateBackupAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> GetBackupListAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> RestoreBackupAsync(string backupId, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetBackupDataAsync(string backupId, CancellationToken ct = default);
         Task<ServiceResult<object>> GetActivityLogAsync(int page, int pageSize, CancellationToken ct = default);
     }
 }

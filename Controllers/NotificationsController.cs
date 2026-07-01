@@ -14,17 +14,17 @@ namespace WebApplication1.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly IStudentNotificationService _notificationService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public NotificationsController(IStudentNotificationService notificationService)
+        public NotificationsController(IStudentNotificationService notificationService, ICurrentUserService currentUserService)
         {
             _notificationService = notificationService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue("user_id") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpGet("list")]

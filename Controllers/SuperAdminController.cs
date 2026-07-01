@@ -120,26 +120,13 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, "Backup restored"));
         }
         [HttpGet("backup/{id}/download")]
-        [AllowAnonymous] 
-        public async Task<IActionResult> BackupDownload(string id, [FromServices] WebApplication1.Data.ApplicationDbContext dbContext)
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
+        public async Task<IActionResult> BackupDownload(string id, System.Threading.CancellationToken ct)
         {
-            var backupData = new
-            {
-                BackupId = id,
-                GeneratedAt = DateTime.UtcNow,
-                Admins = await dbContext.AccountsAdminusers.AsNoTracking().ToListAsync(),
-                Students = await dbContext.StudentsStudentprofiles.AsNoTracking().ToListAsync(),
-                Facilities = await dbContext.LibraryFacilities.AsNoTracking().ToListAsync(),
-                Achievers = await dbContext.LibraryAchievers.AsNoTracking().ToListAsync(),
-                Sliders = await dbContext.LibraryHomesliders.AsNoTracking().ToListAsync(),
-                LibraryInfo = await dbContext.LibraryLibraryinfos.AsNoTracking().ToListAsync(),
-                LibraryAppConfigs = await dbContext.LibraryAppconfigs.AsNoTracking().ToListAsync(),
-                LibraryReviews = await dbContext.LibraryReviews.AsNoTracking().ToListAsync()
-            };
+            var result = await _superAdminService.GetBackupDataAsync(id, ct);
+            if (result.IsNotFound) return NotFound(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Backup file not found."));
 
-            var json = System.Text.Json.JsonSerializer.Serialize(backupData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            return File(bytes, "application/json", $"{id}.json");
+            return File((byte[])result.Data, "application/json", $"{id}.json");
         }
 
         [HttpGet("activity-log")]

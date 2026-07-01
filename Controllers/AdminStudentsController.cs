@@ -129,7 +129,7 @@ namespace WebApplication1.Controllers
 
         [HttpPost("{pk}/photo")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        public async Task<IActionResult> UploadStudentPhotoAsync(string pk, [FromForm(Name = "profile_photo")] Microsoft.AspNetCore.Http.IFormFile profile_photo, CancellationToken ct)
+        public async Task<IActionResult> UploadStudentPhotoAsync(string pk, Microsoft.AspNetCore.Http.IFormFile profile_photo, CancellationToken ct)
         {
             var result = await _studentAdminService.UploadStudentPhotoAsync(pk, profile_photo, Request.Scheme, Request.Host.Value, ct);
             if (result.IsNotFound) return NotFound(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));

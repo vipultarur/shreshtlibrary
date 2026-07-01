@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Controllers;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -119,7 +118,7 @@ namespace WebApplication1.Services
                 return new NotFoundObjectResult(new { success = false, status = "error", message = "Mobile number not registered.", errors = new { mobile = new[] { "Mobile number not registered." } } });
             }
 
-            string rawOtp = new System.Random().Next(0, 999999).ToString("D6");
+            string rawOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
             user.Otp = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(rawOtp);
             user.OtpExpiry = System.DateTime.UtcNow.AddMinutes(5);
             user.OtpAttempts = 0;
@@ -137,7 +136,7 @@ namespace WebApplication1.Services
             await _context.SaveChangesAsync(ct);
 
             // In production, integrate SMS gateway here
-            System.Console.WriteLine($"OTP for {request.Mobile}: {rawOtp}");
+            // OTP must never be logged.
 
             return new OkObjectResult(new { success = true, status = "success", message = "OTP sent successfully." });
         }
@@ -342,7 +341,7 @@ namespace WebApplication1.Services
 
         public async Task<IActionResult> AdminLoginAsync(AdminLoginRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
-            Console.WriteLine($"[AdminLogin] Received Username: '{request.Username}', Password: '{request.Password}'");
+            // Credential logging removed - security violation
             // Fallback checking logic matching DRF (username -> email -> mobile)
             var user = await _context.AccountsAdminusers
                 .FirstOrDefaultAsync(u => u.Username == request.Username, ct) ??
@@ -458,8 +457,10 @@ namespace WebApplication1.Services
             var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Email == request.Email, ct);
             if (user != null)
             {
-                string resetToken = $"reset-{System.Guid.NewGuid()}";
-                user.Otp = resetToken; // Store as plain text or hash depending on original DRF logic (DRF stores plain text for forgot password token: user.otp = reset_token)
+                string rawToken = $"reset-{System.Guid.NewGuid()}";
+                using var sha256 = System.Security.Cryptography.SHA256.Create();
+                string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken))).ToLower();
+                user.Otp = hashedToken;
                 user.OtpExpiry = System.DateTime.UtcNow.AddHours(1);
                 await _context.SaveChangesAsync(ct);
 
@@ -475,7 +476,8 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
 
                 // In production, integrate email sending here
-                System.Console.WriteLine($"Reset link: https://shreshtlibrary.onrender.com/reset-password?token={resetToken}");
+                // Reset link: https://shreshtlibrary.onrender.com/reset-password?token={rawToken}
+                // Reset token must never be logged.
 
                 return new OkObjectResult(new { success = true, status = "success", message = "Password reset link sent to your email." });
             }
@@ -490,7 +492,9 @@ namespace WebApplication1.Services
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { token = new[] { "This field is required." }, new_password = new[] { "This field is required." } } });
             }
 
-            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Otp == request.Token && u.OtpExpiry > System.DateTime.UtcNow, ct);
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.Token))).ToLower();
+            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Otp == hashedToken && u.OtpExpiry > System.DateTime.UtcNow, ct);
             if (user != null)
             {
                 user.Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.NewPassword);

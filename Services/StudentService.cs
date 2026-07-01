@@ -408,7 +408,7 @@ namespace WebApplication1.Services
             var profile = await _context.StudentsStudentprofiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
             if (profile == null) return ApiResponse<object>.Fail("Profile not found");
 
-            string code = $"REF{profile.StudentId?.Replace("-", "")}{new Random().Next(10, 99)}";
+            string code = $"REF{profile.StudentId?.Replace("-", "")}{System.Security.Cryptography.RandomNumberGenerator.GetInt32(10, 100)}";
             var refCode = new WebApplication1.Models.StudentsReferralcode
             {
                 StudentId = userId,

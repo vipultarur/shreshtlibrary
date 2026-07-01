@@ -14,7 +14,6 @@ namespace WebApplication1.Utils
             var parts = djangoHash.Split('$');
             if (parts.Length != 4)
             {
-                Console.WriteLine($"[VerifyDjangoPassword] Failed: parts.Length is {parts.Length}");
                 return false; // Not a standard Django pbkdf2_sha256 hash
             }
 
@@ -25,13 +24,11 @@ namespace WebApplication1.Utils
 
             if (algorithm != "pbkdf2_sha256")
             {
-                Console.WriteLine($"[VerifyDjangoPassword] Failed: algorithm is {algorithm}");
                 return false;
             }
 
             if (!int.TryParse(iterationsStr, out var iterations))
             {
-                Console.WriteLine($"[VerifyDjangoPassword] Failed: int.TryParse failed on {iterationsStr}");
                 return false;
             }
 
@@ -44,13 +41,7 @@ namespace WebApplication1.Utils
             // Removed debug logging of hashes in production
 
             // Constant-time comparison
-            var diff = (uint)generatedHash.Length ^ (uint)hashBytes.Length;
-            for (var i = 0; i < generatedHash.Length && i < hashBytes.Length; i++)
-            {
-                diff |= (uint)(generatedHash[i] ^ hashBytes[i]);
-            }
-
-            return diff == 0;
+            return CryptographicOperations.FixedTimeEquals(generatedHash, hashBytes);
         }
 
         public static string HashDjangoPassword(string password, int iterations = 390000)

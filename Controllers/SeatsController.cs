@@ -14,17 +14,17 @@ namespace WebApplication1.Controllers
     public class SeatsController : ControllerBase
     {
         private readonly IStudentSeatService _seatService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public SeatsController(IStudentSeatService seatService)
+        public SeatsController(IStudentSeatService seatService, ICurrentUserService currentUserService)
         {
             _seatService = seatService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpGet("layout")]

@@ -14,17 +14,17 @@ namespace WebApplication1.Controllers
     public class BillingController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public BillingController(IPaymentService paymentService)
+        public BillingController(IPaymentService paymentService, ICurrentUserService currentUserService)
         {
             _paymentService = paymentService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue("user_id") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpGet("plans")]

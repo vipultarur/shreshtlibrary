@@ -15,17 +15,17 @@ namespace WebApplication1.Controllers
     public class StudentController : ControllerBase
     {
         private readonly IStudentService _studentService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public StudentController(IStudentService studentService)
+        public StudentController(IStudentService studentService, ICurrentUserService currentUserService)
         {
             _studentService = studentService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpGet("profile")]
@@ -55,7 +55,7 @@ namespace WebApplication1.Controllers
 
         [HttpPost("profile/photo")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public async Task<IActionResult> UploadPhotoAsync([FromForm] Microsoft.AspNetCore.Http.IFormFile profile_photo, CancellationToken ct)
+        public async Task<IActionResult> UploadPhotoAsync(Microsoft.AspNetCore.Http.IFormFile profile_photo, CancellationToken ct)
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));

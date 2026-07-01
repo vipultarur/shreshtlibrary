@@ -14,17 +14,17 @@ namespace WebApplication1.Controllers
     public class LibraryController : ControllerBase
     {
         private readonly ILibraryService _libraryService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public LibraryController(ILibraryService libraryService)
+        public LibraryController(ILibraryService libraryService, ICurrentUserService currentUserService)
         {
             _libraryService = libraryService;
+            _currentUserService = currentUserService;
         }
 
         private long? GetCurrentUserId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
-            if (long.TryParse(userIdStr, out var userId)) return userId;
-            return null;
+            return _currentUserService.GetUserId();
         }
 
         [HttpGet("library/info")]

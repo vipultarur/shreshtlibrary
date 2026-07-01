@@ -50,7 +50,7 @@ namespace WebApplication1.Services
 
             var newUser = new AccountsAdminuser
             {
-                Username = payload.Username ?? payload.Email ?? $"admin{new Random().Next(100, 999)}",
+                Username = payload.Username ?? payload.Email ?? $"admin{System.Security.Cryptography.RandomNumberGenerator.GetInt32(100, 1000)}",
                 FirstName = payload.FirstName ?? "",
                 LastName = payload.LastName ?? "",
                 Email = payload.Email,
@@ -210,6 +210,25 @@ namespace WebApplication1.Services
                 new { id = "backup_1", created_at = DateTime.UtcNow.AddDays(-1), status = "completed" },
                 new { id = "backup_2", created_at = DateTime.UtcNow.AddDays(-7), status = "completed" }
             });
+        }
+
+        public async Task<ServiceResult<object>> GetBackupDataAsync(string backupId, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(backupId) || backupId.Contains("..") || backupId.Contains('/') || backupId.Contains('\\'))
+            {
+                return ServiceResult<object>.NotFound("Invalid backup ID");
+            }
+            
+            var backupDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Backups");
+            var filePath = System.IO.Path.Combine(backupDir, $"{backupId}.json");
+            
+            if (!System.IO.File.Exists(filePath))
+            {
+                return ServiceResult<object>.NotFound("Backup file not found.");
+            }
+
+            var bytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+            return ServiceResult<object>.Ok(bytes);
         }
 
         public async Task<ServiceResult<object>> RestoreBackupAsync(string backupId, CancellationToken ct = default)

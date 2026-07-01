@@ -263,11 +263,11 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Fail("Validation failed", validationErrors);
             }
 
-            string username = payload.Username ?? payload.Mobile ?? $"{payload.FirstName?.ToLower() ?? "student"}{new Random().Next(1000, 9999)}";
+            string username = payload.Username ?? payload.Mobile ?? $"{payload.FirstName?.ToLower() ?? "student"}{System.Security.Cryptography.RandomNumberGenerator.GetInt32(1000, 10000)}";
 
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Username == username, ct))
             {
-                username = $"{username}{new Random().Next(100, 999)}";
+                username = $"{username}{System.Security.Cryptography.RandomNumberGenerator.GetInt32(100, 1000)}";
                 if (await _context.AccountsCustomusers.AnyAsync(u => u.Username == username, ct))
                     return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "mobile", new[] { "Username or mobile already exists." } } });
             }
