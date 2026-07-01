@@ -90,5 +90,21 @@ namespace WebApplication1.Controllers
             var result = await _adminNotificationService.GetInboxNotificationsAsync(ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
+
+        [HttpPost("inbox/{pk}/{action}")]
+        public async Task<IActionResult> InboxActionAsync(long pk, string action, CancellationToken ct)
+        {
+            var result = await _adminNotificationService.MarkInboxActionAsync(pk, action, ct);
+            if (result.IsNotFound) return NotFound(new { message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { message = "Action completed" }));
+        }
+
+        [HttpDelete("inbox/{pk}")]
+        public async Task<IActionResult> InboxDeleteAsync(long pk, CancellationToken ct)
+        {
+            var result = await _adminNotificationService.DeleteInboxNotificationAsync(pk, ct);
+            if (result.IsNotFound) return NotFound(new { message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { message = "Deleted successfully" }));
+        }
     }
 }

@@ -275,5 +275,33 @@ namespace WebApplication1.Services
 
             return ServiceResult<object>.Ok(notifications);
         }
+
+        public async Task<ServiceResult<bool>> MarkInboxActionAsync(long pk, string action, CancellationToken ct = default)
+        {
+            var notification = await _context.NotificationsAdmininboxnotifications.FindAsync(new object[] { pk }, ct);
+            if (notification == null) return ServiceResult<bool>.NotFound("Notification not found");
+
+            if (action == "read")
+            {
+                notification.IsRead = true;
+            }
+            else if (action == "unread")
+            {
+                notification.IsRead = false;
+            }
+
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<bool>.Ok(true);
+        }
+
+        public async Task<ServiceResult<bool>> DeleteInboxNotificationAsync(long pk, CancellationToken ct = default)
+        {
+            var notification = await _context.NotificationsAdmininboxnotifications.FindAsync(new object[] { pk }, ct);
+            if (notification == null) return ServiceResult<bool>.NotFound("Notification not found");
+
+            _context.NotificationsAdmininboxnotifications.Remove(notification);
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<bool>.Ok(true);
+        }
     }
 }

@@ -11,6 +11,7 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
+    [Authorize(Roles = "admin,super_admin")]
     public class AdminDashboardController : ControllerBase
     {
         private readonly IAdminDashboardService _adminDashboardService;
