@@ -240,6 +240,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
+        // First ensure EF migration history table exists
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                ""MigrationId"" character varying(150) NOT NULL,
+                ""ProductVersion"" character varying(32) NOT NULL,
+                CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
+            );
+        ");
+
+        // Insert the initial migration so it doesn't fail trying to recreate Django tables
+        db.Database.ExecuteSqlRaw(@"
+            INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
+            SELECT '20260702161914_UpdateLibraryInfoSchema', '8.0.0'
+            WHERE NOT EXISTS (
+                SELECT 1 FROM ""__EFMigrationsHistory"" WHERE ""MigrationId"" = '20260702161914_UpdateLibraryInfoSchema'
+            );
+        ");
+
         db.Database.Migrate();
         Log.Information("Database migration completed successfully.");
     }

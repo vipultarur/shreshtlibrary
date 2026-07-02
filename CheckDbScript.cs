@@ -24,12 +24,11 @@ namespace WebApplication1
             
             try 
             {
-                var count = await context.LibraryDatabasefiles.CountAsync();
-                Console.WriteLine($"LibraryDatabasefiles count: {count}");
-                var files = await context.LibraryDatabasefiles.Take(5).ToListAsync();
-                foreach(var f in files) {
-                    Console.WriteLine($"File: {f.Name}");
-                }
+                var info = await context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync();
+                Console.WriteLine($"Library info: {info?.LibraryName}");
+                
+                var facilities = await context.LibraryGalleryImages.AsNoTracking().ToListAsync();
+                Console.WriteLine($"Gallery images count: {facilities.Count}");
             } 
             catch (Exception ex)
             {
