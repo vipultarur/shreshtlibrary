@@ -53,7 +53,7 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException("Invalid or expired QR code");
             }
 
-            var today = DateOnly.FromDateTime(_dateTimeProvider.UtcNow);
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             
             // Block scanning on holidays
             var isHoliday = await _context.AttendanceHolidays
@@ -92,7 +92,7 @@ namespace WebApplication1.Services
             var attendance = new WebApplication1.Models.AttendanceAttendance
             {
                 Date = today,
-                TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.UtcNow),
+                TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow),
                 IsManual = false,
                 StudentId = userId,
                 QrCodeId = qr.Id,

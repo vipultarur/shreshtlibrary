@@ -22,7 +22,7 @@ namespace WebApplication1.Services
             _cache = cache;
         }
 
-        public async Task<ServiceResult<object>> GetLibraryInfoAsync(CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetLibraryInfoAsync(string mediaBaseUrl, CancellationToken ct = default)
         {
             const string cacheKey = "LibraryInfo";
             if (_cache.TryGetValue(cacheKey, out object? cachedInfo))
@@ -43,6 +43,8 @@ namespace WebApplication1.Services
                 contact_phone = info.PhonePrimary,
                 opening_time = info.OpenTime?.ToString("HH:mm:ss"),
                 closing_time = info.CloseTime?.ToString("HH:mm:ss"),
+                feature_image = !string.IsNullOrEmpty(info.FeatureImage) ? $"{mediaBaseUrl}/media/{info.FeatureImage}" : null,
+                logo_square = !string.IsNullOrEmpty(info.LogoSquare) ? $"{mediaBaseUrl}/media/{info.LogoSquare}" : null,
                 total_seats = 0
             };
             

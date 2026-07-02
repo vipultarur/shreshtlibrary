@@ -31,7 +31,8 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetLibraryInfoAsync(CancellationToken ct)
         {
-            var result = await _libraryService.GetLibraryInfoAsync(ct);
+            var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var result = await _libraryService.GetLibraryInfoAsync(mediaBaseUrl, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 

@@ -106,7 +106,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GenerateQrAsync(string? expiryDuration, CancellationToken ct = default)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             
             var existing = await _context.AttendanceQrcodes
                 .Where(q => !q.IsExpired && q.IsActive)
@@ -152,7 +152,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> RegenerateQrAsync(string? expiryDuration, CancellationToken ct = default)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             
             var existing = await _context.AttendanceQrcodes
                 .Where(q => !q.IsExpired && q.IsActive)
@@ -297,7 +297,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetAttendanceDailySummaryAsync(string? date, CancellationToken ct = default)
         {
-            if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
             var total = await _context.AccountsCustomusers.CountAsync(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive, ct);
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
@@ -486,7 +486,7 @@ namespace WebApplication1.Services
                 existingRecord.MarkedAt = DateTime.UtcNow;
                 if (isPresent && existingRecord.TimeIn == default)
                 {
-                     existingRecord.TimeIn = TimeOnly.FromDateTime(DateTime.UtcNow);
+                     existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
                 }
             }
             else
@@ -495,7 +495,7 @@ namespace WebApplication1.Services
                 {
                     StudentId = targetStudentId.Value,
                     Date = targetDate,
-                    TimeIn = isPresent ? TimeOnly.FromDateTime(DateTime.UtcNow) : new TimeOnly(0, 0),
+                    TimeIn = isPresent ? TimeOnly.FromDateTime(_dateTimeProvider.IstNow) : new TimeOnly(0, 0),
                     IsManual = true,
                     IsPresent = isPresent,
                     Method = "MANUAL",
@@ -565,7 +565,7 @@ namespace WebApplication1.Services
 
                 if (targetStudentId == null || !allValidStudentIds.Contains(targetStudentId.Value)) continue;
 
-                if (!DateOnly.TryParse(dto.Date, out var targetDate)) targetDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                if (!DateOnly.TryParse(dto.Date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
                 var isPresent = dto.IsPresent ?? true;
 
                 var existingRecord = existingRecords.FirstOrDefault(a => a.StudentId == targetStudentId && a.Date == targetDate);
@@ -577,7 +577,7 @@ namespace WebApplication1.Services
                     existingRecord.Method = "MANUAL";
                     if (!string.IsNullOrEmpty(dto.Note)) existingRecord.Note = dto.Note;
                     existingRecord.MarkedAt = DateTime.UtcNow;
-                    if (isPresent && existingRecord.TimeIn == default) existingRecord.TimeIn = TimeOnly.FromDateTime(DateTime.UtcNow);
+                    if (isPresent && existingRecord.TimeIn == default) existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
                 }
                 else
                 {
@@ -585,7 +585,7 @@ namespace WebApplication1.Services
                     {
                         StudentId = targetStudentId.Value,
                         Date = targetDate,
-                        TimeIn = isPresent ? TimeOnly.FromDateTime(DateTime.UtcNow) : new TimeOnly(0, 0),
+                        TimeIn = isPresent ? TimeOnly.FromDateTime(_dateTimeProvider.IstNow) : new TimeOnly(0, 0),
                         IsManual = true,
                         IsPresent = isPresent,
                         Method = "MANUAL",
