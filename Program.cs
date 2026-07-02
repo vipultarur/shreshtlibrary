@@ -251,18 +251,24 @@ using (var scope = app.Services.CreateScope())
 
         // Run safe script to create any missing tables before doing EF migrations
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "script_safe.sql");
+        if (!File.Exists(scriptPath)) scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "script_safe.sql");
+        
         if (File.Exists(scriptPath))
         {
             try 
             {
                 var sql = File.ReadAllText(scriptPath);
                 db.Database.ExecuteSqlRaw(sql);
-                Log.Information("Executed script_safe.sql successfully.");
+                Log.Information("Executed script_safe.sql successfully from {Path}", scriptPath);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "An error occurred while executing script_safe.sql, continuing anyway.");
             }
+        }
+        else
+        {
+            Log.Warning("script_safe.sql was not found! Checked AppContext.BaseDirectory ({BaseDir}) and CurrentDirectory ({CurDir}).", AppContext.BaseDirectory, Directory.GetCurrentDirectory());
         }
 
         // Insert the initial migration so it doesn't fail trying to recreate Django tables
