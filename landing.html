@@ -698,7 +698,6 @@
                 <li><a href="#plans">Pricing</a></li>
                 <li><a href="#achievers">Achievers</a></li>
                 <li><a href="#reviews">Reviews</a></li>
-                <li><a href="/swagger/" class="btn btn-outline" style="padding: 8px 20px; font-size: 14px;">API Docs</a></li>
             </ul>
         </div>
     </header>
@@ -738,9 +737,10 @@
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: center; align-items: center;">
-                <!-- Decorative Graphic -->
-                <svg viewBox="0 0 200 200" width="100%" max-width="320" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 10px 20px rgba(99,102,241,0.25))">
+            <div style="display: flex; justify-content: center; align-items: center;" id="feature-image-container">
+                <img id="feature-image" src="" alt="Library Feature Image" style="max-width: 100%; max-height: 400px; border-radius: 16px; box-shadow: var(--shadow-lg); display: none; object-fit: cover;">
+                <!-- Fallback Decorative Graphic -->
+                <svg id="feature-fallback" viewBox="0 0 200 200" width="100%" max-width="320" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 10px 20px rgba(99,102,241,0.25))">
                     <defs>
                         <linearGradient id="svgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stop-color="#6366f1" />
@@ -767,30 +767,8 @@
                 <p>We provide a premium, disturbance-free workspace explicitly engineered for competitive exams.</p>
             </div>
             
-            <div class="features-grid">
-                <div class="feat-card">
-                    <div class="feat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
-                    </div>
-                    <h3>Fiber Internet</h3>
-                    <p>High-speed gigabit fiber Wi-Fi networks spanning all floors to guarantee reliable web browsing and lectures streaming.</p>
-                </div>
-                
-                <div class="feat-card">
-                    <div class="feat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 4v16M2 12h20"/></svg>
-                    </div>
-                    <h3>Seat Visualization</h3>
-                    <p>Track occupancy levels live. Browse active seat listings with simple colors and choose your preferred study spots.</p>
-                </div>
-                
-                <div class="feat-card">
-                    <div class="feat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </div>
-                    <h3>Affordable Pricing</h3>
-                    <p>Premium workspace access plans structured specifically to support students preparing for competitive profiles.</p>
-                </div>
+            <div class="features-grid" id="dynamic-facilities">
+                <p style="text-align:center; color: var(--gray);">Loading facilities...</p>
             </div>
         </div>
     </section>
@@ -816,13 +794,14 @@
                     </div>
                 </div>
                 
-                <div class="seat-grid">
-                    {% for seat in seats %}
-                    <div class="seat-node {% if seat.status == 'occupied' %}occupied{% else %}available{% endif %}">
-                        Seat {{ seat.seat_number }}
-                        <span>Floor: {{ seat.floor|slice:":1" }} | Row {{ seat.row }}</span>
-                    </div>
-                    {% endfor %}
+                <div class="seat-grid" id="dynamic-seats">
+                    <!-- Placeholder seats for visualization -->
+                    <div class="seat-node available">Seat 1<span>Floor: 1 | Row A</span></div>
+                    <div class="seat-node occupied">Seat 2<span>Floor: 1 | Row A</span></div>
+                    <div class="seat-node available">Seat 3<span>Floor: 1 | Row A</span></div>
+                    <div class="seat-node available">Seat 4<span>Floor: 1 | Row A</span></div>
+                    <div class="seat-node occupied">Seat 5<span>Floor: 1 | Row B</span></div>
+                    <div class="seat-node available">Seat 6<span>Floor: 1 | Row B</span></div>
                 </div>
             </div>
         </div>
@@ -837,32 +816,8 @@
                 <p>Select a daily access duration plan that fits your study schedule. Upgrade or change anytime.</p>
             </div>
             
-            <div class="plans-grid">
-                {% for plan in plans %}
-                <div class="plan-card {% if "12" in plan.name %}premium{% endif %}">
-                    <h3 class="plan-name">{{ plan.name }}</h3>
-                    <div class="plan-price">₹{{ plan.price|floatformat:0 }}<span>/mo</span></div>
-                    <ul class="plan-features">
-                        <li>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                            {{ plan.description }}
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                            Reserved Study Seat
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                            High-Speed Wi-Fi
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                            AC Silent Zone Access
-                        </li>
-                    </ul>
-                    <a href="/admin/" class="btn {% if "12" in plan.name %}btn-primary{% else %}btn-outline{% endif %}" style="width: 100%;">Subscribe Now</a>
-                </div>
-                {% endfor %}
+            <div class="plans-grid" id="dynamic-plans">
+                <p style="text-align:center; color: var(--gray);">Loading plans...</p>
             </div>
         </div>
     </section>
@@ -876,17 +831,8 @@
                 <p>Aspirants who studied at Shresht Library and secured ranks in competitive national examinations.</p>
             </div>
             
-            <div class="achievers-grid">
-                {% for achiever in achievers %}
-                <div class="achiever-card">
-                    <div class="achiever-avatar">
-                        {{ achiever.name|slice:":1" }}
-                    </div>
-                    <h3>{{ achiever.name }}</h3>
-                    <span class="achiever-badge">{{ achiever.achievement }}</span>
-                    <span class="achiever-year">Year: {{ achiever.year }}</span>
-                </div>
-                {% endfor %}
+            <div class="achievers-grid" id="dynamic-achievers">
+                <p style="text-align:center; color: var(--gray);">Loading achievers...</p>
             </div>
         </div>
     </section>
@@ -900,18 +846,8 @@
                 <p>Genuine experiences from students preparing for competitive exams in our quiet study rooms.</p>
             </div>
             
-            <div class="reviews-grid">
-                {% for review in reviews %}
-                <div class="review-card">
-                    <div class="review-stars">
-                        {% for i in "12345"|make_list %}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                        {% endfor %}
-                    </div>
-                    <p class="review-comment">"{{ review.comment }}"</p>
-                    <div class="review-author">— {{ review.student.username }}</div>
-                </div>
-                {% endfor %}
+            <div class="reviews-grid" id="dynamic-reviews">
+                <p style="text-align:center; color: var(--gray);">Loading reviews...</p>
             </div>
         </div>
     </section>
@@ -961,6 +897,149 @@
             }
         `;
         document.head.appendChild(styleSheet);
+
+        // Fetch dynamic data from the API
+        const API_BASE = '/api/v1';
+        
+        async function loadData() {
+            try {
+                // Fetch Library Info
+                fetch(`${API_BASE}/library/info`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const info = result.data;
+                        if (info.feature_image) {
+                            const img = document.getElementById('feature-image');
+                            img.src = info.feature_image;
+                            img.style.display = 'block';
+                            document.getElementById('feature-fallback').style.display = 'none';
+                        }
+                        if (info.name) {
+                            const nameSpan = document.querySelector('.hero h1 span');
+                            if (nameSpan) nameSpan.textContent = info.name;
+                            const title = document.querySelector('title');
+                            if (title) title.textContent = `${info.name} | Premium Quiet Study Spaces`;
+                        }
+                        if (info.description) {
+                            const descP = document.querySelector('.hero-desc');
+                            if (descP) descP.textContent = info.description;
+                        }
+                        // Update contact info if available
+                        const contactDiv = document.querySelector('.footer-contact');
+                        if (contactDiv && (info.address || info.contact_phone || info.contact_email)) {
+                            contactDiv.innerHTML = `
+                                ${info.address ? `<p><strong>Address:</strong> ${info.address}</p>` : ''}
+                                ${info.contact_phone ? `<p><strong>Phone:</strong> ${info.contact_phone}</p>` : ''}
+                                ${info.contact_email ? `<p><strong>Email:</strong> ${info.contact_email}</p>` : ''}
+                            `;
+                        }
+                    }
+                }).catch(e => console.error("Error loading info:", e));
+
+                // Fetch Facilities
+                fetch(`${API_BASE}/library/facilities`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const container = document.getElementById('dynamic-facilities');
+                        if (!result.data.length) {
+                            container.innerHTML = '<p style="text-align:center; color: var(--gray);">No facilities listed.</p>';
+                            return;
+                        }
+                        container.innerHTML = result.data.map(f => `
+                            <div class="feat-card">
+                                <div class="feat-icon" ${f.image ? `style="background: url(${f.image}) center/cover; color: transparent;"` : ''}>
+                                    ${!f.image ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>` : ''}
+                                </div>
+                                <h3>${f.name}</h3>
+                                <p>${f.description || ''}</p>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(e => console.error("Error loading facilities:", e));
+
+                // Fetch Achievers
+                fetch(`${API_BASE}/library/achievers`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const container = document.getElementById('dynamic-achievers');
+                        if (!result.data.length) {
+                            container.innerHTML = '<p style="text-align:center; color: var(--gray);">No achievers listed yet.</p>';
+                            return;
+                        }
+                        container.innerHTML = result.data.map(a => `
+                            <div class="achiever-card">
+                                <div class="achiever-avatar" ${a.photo ? `style="background: url(${a.photo}) center/cover; color: transparent;"` : ''}>
+                                    ${!a.photo ? (a.name ? a.name.charAt(0) : 'A') : ''}
+                                </div>
+                                <h3>${a.name}</h3>
+                                <span class="achiever-badge">${a.achievement || 'Achiever'}</span>
+                                <span class="achiever-year">Year: ${a.year}</span>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(e => console.error("Error loading achievers:", e));
+
+                // Fetch Reviews
+                fetch(`${API_BASE}/library/reviews`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const container = document.getElementById('dynamic-reviews');
+                        if (!result.data.length) {
+                            container.innerHTML = '<p style="text-align:center; color: var(--gray);">No public reviews yet.</p>';
+                            return;
+                        }
+                        container.innerHTML = result.data.map(r => `
+                            <div class="review-card">
+                                <div class="review-stars">
+                                    ${Array.from({length: 5}).map((_, i) => 
+                                        `<svg width="18" height="18" viewBox="0 0 24 24" fill="${i < r.rating ? 'currentColor' : 'none'}" stroke="${i < r.rating ? 'none' : '#cbd5e1'}" stroke-width="${i < r.rating ? '0' : '2'}"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`
+                                    ).join('')}
+                                </div>
+                                <p class="review-comment">"${r.comment || 'No comment provided'}"</p>
+                                <div class="review-author">— ${r.student && r.student.username ? r.student.username : 'Student'}</div>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(e => console.error("Error loading reviews:", e));
+
+                // Fetch Plans
+                fetch(`${API_BASE}/plans`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const container = document.getElementById('dynamic-plans');
+                        if (!result.data.length) {
+                            container.innerHTML = '<p style="text-align:center; color: var(--gray);">No plans available.</p>';
+                            return;
+                        }
+                        container.innerHTML = result.data.map(p => `
+                            <div class="plan-card ${p.name.includes('12') ? 'premium' : ''}">
+                                <h3 class="plan-name">${p.name}</h3>
+                                <div class="plan-price">₹${Math.round(p.price)}<span>/mo</span></div>
+                                <ul class="plan-features">
+                                    <li>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                        ${p.description || 'Library Access'}
+                                    </li>
+                                    <li>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                        Reserved Study Seat
+                                    </li>
+                                    <li>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                        High-Speed Wi-Fi
+                                    </li>
+                                    <li>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                        AC Silent Zone Access
+                                    </li>
+                                </ul>
+                                <a href="/login" class="btn ${p.name.includes('12') ? 'btn-primary' : 'btn-outline'}" style="width: 100%;">Subscribe Now</a>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(e => console.error("Error loading plans:", e));
+
+            } catch(e) {
+                console.error("Initialization error:", e);
+            }
+        }
+        
+        loadData();
     </script>
 </body>
 </html>
