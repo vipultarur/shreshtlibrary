@@ -756,6 +756,88 @@
                 <p id="about-vision" style="margin-top: 8px;"></p>
                 <p id="about-history" style="margin-top: 8px; color: var(--gray); font-size: 14px;"></p>
             </div>
+            <div class="features-grid" style="margin-top: 48px;">
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Services</h3>
+                    <p id="about-services" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Courses Supported</h3>
+                    <p id="about-courses" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Membership Details -->
+    <section class="features" id="membership" style="background: white;">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-tag">Join Us</span>
+                <h2>Membership Information</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Registration Process</h3>
+                    <p id="mem-registration" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Required Documents</h3>
+                    <p id="mem-documents" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Membership Benefits</h3>
+                    <p id="mem-benefits" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Details</h3>
+                    <p id="mem-details" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Capacity & Timing Info -->
+    <section class="features" style="background: #f8fafc;">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-tag">At a Glance</span>
+                <h2>Library Stats & Hours</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; text-align: center;">
+                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <h3 style="font-size: 32px; color: var(--primary);" id="stat-total-seats">-</h3>
+                    <p style="color: var(--gray);">Total Capacity</p>
+                </div>
+                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <h3 style="font-size: 32px; color: #10b981;" id="stat-available-seats">-</h3>
+                    <p style="color: var(--gray);">Available Seats</p>
+                </div>
+                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+                    <h3 style="font-size: 24px; color: var(--dark);" id="stat-hours">-</h3>
+                    <p style="color: var(--gray);">Working Hours <span id="stat-off" style="display: block; font-size: 12px; margin-top: 4px;"></span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ & Rules -->
+    <section class="features" id="rules">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-tag">Guidelines</span>
+                <h2>Rules & FAQ</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Library Rules</h3>
+                    <p id="rules-content" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
+                    <h3>Frequently Asked Questions</h3>
+                    <p id="faq-content" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -911,6 +993,26 @@
                         if (visionP && info.vision) visionP.textContent = 'Vision: ' + info.vision;
                         const historyP = document.getElementById('about-history');
                         if (historyP && info.history) historyP.textContent = info.history;
+                        
+                        // Update Services & Courses
+                        if (info.services) document.getElementById('about-services').textContent = info.services;
+                        if (info.courses_supported) document.getElementById('about-courses').textContent = info.courses_supported;
+                        
+                        // Update Membership
+                        if (info.registration_process) document.getElementById('mem-registration').textContent = info.registration_process;
+                        if (info.required_documents) document.getElementById('mem-documents').textContent = info.required_documents;
+                        if (info.membership_benefits) document.getElementById('mem-benefits').textContent = info.membership_benefits;
+                        if (info.membership_details) document.getElementById('mem-details').textContent = info.membership_details;
+
+                        // Update Stats
+                        if (info.total_capacity) document.getElementById('stat-total-seats').textContent = info.total_capacity;
+                        if (info.available_seats) document.getElementById('stat-available-seats').textContent = info.available_seats;
+                        if (info.opening_time && info.closing_time) document.getElementById('stat-hours').textContent = `${info.opening_time} - ${info.closing_time}`;
+                        if (info.weekly_off) document.getElementById('stat-off').textContent = `(Closed: ${info.weekly_off})`;
+
+                        // Update Rules & FAQ
+                        if (info.library_rules) document.getElementById('rules-content').textContent = info.library_rules;
+                        if (info.faq) document.getElementById('faq-content').textContent = info.faq;
                         
                     }
                 }).catch(e => console.error("Error loading info:", e));
