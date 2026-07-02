@@ -18,12 +18,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IMemoryCache _cache;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache)
+        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
             _emailService = emailService;
             _cache = cache;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<ServiceResult<object>> GetStudentCountsAsync(CancellationToken ct = default)
@@ -472,7 +474,7 @@ namespace WebApplication1.Services
                 .Select(a => new {
                     date = a.Date.ToString("yyyy-MM-dd"),
                     is_present = a.IsPresent,
-                    time_in = a.TimeIn,
+                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
                     time_out = a.TimeOut,
                     total_hours = a.TotalHours
                 })
@@ -554,7 +556,7 @@ namespace WebApplication1.Services
             if (kind == "attendance")
             {
                 var data = await _context.AttendanceAttendances.Where(a => a.StudentId == student.Id).OrderByDescending(a => a.Date).Take(30).Select(a => new {
-                    id = a.Id, date = a.Date, is_present = a.IsPresent, time_in = a.TimeIn, time_out = a.TimeOut, total_hours = a.TotalHours
+                    id = a.Id, date = a.Date, is_present = a.IsPresent, time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn, time_out = a.TimeOut, total_hours = a.TotalHours
                 }).ToListAsync(ct);
                 return ServiceResult<object>.Ok(data);
             }

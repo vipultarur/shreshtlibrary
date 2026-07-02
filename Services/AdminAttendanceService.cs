@@ -258,7 +258,7 @@ namespace WebApplication1.Services
                     student = a.StudentId,
                     student_name = a.Student != null ? $"{a.Student.FirstName} {a.Student.LastName}".Trim() : null,
                     date = a.Date.ToString("yyyy-MM-dd"),
-                    time_in = a.TimeIn,
+                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
                     is_present = a.IsPresent,
                     method = a.Method,
                     marked_at = a.MarkedAt
@@ -470,7 +470,7 @@ namespace WebApplication1.Services
                     date = a.Date.ToString("yyyy-MM-dd"),
                     student = a.StudentId,
                     student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : null,
-                    time_in = a.TimeIn,
+                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
                     is_present = a.IsPresent,
                     is_manual = a.IsManual,
                     method = a.Method ?? "UNKNOWN",
@@ -547,9 +547,14 @@ namespace WebApplication1.Services
                      existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
                 }
                 // Mark as late arrival if admin marks present after cutoff
-                if (isPresent && manualCurrentTime > manualCutoff)
+                var targetDateCutoff = targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute);
+                if (isPresent && _dateTimeProvider.IstNow > targetDateCutoff)
                 {
                     existingRecord.LateMark = true;
+                }
+                else
+                {
+                    existingRecord.LateMark = false;
                 }
             }
             else
@@ -564,6 +569,7 @@ namespace WebApplication1.Services
                     Method = "MANUAL",
                     Note = dto.Note,
                     MarkedAt = DateTime.UtcNow,
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute)
                 };
                 _context.AttendanceAttendances.Add(newRecord);
             }
@@ -618,6 +624,13 @@ namespace WebApplication1.Services
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
                 .ToListAsync(ct);
 
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int manualPadding = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
+            var manualCutoff = openTime.AddMinutes(manualPadding);
+
             foreach (var dto in dtos)
             {
                 long? targetStudentId = dto.StudentId;
@@ -633,6 +646,9 @@ namespace WebApplication1.Services
 
                 var existingRecord = existingRecords.FirstOrDefault(a => a.StudentId == targetStudentId && a.Date == targetDate);
 
+                var targetDateCutoff = targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute);
+                var isLate = isPresent && _dateTimeProvider.IstNow > targetDateCutoff;
+
                 if (existingRecord != null)
                 {
                     existingRecord.IsPresent = isPresent;
@@ -641,6 +657,7 @@ namespace WebApplication1.Services
                     if (!string.IsNullOrEmpty(dto.Note)) existingRecord.Note = dto.Note;
                     existingRecord.MarkedAt = DateTime.UtcNow;
                     if (isPresent && existingRecord.TimeIn == default) existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+                    existingRecord.LateMark = isLate;
                 }
                 else
                 {
@@ -654,6 +671,7 @@ namespace WebApplication1.Services
                         Method = "MANUAL",
                         Note = dto.Note,
                         MarkedAt = DateTime.UtcNow,
+                        LateMark = isLate
                     };
                     _context.AttendanceAttendances.Add(newRecord);
                     existingRecords.Add(newRecord);
@@ -695,7 +713,7 @@ namespace WebApplication1.Services
                     date = a.Date.ToString("yyyy-MM-dd"),
                     student = a.StudentId,
                     student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : null,
-                    time_in = a.TimeIn,
+                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
                     is_present = a.IsPresent,
                     is_manual = a.IsManual,
                     method = a.Method ?? "UNKNOWN",

@@ -11,10 +11,12 @@ namespace WebApplication1.Services
     public class ReportsService : IReportsService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public ReportsService(ApplicationDbContext context)
+        public ReportsService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<ServiceResult<object>> GetAttendanceReportAsync(int page, int pageSize, CancellationToken ct = default)
@@ -30,7 +32,7 @@ namespace WebApplication1.Services
                     date = a.Date.ToString("yyyy-MM-dd"),
                     student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : "Unknown",
                     is_present = a.IsPresent,
-                    time_in = a.TimeIn,
+                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
                     time_out = a.TimeOut,
                     total_hours = a.TotalHours
                 })
@@ -151,7 +153,8 @@ namespace WebApplication1.Services
                     foreach (var a in attendances)
                     {
                         var name = a.Student != null ? $"{a.Student.FirstName} {a.Student.LastName}" : "Unknown";
-                        sb.AppendLine($"{a.Id},{a.Date:yyyy-MM-dd},{EscapeCsv(name)},{a.IsPresent},{a.TimeIn},{a.TimeOut},{a.TotalHours}");
+                        var timeIn = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)).ToString("HH:mm:ss") : a.TimeIn.ToString("HH:mm:ss");
+                        sb.AppendLine($"{a.Id},{a.Date:yyyy-MM-dd},{EscapeCsv(name)},{a.IsPresent},{timeIn},{a.TimeOut},{a.TotalHours}");
                     }
                     break;
                 case "payments":

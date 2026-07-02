@@ -266,8 +266,17 @@ namespace WebApplication1.Services
             {
                 if (attendanceRecord.IsPresent)
                 {
-                    attendanceTime = attendanceRecord.TimeIn.ToString("hh:mm tt");
-                    if (attendanceRecord.LateMark || (attendanceRecord.IsManual && attendanceRecord.TimeIn > cutoffTime))
+                    if (attendanceRecord.MarkedAt.HasValue)
+                    {
+                        var istMarkedAt = TimeZoneInfo.ConvertTimeFromUtc(attendanceRecord.MarkedAt.Value, _dateTimeProvider.IstTimeZone);
+                        attendanceTime = istMarkedAt.ToString("hh:mm tt");
+                    }
+                    else
+                    {
+                        attendanceTime = attendanceRecord.TimeIn.ToString("hh:mm tt");
+                    }
+
+                    if (attendanceRecord.LateMark)
                     {
                         attendanceStatus = "Arrived late";
                     }

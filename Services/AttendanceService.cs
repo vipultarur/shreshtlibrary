@@ -155,7 +155,7 @@ namespace WebApplication1.Services
                 {
                     id = a.Id,
                     date = a.Date.ToString("yyyy-MM-dd"),
-                    time_in = a.TimeIn.ToString("HH:mm:ss"),
+                    time_in = a.MarkedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone).ToString("HH:mm:ss") : a.TimeIn.ToString("HH:mm:ss"),
                     time_out = a.TimeOut.HasValue ? a.TimeOut.Value.ToString("HH:mm:ss") : null,
                     is_present = a.IsPresent,
                     is_manual = a.IsManual,
