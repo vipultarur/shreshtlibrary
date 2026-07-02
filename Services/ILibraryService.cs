@@ -13,5 +13,6 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> GetReviewsSummaryAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> SubmitReviewAsync(long userId, LibraryController.SubmitReviewRequest request, CancellationToken ct = default);
         Task<ServiceResult<object>> GetSlidersAsync(string mediaBaseUrl, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetGalleryImagesAsync(string mediaBaseUrl, CancellationToken ct = default);
     }
 }

@@ -97,5 +97,14 @@ namespace WebApplication1.Controllers
             var result = await _libraryService.GetSlidersAsync(mediaBaseUrl, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
+
+        [HttpGet("library/gallery")]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        public async Task<IActionResult> GetGalleryImagesAsync(CancellationToken ct)
+        {
+            var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var result = await _libraryService.GetGalleryImagesAsync(mediaBaseUrl, ct);
+            return Ok(ApiResponse<object>.Ok(result.Data));
+        }
     }
 }

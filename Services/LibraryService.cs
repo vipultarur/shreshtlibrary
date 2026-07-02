@@ -74,6 +74,23 @@ namespace WebApplication1.Services
                 whatsapp_number = info.WhatsappNumber,
                 telegram_url = info.TelegramUrl,
                 youtube_url = info.YoutubeUrl,
+                tagline = info.Tagline,
+                mission = info.Mission,
+                vision = info.Vision,
+                history = info.History,
+                welcome_message = info.WelcomeMessage,
+                services = info.Services,
+                courses_supported = info.CoursesSupported,
+                statistics_description = info.StatisticsDescription,
+                faq = info.Faq,
+                testimonials = info.Testimonials,
+                emergency_contact = info.EmergencyContact,
+                footer_text = info.FooterText,
+                membership_details = info.MembershipDetails,
+                registration_process = info.RegistrationProcess,
+                required_documents = info.RequiredDocuments,
+                membership_benefits = info.MembershipBenefits,
+                library_rules = info.LibraryRules,
                 created_at = info.CreatedAt,
                 updated_at = info.UpdatedAt
             };
@@ -238,6 +255,25 @@ namespace WebApplication1.Services
                 .ToListAsync(ct);
 
             return ServiceResult<object>.Ok(sliders);
+        }
+
+        public async Task<ServiceResult<object>> GetGalleryImagesAsync(string mediaBaseUrl, CancellationToken ct = default)
+        {
+            var images = await _context.LibraryGalleryImages
+                .AsNoTracking()
+                .OrderBy(i => i.Order)
+                .ThenByDescending(i => i.CreatedAt)
+                .Select(i => new
+                {
+                    id = i.Id,
+                    image_url = !string.IsNullOrEmpty(i.ImageUrl) ? $"{mediaBaseUrl}/media/{i.ImageUrl}" : null,
+                    caption = i.Caption,
+                    order = i.Order,
+                    created_at = i.CreatedAt
+                })
+                .ToListAsync(ct);
+
+            return ServiceResult<object>.Ok(images);
         }
     }
 }
