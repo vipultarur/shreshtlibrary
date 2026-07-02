@@ -253,9 +253,16 @@ using (var scope = app.Services.CreateScope())
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "script_safe.sql");
         if (File.Exists(scriptPath))
         {
-            var sql = File.ReadAllText(scriptPath);
-            db.Database.ExecuteSqlRaw(sql);
-            Log.Information("Executed script_safe.sql successfully.");
+            try 
+            {
+                var sql = File.ReadAllText(scriptPath);
+                db.Database.ExecuteSqlRaw(sql);
+                Log.Information("Executed script_safe.sql successfully.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred while executing script_safe.sql, continuing anyway.");
+            }
         }
 
         // Insert the initial migration so it doesn't fail trying to recreate Django tables
