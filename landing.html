@@ -746,6 +746,19 @@
         </div>
     </section>
 
+    <!-- About Section -->
+    <section class="features" id="about" style="background: #f8fafc;">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-tag">About Us</span>
+                <h2>Discover Shresht Library</h2>
+                <p id="about-mission"></p>
+                <p id="about-vision" style="margin-top: 8px;"></p>
+                <p id="about-history" style="margin-top: 8px; color: var(--gray); font-size: 14px;"></p>
+            </div>
+        </div>
+    </section>
+
 
 
     <!-- Pricing / Membership Plans -->
@@ -759,6 +772,21 @@
             
             <div class="plans-grid" id="dynamic-plans">
                 <p style="text-align:center; color: var(--gray);">Loading plans...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Showcase -->
+    <section class="features" id="gallery">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-tag">Library Environment</span>
+                <h2>Our Gallery</h2>
+                <p>Take a look at our state-of-the-art facilities.</p>
+            </div>
+            
+            <div class="features-grid" id="dynamic-gallery" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <p style="text-align:center; color: var(--gray);">Loading gallery...</p>
             </div>
         </div>
     </section>
@@ -875,6 +903,15 @@
                                 ${info.email ? `<p><strong>Email:</strong> ${info.email}</p>` : ''}
                             `;
                         }
+                        
+                        // Update About info
+                        const missionP = document.getElementById('about-mission');
+                        if (missionP && info.mission) missionP.textContent = 'Mission: ' + info.mission;
+                        const visionP = document.getElementById('about-vision');
+                        if (visionP && info.vision) visionP.textContent = 'Vision: ' + info.vision;
+                        const historyP = document.getElementById('about-history');
+                        if (historyP && info.history) historyP.textContent = info.history;
+                        
                     }
                 }).catch(e => console.error("Error loading info:", e));
 
@@ -996,6 +1033,22 @@
                         `}).join('');
                     }
                 }).catch(e => console.error("Error loading plans:", e));
+
+                // Fetch Gallery
+                fetch(`${API_BASE}/library/gallery`).then(res => res.json()).then(result => {
+                    if (result.success && result.data) {
+                        const container = document.getElementById('dynamic-gallery');
+                        if (!result.data.length) {
+                            container.innerHTML = '<p style="text-align:center; color: var(--gray);">No gallery images.</p>';
+                            return;
+                        }
+                        container.innerHTML = result.data.map(g => `
+                            <div style="border-radius: 12px; overflow: hidden; height: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <div style="background: url('${g.image_url}') center/cover; width: 100%; height: 100%;"></div>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(e => console.error("Error loading gallery:", e));
 
             } catch(e) {
                 console.error("Initialization error:", e);
