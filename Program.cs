@@ -10,6 +10,7 @@ using DotNetEnv;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
+using Microsoft.AspNetCore.HttpOverrides;
 
 Env.Load(); // Load .env file for local development
 Log.Logger = new LoggerConfiguration()
@@ -127,6 +128,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure Forwarded Headers for reverse proxies like Render
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = builder.Configuration["Jwt:Secret"]; // Load from securely configured providers
@@ -225,6 +234,8 @@ builder.Services.AddHsts(options =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
