@@ -63,7 +63,7 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException("Attendance cannot be marked on a holiday.");
             }
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);

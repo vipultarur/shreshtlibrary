@@ -45,7 +45,7 @@ namespace WebApplication1.Services
 
             string paddingTime = paddingSetting?.Value ?? "60";
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
 
             return ServiceResult<object>.Ok(new

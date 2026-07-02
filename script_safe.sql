@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
     "MigrationId" character varying(150) NOT NULL,
     "ProductVersion" character varying(32) NOT NULL,
     CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
@@ -951,8 +951,8 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS city characte
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS state character varying(100) NOT NULL;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS country character varying(100) NOT NULL;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS pin_code character varying(20) NOT NULL;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS latitude numeric(10;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS longitude numeric(10;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS latitude numeric(10,6) NOT NULL DEFAULT 0.0;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS longitude numeric(10,6) NOT NULL DEFAULT 0.0;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS google_map_url character varying(500);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS wifi boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS ac boolean;
@@ -973,7 +973,7 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS created_at ti
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP);
 ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS name character varying(100) NOT NULL;
 ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS duration_months integer NOT NULL;
-ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS price numeric(10;
+ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS price numeric(10,2) NOT NULL DEFAULT 0.0;
 ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL;
 ALTER TABLE IF EXISTS memberships_membershipplan ADD COLUMN IF NOT EXISTS benefits jsonb NOT NULL;
@@ -1115,7 +1115,7 @@ ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS created_by
 ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL;
 ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS notes text;
 ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS plan_name_snapshot character varying(100) NOT NULL;
-ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS price_snapshot numeric(10;
+ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS price_snapshot numeric(10,2) NOT NULL DEFAULT 0.0;
 ALTER TABLE IF EXISTS memberships_membership ADD COLUMN IF NOT EXISTS renewal_count integer NOT NULL;
 ALTER TABLE IF EXISTS seats_seatrow ADD COLUMN IF NOT EXISTS label character varying(10) NOT NULL;
 ALTER TABLE IF EXISTS seats_seatrow ADD COLUMN IF NOT EXISTS floor_id bigint NOT NULL;
@@ -1150,7 +1150,7 @@ ALTER TABLE IF EXISTS accounts_customuser_user_permissions ADD COLUMN IF NOT EXI
 ALTER TABLE IF EXISTS accounts_customuser_user_permissions ADD COLUMN IF NOT EXISTS permission_id integer NOT NULL;
 ALTER TABLE IF EXISTS auth_group_permissions ADD COLUMN IF NOT EXISTS group_id integer NOT NULL;
 ALTER TABLE IF EXISTS auth_group_permissions ADD COLUMN IF NOT EXISTS permission_id integer NOT NULL;
-ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS amount numeric(10;
+ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS amount numeric(10,2) NOT NULL DEFAULT 0.0;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS status character varying(20) NOT NULL;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS payment_mode character varying(20) NOT NULL;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS payment_date date NOT NULL;
@@ -1164,7 +1164,7 @@ ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS method character
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS paid_at timestamp with time zone;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS payment_id character varying(30);
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS recorded_by_id bigint;
-ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS refund_amount numeric(10;
+ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS refund_amount numeric(10,2);
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS refund_reason text;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS refunded_at timestamp with time zone;
 ALTER TABLE IF EXISTS payments_payment ADD COLUMN IF NOT EXISTS transaction_ref character varying(100);

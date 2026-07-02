@@ -134,7 +134,7 @@ namespace WebApplication1.Services
             var todayUnaccounted = studentsTotal - attendanceGroups.Count;
             if (todayUnaccounted < 0) todayUnaccounted = 0;
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var attPaddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             var libOpenTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int attPaddingMins = 60;

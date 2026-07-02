@@ -308,7 +308,7 @@ namespace WebApplication1.Services
             var unaccounted = total - records.Count;
             if (unaccounted < 0) unaccounted = 0;
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
@@ -349,7 +349,7 @@ namespace WebApplication1.Services
         {
             if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
@@ -527,7 +527,7 @@ namespace WebApplication1.Services
                 .FirstOrDefaultAsync(a => a.StudentId == targetStudentId && a.Date == targetDate, ct);
 
             // Determine cutoff for LateMark
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;
@@ -624,7 +624,7 @@ namespace WebApplication1.Services
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
                 .ToListAsync(ct);
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;

@@ -204,7 +204,7 @@ namespace WebApplication1.Services
                 return;
             }
 
-            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(stoppingToken);
+            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(stoppingToken);
             var paddingSetting = await context.CoreGlobalsettings
                 .FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", stoppingToken);
             

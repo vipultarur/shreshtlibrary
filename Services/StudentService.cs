@@ -244,7 +244,7 @@ namespace WebApplication1.Services
             string attendanceStatus = "Pending";
             string? attendanceTime = null;
             
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new System.TimeOnly(10, 0);
