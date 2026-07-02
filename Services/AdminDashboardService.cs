@@ -142,14 +142,16 @@ namespace WebApplication1.Services
             var attCutoff = libOpenTime.AddMinutes(attPaddingMins);
             var attCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            int todayAbsent;
+            int todayAbsent, finalPending;
             if (attCurrentTime > attCutoff)
             {
                 todayAbsent = todaySystemAbsent + todayPending + todayUnaccounted;
+                finalPending = 0;
             }
             else
             {
                 todayAbsent = todaySystemAbsent;
+                finalPending = todayPending + todayUnaccounted;
             }
             
             var nowIst = _dateTimeProvider.IstNow;
@@ -198,7 +200,8 @@ namespace WebApplication1.Services
                 },
                 attendance = new {
                     today_present = todayPresent,
-                    today_absent = todayAbsent
+                    today_absent = todayAbsent,
+                    today_pending = finalPending
                 },
                 seats = new {
                     total = totalSeats,
