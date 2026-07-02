@@ -35,17 +35,47 @@ namespace WebApplication1.Services
 
             var responseData = new
             {
-                id = info.Id,
-                name = info.Name,
+                library_name = info.LibraryName,
+                logo = !string.IsNullOrEmpty(info.Logo) ? $"{mediaBaseUrl}/media/{info.Logo}" : null,
+                banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"{mediaBaseUrl}/media/{info.BannerImage}" : null,
                 description = info.Description,
-                address = info.Address,
-                contact_email = info.Email,
-                contact_phone = info.PhonePrimary,
-                opening_time = info.OpenTime?.ToString("HH:mm:ss"),
-                closing_time = info.CloseTime?.ToString("HH:mm:ss"),
-                feature_image = !string.IsNullOrEmpty(info.FeatureImage) ? $"{mediaBaseUrl}/media/{info.FeatureImage}" : null,
-                logo_square = !string.IsNullOrEmpty(info.LogoSquare) ? $"{mediaBaseUrl}/media/{info.LogoSquare}" : null,
-                total_seats = 0
+                established_year = info.EstablishedYear,
+                owner_name = info.OwnerName,
+                contact_number = info.ContactNumber,
+                email = info.Email,
+                website = info.Website,
+                opening_time = info.OpeningTime.ToString(@"HH\:mm"),
+                closing_time = info.ClosingTime.ToString(@"HH\:mm"),
+                weekly_off = info.WeeklyOff,
+                total_capacity = info.TotalCapacity,
+                available_seats = info.AvailableSeats,
+                address_line1 = info.AddressLine1,
+                address_line2 = info.AddressLine2,
+                area = info.Area,
+                city = info.City,
+                state = info.State,
+                country = info.Country,
+                pin_code = info.PinCode,
+                latitude = info.Latitude,
+                longitude = info.Longitude,
+                google_map_url = info.GoogleMapUrl,
+                wifi = info.Wifi,
+                ac = info.Ac,
+                cctv = info.Cctv,
+                drinking_water = info.DrinkingWater,
+                lockers = info.Lockers,
+                charging_points = info.ChargingPoints,
+                parking = info.Parking,
+                reading_area = info.ReadingArea,
+                computer_access = info.ComputerAccess,
+                printing = info.Printing,
+                facebook_url = info.FacebookUrl,
+                instagram_url = info.InstagramUrl,
+                whatsapp_number = info.WhatsappNumber,
+                telegram_url = info.TelegramUrl,
+                youtube_url = info.YoutubeUrl,
+                created_at = info.CreatedAt,
+                updated_at = info.UpdatedAt
             };
             
             _cache.Set(cacheKey, responseData, CacheDuration);
@@ -211,3 +241,4 @@ namespace WebApplication1.Services
         }
     }
 }
+

@@ -311,7 +311,7 @@ namespace WebApplication1.Services
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
-            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
@@ -352,7 +352,7 @@ namespace WebApplication1.Services
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
-            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
@@ -529,7 +529,7 @@ namespace WebApplication1.Services
             // Determine cutoff for LateMark
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
             var manualCutoff = openTime.AddMinutes(manualPadding);
@@ -626,7 +626,7 @@ namespace WebApplication1.Services
 
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
             var manualCutoff = openTime.AddMinutes(manualPadding);
@@ -837,3 +837,4 @@ namespace WebApplication1.Services
         }
     }
 }
+

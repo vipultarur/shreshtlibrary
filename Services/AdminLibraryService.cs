@@ -85,27 +85,47 @@ namespace WebApplication1.Services
             if (info == null) return ServiceResult<object>.Ok(new { });
             
             return ServiceResult<object>.Ok(new {
-                id = info.Id,
-                name = info.Name,
-                tagline = info.Tagline,
-                phone_primary = info.PhonePrimary,
-                phone_secondary = info.PhoneSecondary,
+                library_name = info.LibraryName,
+                logo = !string.IsNullOrEmpty(info.Logo) ? $"/media/{info.Logo}" : null,
+                banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"/media/{info.BannerImage}" : null,
+                description = info.Description,
+                established_year = info.EstablishedYear,
+                owner_name = info.OwnerName,
+                contact_number = info.ContactNumber,
                 email = info.Email,
-                address = info.Address,
-                google_maps_url = info.GoogleMapsUrl,
+                website = info.Website,
+                opening_time = info.OpeningTime.ToString(@"HH\:mm"),
+                closing_time = info.ClosingTime.ToString(@"HH\:mm"),
+                weekly_off = info.WeeklyOff,
+                total_capacity = info.TotalCapacity,
+                available_seats = info.AvailableSeats,
+                address_line1 = info.AddressLine1,
+                address_line2 = info.AddressLine2,
+                area = info.Area,
+                city = info.City,
+                state = info.State,
+                country = info.Country,
+                pin_code = info.PinCode,
+                latitude = info.Latitude,
+                longitude = info.Longitude,
+                google_map_url = info.GoogleMapUrl,
+                wifi = info.Wifi,
+                ac = info.Ac,
+                cctv = info.Cctv,
+                drinking_water = info.DrinkingWater,
+                lockers = info.Lockers,
+                charging_points = info.ChargingPoints,
+                parking = info.Parking,
+                reading_area = info.ReadingArea,
+                computer_access = info.ComputerAccess,
+                printing = info.Printing,
                 facebook_url = info.FacebookUrl,
                 instagram_url = info.InstagramUrl,
-                website = info.Website,
-                open_time = info.OpenTime?.ToString(@"HH\:mm"),
-                close_time = info.CloseTime?.ToString(@"HH\:mm"),
-                off_days = info.OffDays,
-                about = info.About,
-                description = info.Description,
-                rules = info.Rules,
-                facilities = info.Facilities,
-                feature_image = !string.IsNullOrEmpty(info.FeatureImage) ? $"/media/{info.FeatureImage}" : null,
-                logo_square = !string.IsNullOrEmpty(info.LogoSquare) ? $"/media/{info.LogoSquare}" : null,
-                logo_rectangle = !string.IsNullOrEmpty(info.LogoRectangle) ? $"/media/{info.LogoRectangle}" : null
+                whatsapp_number = info.WhatsappNumber,
+                telegram_url = info.TelegramUrl,
+                youtube_url = info.YoutubeUrl,
+                created_at = info.CreatedAt,
+                updated_at = info.UpdatedAt
             });
         }
 
@@ -118,29 +138,52 @@ namespace WebApplication1.Services
                 _context.LibraryLibraryinfos.Add(info);
             }
 
-            if (dto.Name != null) info.Name = dto.Name;
-            if (dto.Tagline != null) info.Tagline = dto.Tagline;
-            if (dto.PhonePrimary != null) info.PhonePrimary = dto.PhonePrimary;
-            if (dto.PhoneSecondary != null) info.PhoneSecondary = dto.PhoneSecondary;
+            if (dto.LibraryName != null) info.LibraryName = dto.LibraryName;
+            if (dto.Description != null) info.Description = dto.Description;
+            if (dto.EstablishedYear.HasValue) info.EstablishedYear = dto.EstablishedYear.Value;
+            if (dto.OwnerName != null) info.OwnerName = dto.OwnerName;
+            if (dto.ContactNumber != null) info.ContactNumber = dto.ContactNumber;
             if (dto.Email != null) info.Email = dto.Email;
-            if (dto.Address != null) info.Address = dto.Address;
-            if (dto.GoogleMapsUrl != null) info.GoogleMapsUrl = dto.GoogleMapsUrl;
-            if (dto.FacebookUrl != null) info.FacebookUrl = dto.FacebookUrl;
-            if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
             if (dto.Website != null) info.Website = dto.Website;
             
-            if (!string.IsNullOrEmpty(dto.OpenTime) && TimeOnly.TryParse(dto.OpenTime, out var ot)) info.OpenTime = ot;
-            if (!string.IsNullOrEmpty(dto.CloseTime) && TimeOnly.TryParse(dto.CloseTime, out var closeT)) info.CloseTime = closeT;
+            if (!string.IsNullOrEmpty(dto.OpeningTime) && TimeOnly.TryParse(dto.OpeningTime, out var ot)) info.OpeningTime = ot;
+            if (!string.IsNullOrEmpty(dto.ClosingTime) && TimeOnly.TryParse(dto.ClosingTime, out var closeT)) info.ClosingTime = closeT;
             
-            if (dto.OffDays != null) info.OffDays = dto.OffDays;
-            if (dto.About != null) info.About = dto.About;
-            if (dto.Description != null) info.Description = dto.Description;
-            if (dto.Rules != null) info.Rules = dto.Rules;
-            if (dto.Facilities != null) info.Facilities = dto.Facilities;
+            if (dto.WeeklyOff != null) info.WeeklyOff = dto.WeeklyOff;
+            if (dto.TotalCapacity.HasValue) info.TotalCapacity = dto.TotalCapacity.Value;
+            if (dto.AvailableSeats.HasValue) info.AvailableSeats = dto.AvailableSeats.Value;
+            if (dto.AddressLine1 != null) info.AddressLine1 = dto.AddressLine1;
+            if (dto.AddressLine2 != null) info.AddressLine2 = dto.AddressLine2;
+            if (dto.Area != null) info.Area = dto.Area;
+            if (dto.City != null) info.City = dto.City;
+            if (dto.State != null) info.State = dto.State;
+            if (dto.Country != null) info.Country = dto.Country;
+            if (dto.PinCode != null) info.PinCode = dto.PinCode;
+            if (dto.Latitude.HasValue) info.Latitude = dto.Latitude.Value;
+            if (dto.Longitude.HasValue) info.Longitude = dto.Longitude.Value;
+            if (dto.GoogleMapUrl != null) info.GoogleMapUrl = dto.GoogleMapUrl;
 
-            if (dto.FeatureImage != null) info.FeatureImage = await SaveImageAsync(dto.FeatureImage) ?? info.FeatureImage;
-            if (dto.LogoSquare != null) info.LogoSquare = await SaveImageAsync(dto.LogoSquare) ?? info.LogoSquare;
-            if (dto.LogoRectangle != null) info.LogoRectangle = await SaveImageAsync(dto.LogoRectangle) ?? info.LogoRectangle;
+            if (dto.Wifi.HasValue) info.Wifi = dto.Wifi.Value;
+            if (dto.Ac.HasValue) info.Ac = dto.Ac.Value;
+            if (dto.Cctv.HasValue) info.Cctv = dto.Cctv.Value;
+            if (dto.DrinkingWater.HasValue) info.DrinkingWater = dto.DrinkingWater.Value;
+            if (dto.Lockers.HasValue) info.Lockers = dto.Lockers.Value;
+            if (dto.ChargingPoints.HasValue) info.ChargingPoints = dto.ChargingPoints.Value;
+            if (dto.Parking.HasValue) info.Parking = dto.Parking.Value;
+            if (dto.ReadingArea.HasValue) info.ReadingArea = dto.ReadingArea.Value;
+            if (dto.ComputerAccess.HasValue) info.ComputerAccess = dto.ComputerAccess.Value;
+            if (dto.Printing.HasValue) info.Printing = dto.Printing.Value;
+
+            if (dto.FacebookUrl != null) info.FacebookUrl = dto.FacebookUrl;
+            if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
+            if (dto.WhatsappNumber != null) info.WhatsappNumber = dto.WhatsappNumber;
+            if (dto.TelegramUrl != null) info.TelegramUrl = dto.TelegramUrl;
+            if (dto.YoutubeUrl != null) info.YoutubeUrl = dto.YoutubeUrl;
+
+            if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
+            if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
+
+            info.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(ct);
             return ServiceResult<object>.Ok("Library info updated.");

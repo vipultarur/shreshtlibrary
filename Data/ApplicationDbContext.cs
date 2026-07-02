@@ -764,57 +764,53 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<LibraryLibraryinfo>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("library_libraryinfo_pkey");
-
             entity.ToTable("library_libraryinfo");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.About).HasColumnName("about");
-            entity.Property(e => e.Address).HasColumnName("address");
-            entity.Property(e => e.CloseTime).HasColumnName("close_time");
+            entity.Property(e => e.LibraryName).HasMaxLength(255).HasColumnName("library_name");
+            entity.Property(e => e.Logo).HasMaxLength(255).HasColumnName("logo");
+            entity.Property(e => e.BannerImage).HasMaxLength(255).HasColumnName("banner_image");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Email)
-                .HasMaxLength(254)
-                .HasColumnName("email");
-            entity.Property(e => e.FacebookUrl)
-                .HasMaxLength(200)
-                .HasColumnName("facebook_url");
-            entity.Property(e => e.Facilities).HasColumnName("facilities");
-            entity.Property(e => e.FeatureImage)
-                .HasMaxLength(100)
-                .HasColumnName("feature_image");
-            entity.Property(e => e.GoogleMapsUrl)
-                .HasMaxLength(200)
-                .HasColumnName("google_maps_url");
-            entity.Property(e => e.InstagramUrl)
-                .HasMaxLength(200)
-                .HasColumnName("instagram_url");
-            entity.Property(e => e.LogoRectangle)
-                .HasMaxLength(100)
-                .HasColumnName("logo_rectangle");
-            entity.Property(e => e.LogoSquare)
-                .HasMaxLength(100)
-                .HasColumnName("logo_square");
-            entity.Property(e => e.Name)
-                .HasMaxLength(200)
-                .HasColumnName("name");
-            entity.Property(e => e.OffDays)
-                .HasColumnType("jsonb")
-                .HasColumnName("off_days");
-            entity.Property(e => e.OpenTime).HasColumnName("open_time");
-            entity.Property(e => e.PhonePrimary)
-                .HasMaxLength(20)
-                .HasColumnName("phone_primary");
-            entity.Property(e => e.PhoneSecondary)
-                .HasMaxLength(20)
-                .HasColumnName("phone_secondary");
-            entity.Property(e => e.Rules).HasColumnName("rules");
-            entity.Property(e => e.Tagline)
-                .HasMaxLength(300)
-                .HasColumnName("tagline");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.Website)
-                .HasMaxLength(200)
-                .HasColumnName("website");
+            entity.Property(e => e.EstablishedYear).HasColumnName("established_year");
+            entity.Property(e => e.OwnerName).HasMaxLength(255).HasColumnName("owner_name");
+            entity.Property(e => e.ContactNumber).HasMaxLength(50).HasColumnName("contact_number");
+            entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("email");
+            entity.Property(e => e.Website).HasMaxLength(255).HasColumnName("website");
+            entity.Property(e => e.OpeningTime).HasColumnName("opening_time");
+            entity.Property(e => e.ClosingTime).HasColumnName("closing_time");
+            entity.Property(e => e.WeeklyOff).HasMaxLength(100).HasColumnName("weekly_off");
+            entity.Property(e => e.TotalCapacity).HasColumnName("total_capacity");
+            entity.Property(e => e.AvailableSeats).HasColumnName("available_seats");
+            entity.Property(e => e.AddressLine1).HasMaxLength(255).HasColumnName("address_line1");
+            entity.Property(e => e.AddressLine2).HasMaxLength(255).HasColumnName("address_line2");
+            entity.Property(e => e.Area).HasMaxLength(100).HasColumnName("area");
+            entity.Property(e => e.City).HasMaxLength(100).HasColumnName("city");
+            entity.Property(e => e.State).HasMaxLength(100).HasColumnName("state");
+            entity.Property(e => e.Country).HasMaxLength(100).HasColumnName("country");
+            entity.Property(e => e.PinCode).HasMaxLength(20).HasColumnName("pin_code");
+            entity.Property(e => e.Latitude).HasColumnType("numeric(10,6)").HasColumnName("latitude");
+            entity.Property(e => e.Longitude).HasColumnType("numeric(10,6)").HasColumnName("longitude");
+            entity.Property(e => e.GoogleMapUrl).HasMaxLength(500).HasColumnName("google_map_url");
+            
+            entity.Property(e => e.Wifi).HasColumnName("wifi");
+            entity.Property(e => e.Ac).HasColumnName("ac");
+            entity.Property(e => e.Cctv).HasColumnName("cctv");
+            entity.Property(e => e.DrinkingWater).HasColumnName("drinking_water");
+            entity.Property(e => e.Lockers).HasColumnName("lockers");
+            entity.Property(e => e.ChargingPoints).HasColumnName("charging_points");
+            entity.Property(e => e.Parking).HasColumnName("parking");
+            entity.Property(e => e.ReadingArea).HasColumnName("reading_area");
+            entity.Property(e => e.ComputerAccess).HasColumnName("computer_access");
+            entity.Property(e => e.Printing).HasColumnName("printing");
+
+            entity.Property(e => e.FacebookUrl).HasMaxLength(255).HasColumnName("facebook_url");
+            entity.Property(e => e.InstagramUrl).HasMaxLength(255).HasColumnName("instagram_url");
+            entity.Property(e => e.WhatsappNumber).HasMaxLength(50).HasColumnName("whatsapp_number");
+            entity.Property(e => e.TelegramUrl).HasMaxLength(255).HasColumnName("telegram_url");
+            entity.Property(e => e.YoutubeUrl).HasMaxLength(255).HasColumnName("youtube_url");
+
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<LibraryReview>(entity =>

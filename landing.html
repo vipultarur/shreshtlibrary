@@ -314,9 +314,9 @@
 
         .plans-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 32px;
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -847,20 +847,20 @@
                 fetch(`${API_BASE}/library/info`).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const info = result.data;
-                        if (info.feature_image) {
+                        if (info.banner_image) {
                             const img = document.getElementById('feature-image');
                             if (img) {
-                                img.src = info.feature_image;
+                                img.src = info.banner_image;
                                 img.style.display = 'block';
                             }
                             const fallback = document.getElementById('feature-fallback');
                             if (fallback) fallback.style.display = 'none';
                         }
-                        if (info.name) {
+                        if (info.library_name) {
                             const nameSpan = document.querySelector('.hero h1 span');
-                            if (nameSpan) nameSpan.textContent = info.name;
+                            if (nameSpan) nameSpan.textContent = info.library_name;
                             const title = document.querySelector('title');
-                            if (title) title.textContent = `${info.name} | Premium Quiet Study Spaces`;
+                            if (title) title.textContent = `${info.library_name} | Premium Quiet Study Spaces`;
                         }
                         if (info.description) {
                             const descP = document.querySelector('.hero-desc');
@@ -868,11 +868,11 @@
                         }
                         // Update contact info if available
                         const contactDiv = document.querySelector('.footer-contact');
-                        if (contactDiv && (info.address || info.contact_phone || info.contact_email)) {
+                        if (contactDiv && (info.address_line1 || info.contact_number || info.email)) {
                             contactDiv.innerHTML = `
-                                ${info.address ? `<p><strong>Address:</strong> ${info.address}</p>` : ''}
-                                ${info.contact_phone ? `<p><strong>Phone:</strong> ${info.contact_phone}</p>` : ''}
-                                ${info.contact_email ? `<p><strong>Email:</strong> ${info.contact_email}</p>` : ''}
+                                ${info.address_line1 ? `<p><strong>Address:</strong> ${info.address_line1} ${info.area ? ', ' + info.area : ''} ${info.city ? ', ' + info.city : ''}</p>` : ''}
+                                ${info.contact_number ? `<p><strong>Phone:</strong> ${info.contact_number}</p>` : ''}
+                                ${info.email ? `<p><strong>Email:</strong> ${info.email}</p>` : ''}
                             `;
                         }
                     }
