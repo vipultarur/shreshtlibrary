@@ -27,6 +27,7 @@ namespace WebApplication1.Controllers
             return _currentUserService.GetUserId();
         }
 
+        [AllowAnonymous]
         [HttpGet("plans")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetPublicPlansAsync(CancellationToken ct)

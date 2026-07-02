@@ -201,35 +201,6 @@
             justify-content: center;
         }
 
-        .stats-badge-container {
-            display: inline-flex;
-            align-items: center;
-            gap: 24px;
-            padding: 24px 32px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border: 1px solid var(--border);
-            margin: 0 auto;
-        }
-
-        .stat-item {
-            flex: 1;
-            text-align: center;
-        }
-
-        .stat-num {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--primary);
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--gray);
-            font-weight: 500;
-        }
 
         /* Features Section */
         .features {
@@ -333,84 +304,7 @@
             overflow: hidden;
         }
 
-        /* Live Seat Map Preview */
-        .seat-preview-section {
-            padding: 100px 0;
-            background: var(--light);
-        }
 
-        .seat-layout-card {
-            background: white;
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border);
-        }
-
-        .seat-legend {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-        }
-
-        .color-available { background-color: #10b981; }
-        .color-occupied { background-color: #ef4444; }
-
-        .seat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-            gap: 16px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .seat-node {
-            background: white;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 8px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 700;
-            transition: all 0.25s ease;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .seat-node.available {
-            border-color: #10b981;
-            color: #10b981;
-            background-color: rgba(16, 185, 129, 0.05);
-        }
-
-        .seat-node.occupied {
-            border-color: #ef4444;
-            color: #ef4444;
-            background-color: rgba(239, 68, 68, 0.05);
-        }
-
-        .seat-node span {
-            display: block;
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--gray);
-            margin-top: 4px;
-        }
 
         /* Membership Plans */
         .plans-section {
@@ -771,10 +665,7 @@
                 flex-direction: column;
                 text-align: center;
             }
-            .stats-badge-container {
-                flex-direction: column;
-                gap: 12px;
-            }
+
         }
 
         @media (max-width: 968px) {
@@ -790,9 +681,7 @@
             .hero-actions {
                 justify-content: center;
             }
-            .stats-badge-container {
-                margin: 0 auto;
-            }
+
             .footer-grid {
                 grid-template-columns: 1fr;
                 gap: 32px;
@@ -814,7 +703,6 @@
             </a>
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
-                <li><a href="#seats">Seat Map</a></li>
                 <li><a href="#plans">Pricing</a></li>
                 <li><a href="#achievers">Achievers</a></li>
                 <li><a href="#reviews">Reviews</a></li>
@@ -835,26 +723,10 @@
                     A modern, air-conditioned, ultra-quiet study environment equipped with visual seat mappings, high-speed fiber internet, and seamless automated check-ins for serious UPSC, SSC, and engineering aspirants.
                 </p>
                 <div class="hero-actions">
-                    <a href="#seats" class="btn btn-primary">Check Seat Occupancy</a>
                     <a href="#plans" class="btn btn-outline" style="border: 2px solid var(--dark); color: var(--dark);">Explore Plans</a>
                 </div>
                 
-                <div class="stats-badge-container">
-                    <div class="stat-item">
-                        <div class="stat-num">{{ total_seats }}</div>
-                        <div class="stat-label">Total Seats</div>
-                    </div>
-                    <div style="width: 1px; background-color: var(--border);"></div>
-                    <div class="stat-item">
-                        <div class="stat-num" style="color: #ef4444;">{{ occupied_seats }}</div>
-                        <div class="stat-label">Occupied</div>
-                    </div>
-                    <div style="width: 1px; background-color: var(--border);"></div>
-                    <div class="stat-item">
-                        <div class="stat-num" style="color: #10b981;">{{ available_seats }}</div>
-                        <div class="stat-label">Available</div>
-                    </div>
-                </div>
+
             </div>
         </div>
     </section>
@@ -874,39 +746,7 @@
         </div>
     </section>
 
-    <!-- Seat Preview Section -->
-    <section class="seat-preview-section" id="seats">
-        <div class="container">
-            <div class="sec-header">
-                <span class="sec-tag">Live Layout View</span>
-                <h2>Study Seats Map</h2>
-                <p>Browse our layout occupancy. Seats marked green are vacant and ready for immediate booking.</p>
-            </div>
-            
-            <div class="seat-layout-card">
-                <div class="seat-legend">
-                    <div class="legend-item">
-                        <div class="legend-color color-available"></div>
-                        Available
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color color-occupied"></div>
-                        Occupied
-                    </div>
-                </div>
-                
-                <div class="seat-grid" id="dynamic-seats">
-                    <!-- Placeholder seats for visualization -->
-                    <div class="seat-node available">Seat 1<span>Floor: 1 | Row A</span></div>
-                    <div class="seat-node occupied">Seat 2<span>Floor: 1 | Row A</span></div>
-                    <div class="seat-node available">Seat 3<span>Floor: 1 | Row A</span></div>
-                    <div class="seat-node available">Seat 4<span>Floor: 1 | Row A</span></div>
-                    <div class="seat-node occupied">Seat 5<span>Floor: 1 | Row B</span></div>
-                    <div class="seat-node available">Seat 6<span>Floor: 1 | Row B</span></div>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- Pricing / Membership Plans -->
     <section class="plans-section" id="plans">
@@ -966,7 +806,6 @@
                 <h4>Quick Links</h4>
                 <ul class="footer-links">
                     <li><a href="#features">Facilities</a></li>
-                    <li><a href="#seats">Seat Map</a></li>
                     <li><a href="#plans">Pricing Plans</a></li>
                     <li><a href="/admin/">Admin Dashboard</a></li>
                 </ul>
@@ -1010,9 +849,12 @@
                         const info = result.data;
                         if (info.feature_image) {
                             const img = document.getElementById('feature-image');
-                            img.src = info.feature_image;
-                            img.style.display = 'block';
-                            document.getElementById('feature-fallback').style.display = 'none';
+                            if (img) {
+                                img.src = info.feature_image;
+                                img.style.display = 'block';
+                            }
+                            const fallback = document.getElementById('feature-fallback');
+                            if (fallback) fallback.style.display = 'none';
                         }
                         if (info.name) {
                             const nameSpan = document.querySelector('.hero h1 span');

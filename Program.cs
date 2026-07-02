@@ -364,25 +364,6 @@ app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnv
 
     var html = await System.IO.File.ReadAllTextAsync(path);
     
-    int totalSeats = 100; // Default values in case DB is unreachable
-    int occupiedSeats = 50;
-    int availableSeats = 50;
-
-    try 
-    {
-        totalSeats = await db.SeatsSeats.CountAsync();
-        occupiedSeats = await db.SeatsSeats.CountAsync(s => s.Status == "Occupied");
-        availableSeats = totalSeats - occupiedSeats;
-    }
-    catch (Exception)
-    {
-        // Silently ignore DB connection issues (e.g. IPv6 timeouts) to ensure landing page always loads
-    }
-
-    html = html.Replace("{{ total_seats }}", totalSeats.ToString())
-               .Replace("{{ occupied_seats }}", occupiedSeats.ToString())
-               .Replace("{{ available_seats }}", availableSeats.ToString());
-
     return Results.Content(html, "text/html");
 });
 app.MapControllers();
