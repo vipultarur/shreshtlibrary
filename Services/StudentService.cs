@@ -267,7 +267,7 @@ namespace WebApplication1.Services
                 if (attendanceRecord.IsPresent)
                 {
                     attendanceTime = attendanceRecord.TimeIn.ToString("hh:mm tt");
-                    if (attendanceRecord.TimeIn > cutoffTime || attendanceRecord.LateMark)
+                    if (attendanceRecord.LateMark || (attendanceRecord.IsManual && attendanceRecord.TimeIn > cutoffTime))
                     {
                         attendanceStatus = "Arrived late";
                     }
@@ -276,13 +276,28 @@ namespace WebApplication1.Services
                         attendanceStatus = "Present";
                     }
                 }
+                else if (attendanceRecord.Method == "PENDING")
+                {
+                    // Midnight-reset record, student hasn't scanned yet
+                    if (currentTime > cutoffTime)
+                    {
+                        attendanceStatus = "Absent";
+                    }
+                    else
+                    {
+                        attendanceStatus = "Pending";
+                        allowQrScan = currentTime >= openTime;
+                    }
+                }
                 else
                 {
+                    // Explicitly marked absent (Method = SYSTEM or MANUAL)
                     attendanceStatus = "Absent";
                 }
             }
             else
             {
+                // No record (fallback if midnight reset hasn't run)
                 if (currentTime > cutoffTime)
                 {
                     attendanceStatus = "Absent";
@@ -290,7 +305,7 @@ namespace WebApplication1.Services
                 else
                 {
                     attendanceStatus = "Pending";
-                    allowQrScan = true;
+                    allowQrScan = currentTime >= openTime;
                 }
             }
 

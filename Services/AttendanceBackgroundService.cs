@@ -17,6 +17,8 @@ namespace WebApplication1.Services
         private readonly ILogger<AttendanceBackgroundService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
         private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
+        private DateOnly _lastResetDate = DateOnly.MinValue;
+        private DateOnly _lastAbsentMarkedDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -32,8 +34,9 @@ namespace WebApplication1.Services
             {
                 try
                 {
+                    await MidnightResetAsync(stoppingToken);
                     await AutoGenerateQrAsync(stoppingToken);
-                    await ProcessPendingAttendanceAsync(stoppingToken);
+                    await ProcessPendingToAbsentAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -41,6 +44,73 @@ namespace WebApplication1.Services
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
+        }
+
+        /// <summary>
+        /// Step 1: At 12:00 AM (or first run of the day), create PENDING attendance records for all active students.
+        /// </summary>
+        private async Task MidnightResetAsync(CancellationToken stoppingToken)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastResetDate >= today) return;
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var isHoliday = await context.AttendanceHolidays
+                .AnyAsync(h => h.Date == today && h.IsActive, stoppingToken);
+            if (isHoliday)
+            {
+                _lastResetDate = today;
+                _logger.LogInformation("Skipping midnight reset for {Date} — holiday.", today);
+                return;
+            }
+
+            var activeStudents = await context.AccountsCustomusers
+                .Where(u => u.Role == "student" && u.IsActive)
+                .ToListAsync(stoppingToken);
+
+            var existingStudentIds = await context.AttendanceAttendances
+                .Where(a => a.Date == today)
+                .Select(a => a.StudentId)
+                .ToListAsync(stoppingToken);
+            var existingSet = new System.Collections.Generic.HashSet<long>(existingStudentIds);
+
+            var now = _dateTimeProvider.UtcNow;
+            int created = 0;
+
+            foreach (var student in activeStudents)
+            {
+                if (existingSet.Contains(student.Id)) continue;
+
+                var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(
+                    student.DateJoined.Kind == DateTimeKind.Unspecified
+                        ? DateTime.SpecifyKind(student.DateJoined, DateTimeKind.Utc)
+                        : student.DateJoined.ToUniversalTime(),
+                    _dateTimeProvider.IstTimeZone);
+                if (DateOnly.FromDateTime(istJoinDate) > today) continue;
+
+                context.AttendanceAttendances.Add(new AttendanceAttendance
+                {
+                    StudentId = student.Id,
+                    Date = today,
+                    IsPresent = false,
+                    MarkedAt = now,
+                    TimeIn = default,
+                    LateMark = false,
+                    IsManual = false,
+                    Method = "PENDING"
+                });
+                created++;
+            }
+
+            if (created > 0)
+            {
+                await context.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Midnight reset: Created {Count} pending attendance records for {Date}.", created, today);
+            }
+
+            _lastResetDate = today;
         }
 
         private async Task AutoGenerateQrAsync(CancellationToken stoppingToken)
@@ -112,18 +182,27 @@ namespace WebApplication1.Services
             _logger.LogInformation("Auto-generated QR code for {Date}.", today);
         }
 
-        private async Task ProcessPendingAttendanceAsync(CancellationToken stoppingToken)
+        /// <summary>
+        /// Step 4: Once the attendance window closes, convert all PENDING records to Absent
+        /// and send notifications. This runs once per day after cutoff.
+        /// </summary>
+        private async Task ProcessPendingToAbsentAsync(CancellationToken stoppingToken)
         {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastAbsentMarkedDate >= today) return; // Already processed today
+
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
-            
             var holidayRecord = await context.AttendanceHolidays
                 .AsNoTracking()
                 .FirstOrDefaultAsync(h => h.Date == today && h.IsActive, stoppingToken);
 
-            if (holidayRecord != null) return; // No auto-absent on holidays
+            if (holidayRecord != null)
+            {
+                _lastAbsentMarkedDate = today;
+                return;
+            }
 
             var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(stoppingToken);
             var paddingSetting = await context.CoreGlobalsettings
@@ -137,47 +216,29 @@ namespace WebApplication1.Services
             }
             
             var cutoffTime = openTime.AddMinutes(paddingMinutes);
-            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
             if (currentTime <= cutoffTime) return; // Window is still open
 
-            // Time has passed. Find all active students without an attendance record today.
-            var activeStudentsWithoutAttendance = await context.AccountsCustomusers
-                .Where(u => u.Role == "student" && u.IsActive && 
-                            !context.AttendanceAttendances.Any(a => a.StudentId == u.Id && a.Date == today))
+            // Find all PENDING records for today and convert them to Absent
+            var pendingRecords = await context.AttendanceAttendances
+                .Where(a => a.Date == today && a.Method == "PENDING" && !a.IsPresent)
                 .ToListAsync(stoppingToken);
 
-            var validStudents = new System.Collections.Generic.List<AccountsCustomuser>();
-            foreach (var student in activeStudentsWithoutAttendance)
+            if (!pendingRecords.Any())
             {
-                var istJoinDate = TimeZoneInfo.ConvertTimeFromUtc(student.DateJoined.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(student.DateJoined, DateTimeKind.Utc) : student.DateJoined.ToUniversalTime(), _dateTimeProvider.IstTimeZone);
-                if (DateOnly.FromDateTime(istJoinDate) <= today)
-                {
-                    validStudents.Add(student);
-                }
+                _lastAbsentMarkedDate = today;
+                return;
             }
 
-            if (!validStudents.Any()) return;
-
-            _logger.LogInformation($"Auto-marking {validStudents.Count} students as Absent for {today}.");
+            _logger.LogInformation("Auto-marking {Count} pending students as Absent for {Date}.", pendingRecords.Count, today);
 
             var now = _dateTimeProvider.UtcNow;
-            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
             
-            foreach (var student in validStudents)
+            foreach (var record in pendingRecords)
             {
-                var record = new AttendanceAttendance
-                {
-                    StudentId = student.Id,
-                    Date = today,
-                    IsPresent = false,
-                    MarkedAt = now,
-                    TimeIn = default,
-                    LateMark = false,
-                    IsManual = false,
-                    Method = "SYSTEM"
-                };
-                context.AttendanceAttendances.Add(record);
+                record.Method = "SYSTEM";
+                record.MarkedAt = now;
                 
                 // Add Notification
                 var notification = new NotificationsNotification
@@ -205,7 +266,7 @@ namespace WebApplication1.Services
                 
                 var studentNotification = new NotificationsStudentnotification
                 {
-                    StudentId = student.Id,
+                    StudentId = record.StudentId,
                     Notification = notification,
                     IsRead = false
                 };
@@ -213,6 +274,7 @@ namespace WebApplication1.Services
             }
 
             await context.SaveChangesAsync(stoppingToken);
+            _lastAbsentMarkedDate = today;
         }
     }
 }

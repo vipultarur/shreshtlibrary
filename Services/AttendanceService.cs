@@ -63,14 +63,6 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException("Attendance cannot be marked on a holiday.");
             }
 
-            var existing = await _context.AttendanceAttendances
-                .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
-
-            if (existing != null)
-            {
-                throw new InvalidOperationException("Attendance already marked for today");
-            }
-
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
@@ -84,11 +76,48 @@ namespace WebApplication1.Services
             var cutoffTime = openTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
+            if (currentTime < openTime)
+            {
+                throw new InvalidOperationException("Attendance window has not opened yet.");
+            }
+
             if (currentTime > cutoffTime)
             {
                 throw new InvalidOperationException("Attendance window has expired for today.");
             }
 
+            var existing = await _context.AttendanceAttendances
+                .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
+
+            if (existing != null)
+            {
+                // If record is PENDING (created by midnight reset), update it to Present
+                if (existing.Method == "PENDING" && !existing.IsPresent)
+                {
+                    existing.IsPresent = true;
+                    existing.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+                    existing.QrCodeId = qr.Id;
+                    existing.MarkedAt = _dateTimeProvider.UtcNow;
+                    existing.Method = "QR";
+                    existing.LateMark = false;
+                    existing.UnderTime = false;
+
+                    await _context.SaveChangesAsync(ct);
+
+                    return new
+                    {
+                        id = existing.Id,
+                        date = existing.Date.ToString("yyyy-MM-dd"),
+                        time_in = existing.TimeIn.ToString("HH:mm:ss"),
+                        is_present = existing.IsPresent,
+                        method = existing.Method
+                    };
+                }
+
+                throw new InvalidOperationException("Attendance already marked for today");
+            }
+
+            // No record exists (fallback if midnight reset hasn't run yet)
             var attendance = new WebApplication1.Models.AttendanceAttendance
             {
                 Date = today,

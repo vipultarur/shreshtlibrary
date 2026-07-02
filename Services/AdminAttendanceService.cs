@@ -303,14 +303,43 @@ namespace WebApplication1.Services
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
             
             var present = records.Count(a => a.IsPresent);
-            var explicitlyAbsent = records.Count(a => !a.IsPresent);
-            var pending = total - (present + explicitlyAbsent);
-            if (pending < 0) pending = 0;
+            var systemAbsent = records.Count(a => !a.IsPresent && a.Method != "PENDING");
+            var pendingRecords = records.Count(a => !a.IsPresent && a.Method == "PENDING");
+            var unaccounted = total - records.Count;
+            if (unaccounted < 0) unaccounted = 0;
+
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int paddingMinutes = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
+            {
+                paddingMinutes = parsedPadding;
+            }
+            
+            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+            var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+
+            bool isPastCutoff = targetDate < todayDate || (targetDate == todayDate && currentTime > cutoffTime);
+
+            int absent, pending;
+            if (isPastCutoff)
+            {
+                absent = systemAbsent + pendingRecords + unaccounted;
+                pending = 0;
+            }
+            else
+            {
+                absent = systemAbsent;
+                pending = pendingRecords + unaccounted;
+            }
 
             return ServiceResult<object>.Ok(new {
                 date = targetDate.ToString("yyyy-MM-dd"),
                 present = present,
-                absent = explicitlyAbsent,
+                absent = absent,
                 pending = pending,
                 total = total
             });
@@ -320,9 +349,26 @@ namespace WebApplication1.Services
         {
             if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
 
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int paddingMinutes = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
+            {
+                paddingMinutes = parsedPadding;
+            }
+            
+            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+            var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+
+            bool isPastCutoff = targetDate < todayDate || (targetDate == todayDate && currentTime > cutoffTime);
+
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
             var presentIds = records.Where(r => r.IsPresent).Select(r => r.StudentId).ToHashSet();
-            var absentIds = records.Where(r => !r.IsPresent).Select(r => r.StudentId).ToHashSet();
+            var absentIds = records.Where(r => !r.IsPresent && r.Method != "PENDING").Select(r => r.StudentId).ToHashSet();
+            var pendingIds = records.Where(r => !r.IsPresent && r.Method == "PENDING").Select(r => r.StudentId).ToHashSet();
 
             var allStudents = await _context.AccountsCustomusers
                 .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive)
@@ -349,10 +395,13 @@ namespace WebApplication1.Services
                 }
 
                 if (presentIds.Contains(stu.user_id)) continue;
+
                 if (absentIds.Contains(stu.user_id)) {
                     result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = "absent" });
-                } else {
-                    result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = "pending" });
+                } else if (pendingIds.Contains(stu.user_id) || !presentIds.Contains(stu.user_id)) {
+                    // PENDING record or no record at all
+                    var status = isPastCutoff ? "absent" : "pending";
+                    result.Add(new { user_id = stu.user_id, student_id = stu.student_id, username = stu.username, first_name = stu.first_name, last_name = stu.last_name, mobile = stu.mobile, attendance_status = status });
                 }
             }
 
@@ -477,6 +526,15 @@ namespace WebApplication1.Services
             var existingRecord = await _context.AttendanceAttendances
                 .FirstOrDefaultAsync(a => a.StudentId == targetStudentId && a.Date == targetDate, ct);
 
+            // Determine cutoff for LateMark
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            var openTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int manualPadding = 60;
+            if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
+            var manualCutoff = openTime.AddMinutes(manualPadding);
+            var manualCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+
             if (existingRecord != null)
             {
                 existingRecord.IsPresent = isPresent;
@@ -487,6 +545,11 @@ namespace WebApplication1.Services
                 if (isPresent && existingRecord.TimeIn == default)
                 {
                      existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+                }
+                // Mark as late arrival if admin marks present after cutoff
+                if (isPresent && manualCurrentTime > manualCutoff)
+                {
+                    existingRecord.LateMark = true;
                 }
             }
             else

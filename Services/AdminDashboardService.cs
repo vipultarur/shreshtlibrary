@@ -127,9 +127,30 @@ namespace WebApplication1.Services
             var studentsTotal = studentStatusGroups.Where(g => g.Status != "EXPIRED" && g.Status != "SUSPENDED").Sum(g => g.Count);
             var studentsNewThisMonth = await _context.StudentsStudentprofiles.CountAsync(s => s.CreatedAt != null && s.CreatedAt >= firstDayOfMonth, ct);
 
-            var attendanceGroups = await _context.AttendanceAttendances.Where(a => a.Date == todayDateOnly).GroupBy(a => a.IsPresent).Select(g => new { IsPresent = g.Key, Count = g.Count() }).ToListAsync(ct);
-            var todayPresent = attendanceGroups.FirstOrDefault(g => g.IsPresent)?.Count ?? 0;
-            var todayAbsent = attendanceGroups.FirstOrDefault(g => !g.IsPresent)?.Count ?? 0;
+            var attendanceGroups = await _context.AttendanceAttendances.Where(a => a.Date == todayDateOnly).ToListAsync(ct);
+            var todayPresent = attendanceGroups.Count(a => a.IsPresent);
+            var todaySystemAbsent = attendanceGroups.Count(a => !a.IsPresent && a.Method != "PENDING");
+            var todayPending = attendanceGroups.Count(a => !a.IsPresent && a.Method == "PENDING");
+            var todayUnaccounted = studentsTotal - attendanceGroups.Count;
+            if (todayUnaccounted < 0) todayUnaccounted = 0;
+
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var attPaddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
+            var libOpenTime = libraryInfo?.OpenTime ?? new TimeOnly(10, 0);
+            int attPaddingMins = 60;
+            if (attPaddingSetting != null && int.TryParse(attPaddingSetting.Value, out int attParsed)) attPaddingMins = attParsed;
+            var attCutoff = libOpenTime.AddMinutes(attPaddingMins);
+            var attCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+
+            int todayAbsent;
+            if (attCurrentTime > attCutoff)
+            {
+                todayAbsent = todaySystemAbsent + todayPending + todayUnaccounted;
+            }
+            else
+            {
+                todayAbsent = todaySystemAbsent;
+            }
             
             var nowIst = _dateTimeProvider.IstNow;
             var istZone = _dateTimeProvider.IstTimeZone;
