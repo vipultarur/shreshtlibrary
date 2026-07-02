@@ -50,6 +50,26 @@ public partial class LibraryLibraryinfo
     public string? WhatsappNumber { get; set; }
     public string? TelegramUrl { get; set; }
     public string? YoutubeUrl { get; set; }
+    // About Content
+    public string? Tagline { get; set; }
+    public string? Mission { get; set; }
+    public string? Vision { get; set; }
+    public string? History { get; set; }
+    public string? WelcomeMessage { get; set; }
+    public string? Services { get; set; }
+    public string? CoursesSupported { get; set; }
+    public string? StatisticsDescription { get; set; }
+    public string? Faq { get; set; }
+    public string? Testimonials { get; set; }
+    public string? EmergencyContact { get; set; }
+    public string? FooterText { get; set; }
+
+    // Membership Info
+    public string? MembershipDetails { get; set; }
+    public string? RegistrationProcess { get; set; }
+    public string? RequiredDocuments { get; set; }
+    public string? MembershipBenefits { get; set; }
+    public string? LibraryRules { get; set; }
     
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

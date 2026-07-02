@@ -58,6 +58,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<LibraryFacility> LibraryFacilities { get; set; }
 
+    public virtual DbSet<LibraryGalleryImage> LibraryGalleryImages { get; set; }
+
     public virtual DbSet<LibraryHomeslider> LibraryHomesliders { get; set; }
 
     public virtual DbSet<LibraryLibraryinfo> LibraryLibraryinfos { get; set; }

@@ -124,6 +124,28 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [HttpGet("gallery")]
+        public async Task<IActionResult> GetGalleryImages(CancellationToken ct)
+        {
+            var result = await _libraryService.GetGalleryImages(ct);
+            return Ok(ApiResponse<object>.Ok(result.Data));
+        }
+
+        [HttpPost("gallery")]
+        public async Task<IActionResult> UploadGalleryImage([FromForm] GalleryImageDto dto, CancellationToken ct)
+        {
+            var result = await _libraryService.UploadGalleryImage(dto, ct);
+            return Ok(ApiResponse<object>.Ok(result.Data));
+        }
+
+        [HttpDelete("gallery/{id}")]
+        public async Task<IActionResult> DeleteGalleryImage(long id, CancellationToken ct)
+        {
+            var result = await _libraryService.DeleteGalleryImage(id, ct);
+            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            return Ok(ApiResponse<object>.Ok(result.Data));
+        }
+
         public class LibraryInfoUpdateDto
         {
             [FromForm(Name = "library_name")] public string? LibraryName { get; set; }
@@ -167,6 +189,27 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "whatsapp_number")] public string? WhatsappNumber { get; set; }
             [FromForm(Name = "telegram_url")] public string? TelegramUrl { get; set; }
             [FromForm(Name = "youtube_url")] public string? YoutubeUrl { get; set; }
+
+            // About Content
+            [FromForm(Name = "tagline")] public string? Tagline { get; set; }
+            [FromForm(Name = "mission")] public string? Mission { get; set; }
+            [FromForm(Name = "vision")] public string? Vision { get; set; }
+            [FromForm(Name = "history")] public string? History { get; set; }
+            [FromForm(Name = "welcome_message")] public string? WelcomeMessage { get; set; }
+            [FromForm(Name = "services")] public string? Services { get; set; }
+            [FromForm(Name = "courses_supported")] public string? CoursesSupported { get; set; }
+            [FromForm(Name = "statistics_description")] public string? StatisticsDescription { get; set; }
+            [FromForm(Name = "faq")] public string? Faq { get; set; }
+            [FromForm(Name = "testimonials")] public string? Testimonials { get; set; }
+            [FromForm(Name = "emergency_contact")] public string? EmergencyContact { get; set; }
+            [FromForm(Name = "footer_text")] public string? FooterText { get; set; }
+
+            // Membership Info
+            [FromForm(Name = "membership_details")] public string? MembershipDetails { get; set; }
+            [FromForm(Name = "registration_process")] public string? RegistrationProcess { get; set; }
+            [FromForm(Name = "required_documents")] public string? RequiredDocuments { get; set; }
+            [FromForm(Name = "membership_benefits")] public string? MembershipBenefits { get; set; }
+            [FromForm(Name = "library_rules")] public string? LibraryRules { get; set; }
         }
 
         public class FacilityDto
@@ -189,6 +232,13 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "order")] public int? Order { get; set; }
             [FromForm(Name = "is_active")] public bool? IsActive { get; set; }
             [FromForm(Name = "photo")] public IFormFile? Photo { get; set; }
+        }
+
+        public class GalleryImageDto
+        {
+            [FromForm(Name = "image")] public IFormFile Image { get; set; }
+            [FromForm(Name = "caption")] public string? Caption { get; set; }
+            [FromForm(Name = "order")] public int? Order { get; set; }
         }
     }
 }

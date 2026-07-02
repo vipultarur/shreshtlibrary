@@ -27,6 +27,9 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> DeleteAchiever(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviews(CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviewSummary(CancellationToken ct = default);
+        Task<ServiceResult<object>> GetGalleryImages(CancellationToken ct = default);
+        Task<ServiceResult<object>> UploadGalleryImage(AdminLibraryController.GalleryImageDto dto, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeleteGalleryImage(long id, CancellationToken ct = default);
     }
 
     public class AdminLibraryService : IAdminLibraryService
@@ -124,6 +127,23 @@ namespace WebApplication1.Services
                 whatsapp_number = info.WhatsappNumber,
                 telegram_url = info.TelegramUrl,
                 youtube_url = info.YoutubeUrl,
+                tagline = info.Tagline,
+                mission = info.Mission,
+                vision = info.Vision,
+                history = info.History,
+                welcome_message = info.WelcomeMessage,
+                services = info.Services,
+                courses_supported = info.CoursesSupported,
+                statistics_description = info.StatisticsDescription,
+                faq = info.Faq,
+                testimonials = info.Testimonials,
+                emergency_contact = info.EmergencyContact,
+                footer_text = info.FooterText,
+                membership_details = info.MembershipDetails,
+                registration_process = info.RegistrationProcess,
+                required_documents = info.RequiredDocuments,
+                membership_benefits = info.MembershipBenefits,
+                library_rules = info.LibraryRules,
                 created_at = info.CreatedAt,
                 updated_at = info.UpdatedAt
             });
@@ -179,6 +199,24 @@ namespace WebApplication1.Services
             if (dto.WhatsappNumber != null) info.WhatsappNumber = dto.WhatsappNumber;
             if (dto.TelegramUrl != null) info.TelegramUrl = dto.TelegramUrl;
             if (dto.YoutubeUrl != null) info.YoutubeUrl = dto.YoutubeUrl;
+
+            if (dto.Tagline != null) info.Tagline = dto.Tagline;
+            if (dto.Mission != null) info.Mission = dto.Mission;
+            if (dto.Vision != null) info.Vision = dto.Vision;
+            if (dto.History != null) info.History = dto.History;
+            if (dto.WelcomeMessage != null) info.WelcomeMessage = dto.WelcomeMessage;
+            if (dto.Services != null) info.Services = dto.Services;
+            if (dto.CoursesSupported != null) info.CoursesSupported = dto.CoursesSupported;
+            if (dto.StatisticsDescription != null) info.StatisticsDescription = dto.StatisticsDescription;
+            if (dto.Faq != null) info.Faq = dto.Faq;
+            if (dto.Testimonials != null) info.Testimonials = dto.Testimonials;
+            if (dto.EmergencyContact != null) info.EmergencyContact = dto.EmergencyContact;
+            if (dto.FooterText != null) info.FooterText = dto.FooterText;
+            if (dto.MembershipDetails != null) info.MembershipDetails = dto.MembershipDetails;
+            if (dto.RegistrationProcess != null) info.RegistrationProcess = dto.RegistrationProcess;
+            if (dto.RequiredDocuments != null) info.RequiredDocuments = dto.RequiredDocuments;
+            if (dto.MembershipBenefits != null) info.MembershipBenefits = dto.MembershipBenefits;
+            if (dto.LibraryRules != null) info.LibraryRules = dto.LibraryRules;
 
             if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
             if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
@@ -351,6 +389,48 @@ namespace WebApplication1.Services
         {
             var count = await _context.LibraryReviews.CountAsync(ct);
             return ServiceResult<object>.Ok(new { count });
+        }
+
+        public async Task<ServiceResult<object>> GetGalleryImages(CancellationToken ct = default)
+        {
+            var images = await _context.LibraryGalleryImages.AsNoTracking().OrderBy(i => i.Order).ThenByDescending(i => i.CreatedAt).ToListAsync(ct);
+            var data = images.Select(i => new {
+                id = i.Id,
+                image_url = !string.IsNullOrEmpty(i.ImageUrl) ? $"/media/{i.ImageUrl}" : null,
+                caption = i.Caption,
+                order = i.Order,
+                created_at = i.CreatedAt
+            });
+            return ServiceResult<object>.Ok(data);
+        }
+
+        public async Task<ServiceResult<object>> UploadGalleryImage(AdminLibraryController.GalleryImageDto dto, CancellationToken ct = default)
+        {
+            var imagePath = await SaveImageAsync(dto.Image);
+            if (string.IsNullOrEmpty(imagePath)) return ServiceResult<object>.Fail("Failed to upload image.");
+
+            var galleryImage = new LibraryGalleryImage
+            {
+                ImageUrl = imagePath,
+                Caption = dto.Caption,
+                Order = dto.Order ?? 0,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.LibraryGalleryImages.Add(galleryImage);
+            await _context.SaveChangesAsync(ct);
+
+            return ServiceResult<object>.Ok("Gallery image uploaded.");
+        }
+
+        public async Task<ServiceResult<object>> DeleteGalleryImage(long id, CancellationToken ct = default)
+        {
+            var image = await _context.LibraryGalleryImages.FindAsync(new object[] { id }, ct);
+            if (image == null) return ServiceResult<object>.NotFound("Image not found.");
+
+            _context.LibraryGalleryImages.Remove(image);
+            await _context.SaveChangesAsync(ct);
+            
+            return ServiceResult<object>.Ok("Gallery image deleted.");
         }
     }
 }
