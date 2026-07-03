@@ -72,14 +72,8 @@ namespace WebApplication1.Services
             // Save to DB
             try
             {
-                var dbFile = new LibraryDatabasefile
-                {
-                    Name = relativePath,
-                    Data = fileData,
-                    ContentType = file.ContentType ?? "application/octet-stream",
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.LibraryDatabasefiles.Add(dbFile);
+                var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
+                await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, file.ContentType ?? "application/octet-stream", DateTime.UtcNow);
             }
             catch
             {
@@ -173,82 +167,107 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateLibraryInfo(AdminLibraryController.LibraryInfoUpdateDto dto, CancellationToken ct = default)
         {
-            var info = await _context.LibraryLibraryinfos.FirstOrDefaultAsync(ct);
-            if (info == null)
+            try
             {
-                info = new LibraryLibraryinfo();
-                _context.LibraryLibraryinfos.Add(info);
+                var info = await _context.LibraryLibraryinfos.FirstOrDefaultAsync(ct);
+                if (info == null)
+                {
+                    info = new LibraryLibraryinfo
+                    {
+                        LibraryName = dto.LibraryName ?? "Shresht Library",
+                        Logo = "",
+                        Description = dto.Description ?? "Library Description",
+                        OwnerName = dto.OwnerName ?? "Admin",
+                        ContactNumber = dto.ContactNumber ?? "0000000000",
+                        Email = dto.Email ?? "admin@example.com",
+                        AddressLine1 = dto.AddressLine1 ?? "Address 1",
+                        Area = dto.Area ?? "Area",
+                        City = dto.City ?? "City",
+                        State = dto.State ?? "State",
+                        Country = dto.Country ?? "India",
+                        PinCode = dto.PinCode ?? "000000",
+                        OpeningTime = new TimeOnly(8, 0),
+                        ClosingTime = new TimeOnly(20, 0),
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.LibraryLibraryinfos.Add(info);
+                }
+
+                if (dto.LibraryName != null) info.LibraryName = dto.LibraryName;
+                if (dto.Description != null) info.Description = dto.Description;
+                if (dto.EstablishedYear.HasValue) info.EstablishedYear = dto.EstablishedYear.Value;
+                if (dto.OwnerName != null) info.OwnerName = dto.OwnerName;
+                if (dto.ContactNumber != null) info.ContactNumber = dto.ContactNumber;
+                if (dto.Email != null) info.Email = dto.Email;
+                if (dto.Website != null) info.Website = dto.Website;
+                
+                if (!string.IsNullOrEmpty(dto.OpeningTime) && TimeOnly.TryParse(dto.OpeningTime, out var ot)) info.OpeningTime = ot;
+                if (!string.IsNullOrEmpty(dto.ClosingTime) && TimeOnly.TryParse(dto.ClosingTime, out var closeT)) info.ClosingTime = closeT;
+                
+                if (dto.WeeklyOff != null) info.WeeklyOff = dto.WeeklyOff;
+                if (dto.TotalCapacity.HasValue) info.TotalCapacity = dto.TotalCapacity.Value;
+                if (dto.AvailableSeats.HasValue) info.AvailableSeats = dto.AvailableSeats.Value;
+                if (dto.AddressLine1 != null) info.AddressLine1 = dto.AddressLine1;
+                if (dto.AddressLine2 != null) info.AddressLine2 = dto.AddressLine2;
+                if (dto.Area != null) info.Area = dto.Area;
+                if (dto.City != null) info.City = dto.City;
+                if (dto.State != null) info.State = dto.State;
+                if (dto.Country != null) info.Country = dto.Country;
+                if (dto.PinCode != null) info.PinCode = dto.PinCode;
+                if (dto.Latitude.HasValue) info.Latitude = dto.Latitude.Value;
+                if (dto.Longitude.HasValue) info.Longitude = dto.Longitude.Value;
+                if (dto.GoogleMapUrl != null) info.GoogleMapUrl = dto.GoogleMapUrl;
+
+                if (dto.Wifi.HasValue) info.Wifi = dto.Wifi.Value;
+                if (dto.Ac.HasValue) info.Ac = dto.Ac.Value;
+                if (dto.Cctv.HasValue) info.Cctv = dto.Cctv.Value;
+                if (dto.DrinkingWater.HasValue) info.DrinkingWater = dto.DrinkingWater.Value;
+                if (dto.Lockers.HasValue) info.Lockers = dto.Lockers.Value;
+                if (dto.ChargingPoints.HasValue) info.ChargingPoints = dto.ChargingPoints.Value;
+                if (dto.Parking.HasValue) info.Parking = dto.Parking.Value;
+                if (dto.ReadingArea.HasValue) info.ReadingArea = dto.ReadingArea.Value;
+                if (dto.ComputerAccess.HasValue) info.ComputerAccess = dto.ComputerAccess.Value;
+                if (dto.Printing.HasValue) info.Printing = dto.Printing.Value;
+
+                if (dto.FacebookUrl != null) info.FacebookUrl = dto.FacebookUrl;
+                if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
+                if (dto.WhatsappNumber != null) info.WhatsappNumber = dto.WhatsappNumber;
+                if (dto.TelegramUrl != null) info.TelegramUrl = dto.TelegramUrl;
+                if (dto.YoutubeUrl != null) info.YoutubeUrl = dto.YoutubeUrl;
+                if (dto.TwitterUrl != null) info.TwitterUrl = dto.TwitterUrl;
+                if (dto.LinkedinUrl != null) info.LinkedinUrl = dto.LinkedinUrl;
+
+                if (dto.Tagline != null) info.Tagline = dto.Tagline;
+                if (dto.Mission != null) info.Mission = dto.Mission;
+                if (dto.Vision != null) info.Vision = dto.Vision;
+                if (dto.History != null) info.History = dto.History;
+                if (dto.WelcomeMessage != null) info.WelcomeMessage = dto.WelcomeMessage;
+                if (dto.Services != null) info.Services = dto.Services;
+                if (dto.CoursesSupported != null) info.CoursesSupported = dto.CoursesSupported;
+                if (dto.StatisticsDescription != null) info.StatisticsDescription = dto.StatisticsDescription;
+                if (dto.Faq != null) info.Faq = dto.Faq;
+                if (dto.Testimonials != null) info.Testimonials = dto.Testimonials;
+                if (dto.EmergencyContact != null) info.EmergencyContact = dto.EmergencyContact;
+                if (dto.FooterText != null) info.FooterText = dto.FooterText;
+                if (dto.MembershipDetails != null) info.MembershipDetails = dto.MembershipDetails;
+                if (dto.RegistrationProcess != null) info.RegistrationProcess = dto.RegistrationProcess;
+                if (dto.RequiredDocuments != null) info.RequiredDocuments = dto.RequiredDocuments;
+                if (dto.MembershipBenefits != null) info.MembershipBenefits = dto.MembershipBenefits;
+                if (dto.LibraryRules != null) info.LibraryRules = dto.LibraryRules;
+
+                if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
+                if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
+
+                info.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok("Library info updated.");
             }
-
-            if (dto.LibraryName != null) info.LibraryName = dto.LibraryName;
-            if (dto.Description != null) info.Description = dto.Description;
-            if (dto.EstablishedYear.HasValue) info.EstablishedYear = dto.EstablishedYear.Value;
-            if (dto.OwnerName != null) info.OwnerName = dto.OwnerName;
-            if (dto.ContactNumber != null) info.ContactNumber = dto.ContactNumber;
-            if (dto.Email != null) info.Email = dto.Email;
-            if (dto.Website != null) info.Website = dto.Website;
-            
-            if (!string.IsNullOrEmpty(dto.OpeningTime) && TimeOnly.TryParse(dto.OpeningTime, out var ot)) info.OpeningTime = ot;
-            if (!string.IsNullOrEmpty(dto.ClosingTime) && TimeOnly.TryParse(dto.ClosingTime, out var closeT)) info.ClosingTime = closeT;
-            
-            if (dto.WeeklyOff != null) info.WeeklyOff = dto.WeeklyOff;
-            if (dto.TotalCapacity.HasValue) info.TotalCapacity = dto.TotalCapacity.Value;
-            if (dto.AvailableSeats.HasValue) info.AvailableSeats = dto.AvailableSeats.Value;
-            if (dto.AddressLine1 != null) info.AddressLine1 = dto.AddressLine1;
-            if (dto.AddressLine2 != null) info.AddressLine2 = dto.AddressLine2;
-            if (dto.Area != null) info.Area = dto.Area;
-            if (dto.City != null) info.City = dto.City;
-            if (dto.State != null) info.State = dto.State;
-            if (dto.Country != null) info.Country = dto.Country;
-            if (dto.PinCode != null) info.PinCode = dto.PinCode;
-            if (dto.Latitude.HasValue) info.Latitude = dto.Latitude.Value;
-            if (dto.Longitude.HasValue) info.Longitude = dto.Longitude.Value;
-            if (dto.GoogleMapUrl != null) info.GoogleMapUrl = dto.GoogleMapUrl;
-
-            if (dto.Wifi.HasValue) info.Wifi = dto.Wifi.Value;
-            if (dto.Ac.HasValue) info.Ac = dto.Ac.Value;
-            if (dto.Cctv.HasValue) info.Cctv = dto.Cctv.Value;
-            if (dto.DrinkingWater.HasValue) info.DrinkingWater = dto.DrinkingWater.Value;
-            if (dto.Lockers.HasValue) info.Lockers = dto.Lockers.Value;
-            if (dto.ChargingPoints.HasValue) info.ChargingPoints = dto.ChargingPoints.Value;
-            if (dto.Parking.HasValue) info.Parking = dto.Parking.Value;
-            if (dto.ReadingArea.HasValue) info.ReadingArea = dto.ReadingArea.Value;
-            if (dto.ComputerAccess.HasValue) info.ComputerAccess = dto.ComputerAccess.Value;
-            if (dto.Printing.HasValue) info.Printing = dto.Printing.Value;
-
-            if (dto.FacebookUrl != null) info.FacebookUrl = dto.FacebookUrl;
-            if (dto.InstagramUrl != null) info.InstagramUrl = dto.InstagramUrl;
-            if (dto.WhatsappNumber != null) info.WhatsappNumber = dto.WhatsappNumber;
-            if (dto.TelegramUrl != null) info.TelegramUrl = dto.TelegramUrl;
-            if (dto.YoutubeUrl != null) info.YoutubeUrl = dto.YoutubeUrl;
-            if (dto.TwitterUrl != null) info.TwitterUrl = dto.TwitterUrl;
-            if (dto.LinkedinUrl != null) info.LinkedinUrl = dto.LinkedinUrl;
-
-            if (dto.Tagline != null) info.Tagline = dto.Tagline;
-            if (dto.Mission != null) info.Mission = dto.Mission;
-            if (dto.Vision != null) info.Vision = dto.Vision;
-            if (dto.History != null) info.History = dto.History;
-            if (dto.WelcomeMessage != null) info.WelcomeMessage = dto.WelcomeMessage;
-            if (dto.Services != null) info.Services = dto.Services;
-            if (dto.CoursesSupported != null) info.CoursesSupported = dto.CoursesSupported;
-            if (dto.StatisticsDescription != null) info.StatisticsDescription = dto.StatisticsDescription;
-            if (dto.Faq != null) info.Faq = dto.Faq;
-            if (dto.Testimonials != null) info.Testimonials = dto.Testimonials;
-            if (dto.EmergencyContact != null) info.EmergencyContact = dto.EmergencyContact;
-            if (dto.FooterText != null) info.FooterText = dto.FooterText;
-            if (dto.MembershipDetails != null) info.MembershipDetails = dto.MembershipDetails;
-            if (dto.RegistrationProcess != null) info.RegistrationProcess = dto.RegistrationProcess;
-            if (dto.RequiredDocuments != null) info.RequiredDocuments = dto.RequiredDocuments;
-            if (dto.MembershipBenefits != null) info.MembershipBenefits = dto.MembershipBenefits;
-            if (dto.LibraryRules != null) info.LibraryRules = dto.LibraryRules;
-
-            if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
-            if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
-
-            info.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Library info updated.");
+            catch (Exception ex)
+            {
+                var innerMsg = ex.InnerException != null ? ex.InnerException.Message : "";
+                return ServiceResult<object>.Fail($"DB Error in UpdateLibraryInfo: {ex.Message} | {innerMsg}");
+            }
         }
 
         public async Task<ServiceResult<object>> GetFacilities(CancellationToken ct = default)

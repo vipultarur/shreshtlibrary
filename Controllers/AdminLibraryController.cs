@@ -21,6 +21,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("info")]
+        [HttpGet("info/")]
         public async Task<IActionResult> GetLibraryInfo(CancellationToken ct)
         {
             var result = await _libraryService.GetLibraryInfo(ct);
@@ -28,6 +29,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("info")]
+        [HttpPost("info/")]
         public async Task<IActionResult> UpdateLibraryInfo([FromForm] LibraryInfoUpdateDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateLibraryInfo(dto, ct);

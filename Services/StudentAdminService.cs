@@ -610,14 +610,8 @@ namespace WebApplication1.Services
 
             try
             {
-                var dbFile = new LibraryDatabasefile
-                {
-                    Name = relativePath,
-                    Data = fileData,
-                    ContentType = photo.ContentType ?? "application/octet-stream",
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.LibraryDatabasefiles.Add(dbFile);
+                var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
+                await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, photo.ContentType ?? "application/octet-stream", DateTime.UtcNow);
             }
             catch {}
 

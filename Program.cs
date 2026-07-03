@@ -451,6 +451,7 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS reading_area 
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS computer_access boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS printing boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS facebook_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS instagram_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS whatsapp_number character varying(50);
@@ -466,11 +467,11 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS welcome_messa
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS services text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS courses_supported text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS statistics_description text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS faq jsonb;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS testimonials jsonb;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS faq text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS testimonials text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS emergency_contact character varying(100);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS footer_text character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_details jsonb;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_details text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS registration_process text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS required_documents text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_benefits text;
