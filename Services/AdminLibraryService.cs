@@ -145,7 +145,7 @@ namespace WebApplication1.Services
                     services = info.Services,
                     courses_supported = info.CoursesSupported,
                     statistics_description = info.StatisticsDescription,
-                    faq = info.Faq,
+                    faq = !string.IsNullOrEmpty(info.Faq) ? System.Text.Json.JsonSerializer.Deserialize<object>(info.Faq) : null,
                     testimonials = info.Testimonials,
                     emergency_contact = info.EmergencyContact,
                     footer_text = info.FooterText,
@@ -287,6 +287,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> CreateFacility(AdminLibraryController.FacilityDto dto, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
             var iconPath = await SaveImageAsync(dto.Image);
             var facility = new LibraryFacility
             {
@@ -358,6 +359,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> CreateAchiever(AdminLibraryController.AchieverDto dto, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
             var imagePath = await SaveImageAsync(dto.Photo);
             var achiever = new LibraryAchiever
             {

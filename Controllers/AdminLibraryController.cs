@@ -220,7 +220,7 @@ namespace WebApplication1.Controllers
 
         public class FacilityDto
         {
-            [FromForm(Name = "name")] public string Name { get; set; }
+            [FromForm(Name = "name")] public string? Name { get; set; }
             [FromForm(Name = "description")] public string? Description { get; set; }
             [FromForm(Name = "icon_key")] public string? IconKey { get; set; }
             [FromForm(Name = "image")] public IFormFile? Image { get; set; }
@@ -230,7 +230,7 @@ namespace WebApplication1.Controllers
 
         public class AchieverDto
         {
-            [FromForm(Name = "name")] public string Name { get; set; }
+            [FromForm(Name = "name")] public string? Name { get; set; }
             [FromForm(Name = "achievement")] public string? Achievement { get; set; }
             [FromForm(Name = "goal")] public string? Goal { get; set; }
             [FromForm(Name = "year")] public int? Year { get; set; }
