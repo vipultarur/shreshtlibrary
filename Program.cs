@@ -53,8 +53,21 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 });
 
 // Add DbContext
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    var connBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+    if (connBuilder.MaxPoolSize > 10) 
+    {
+        connBuilder.MaxPoolSize = 10;
+    }
+    connBuilder.Timeout = 30;
+    connBuilder.CommandTimeout = 60;
+    connectionString = connBuilder.ConnectionString;
+}
+
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    options.UseNpgsql(connectionString, 
         npgsqlOptionsAction: sqlOptions =>
         {
             sqlOptions.EnableRetryOnFailure(
@@ -396,6 +409,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
 app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnvironment env) =>
 {
     var path = System.IO.Path.Combine(env.ContentRootPath, "landing.html");

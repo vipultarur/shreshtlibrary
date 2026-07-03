@@ -28,7 +28,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
-        [HttpPost("info")]
+        [HttpPut("info")]
         public async Task<IActionResult> UpdateLibraryInfo([FromForm] LibraryInfoUpdateDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateLibraryInfo(dto, ct);
