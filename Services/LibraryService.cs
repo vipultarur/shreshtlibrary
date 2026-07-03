@@ -74,6 +74,8 @@ namespace WebApplication1.Services
                 whatsapp_number = info.WhatsappNumber,
                 telegram_url = info.TelegramUrl,
                 youtube_url = info.YoutubeUrl,
+                twitter_url = info.TwitterUrl,
+                linkedin_url = info.LinkedinUrl,
                 tagline = info.Tagline,
                 mission = info.Mission,
                 vision = info.Vision,

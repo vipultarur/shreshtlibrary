@@ -821,7 +821,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Services).HasColumnName("services");
             entity.Property(e => e.CoursesSupported).HasColumnName("courses_supported");
             entity.Property(e => e.StatisticsDescription).HasColumnName("statistics_description");
-            entity.Property(e => e.Faq).HasColumnName("faq");
+            entity.Property(e => e.Faq).HasColumnType("jsonb").HasColumnName("faq");
             entity.Property(e => e.Testimonials).HasColumnName("testimonials");
             entity.Property(e => e.EmergencyContact).HasColumnName("emergency_contact");
             entity.Property(e => e.FooterText).HasColumnName("footer_text");
