@@ -44,7 +44,10 @@ namespace WebApplication1.Services
         public AdminLibraryService(ApplicationDbContext context)
         {
             _context = context;
-            _mediaDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "library"));
+            var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            _mediaDir = isDev 
+                ? Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "library"))
+                : Path.Combine(Directory.GetCurrentDirectory(), "media", "library");
         }
 
         private async Task<string?> SaveImageAsync(IFormFile? file)

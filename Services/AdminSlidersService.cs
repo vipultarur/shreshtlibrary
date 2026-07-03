@@ -52,7 +52,10 @@ namespace WebApplication1.Services
 
             if (dto.Image != null)
             {
-                var mediaDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"));
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                var mediaDir = isDev 
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"))
+                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "sliders");
                 if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -117,7 +120,10 @@ namespace WebApplication1.Services
 
             if (dto.Image != null)
             {
-                var mediaDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"));
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                var mediaDir = isDev 
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"))
+                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "sliders");
                 if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };

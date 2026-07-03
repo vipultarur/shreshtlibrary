@@ -115,7 +115,10 @@ namespace WebApplication1.Services
 
             if (dto.BackgroundImage != null)
             {
-                var mediaPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"));
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                var mediaPath = isDev 
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
+                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
                 var fileName = $"notifications/bg_{Guid.NewGuid()}{System.IO.Path.GetExtension(dto.BackgroundImage.FileName)}";
                 var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
@@ -130,7 +133,10 @@ namespace WebApplication1.Services
             // Handle gallery images for half_image / full_image layouts
             if (dto.Images != null && dto.Images.Count > 0)
             {
-                var mediaPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"));
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                var mediaPath = isDev 
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
+                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
                 int sortOrder = 0;
                 foreach (var img in dto.Images)
                 {

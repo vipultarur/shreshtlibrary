@@ -59,7 +59,10 @@ namespace WebApplication1.Services
 
             if (request.profile_image != null)
             {
-                var mediaDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "admins"));
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                var mediaDir = isDev 
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "admins"))
+                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "admins");
                 if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
