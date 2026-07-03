@@ -86,11 +86,7 @@ namespace WebApplication1.Services
                 testimonials = info.Testimonials,
                 emergency_contact = info.EmergencyContact,
                 footer_text = info.FooterText,
-                membership_details = info.MembershipDetails,
-                registration_process = info.RegistrationProcess,
-                required_documents = info.RequiredDocuments,
-                membership_benefits = info.MembershipBenefits,
-                library_rules = info.LibraryRules,
+
                 created_at = info.CreatedAt,
                 updated_at = info.UpdatedAt
             };

@@ -216,12 +216,7 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "emergency_contact")] public string? EmergencyContact { get; set; }
             [FromForm(Name = "footer_text")] public string? FooterText { get; set; }
 
-            // Membership Info
-            [FromForm(Name = "membership_details")] public string? MembershipDetails { get; set; }
-            [FromForm(Name = "registration_process")] public string? RegistrationProcess { get; set; }
-            [FromForm(Name = "required_documents")] public string? RequiredDocuments { get; set; }
-            [FromForm(Name = "membership_benefits")] public string? MembershipBenefits { get; set; }
-            [FromForm(Name = "library_rules")] public string? LibraryRules { get; set; }
+
         }
 
         public class FacilityDto

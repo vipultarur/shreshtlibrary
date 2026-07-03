@@ -826,11 +826,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.EmergencyContact).HasColumnName("emergency_contact");
             entity.Property(e => e.FooterText).HasColumnName("footer_text");
 
-            entity.Property(e => e.MembershipDetails).HasColumnName("membership_details");
-            entity.Property(e => e.RegistrationProcess).HasColumnName("registration_process");
-            entity.Property(e => e.RequiredDocuments).HasColumnName("required_documents");
-            entity.Property(e => e.MembershipBenefits).HasColumnName("membership_benefits");
-            entity.Property(e => e.LibraryRules).HasColumnName("library_rules");
+
 
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");

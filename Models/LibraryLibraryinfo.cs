@@ -66,12 +66,7 @@ public partial class LibraryLibraryinfo
     public string? EmergencyContact { get; set; }
     public string? FooterText { get; set; }
 
-    // Membership Info
-    public string? MembershipDetails { get; set; }
-    public string? RegistrationProcess { get; set; }
-    public string? RequiredDocuments { get; set; }
-    public string? MembershipBenefits { get; set; }
-    public string? LibraryRules { get; set; }
+
     
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

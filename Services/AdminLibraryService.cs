@@ -148,12 +148,7 @@ namespace WebApplication1.Services
                     faq = !string.IsNullOrEmpty(info.Faq) ? System.Text.Json.JsonSerializer.Deserialize<object>(info.Faq) : null,
                     emergency_contact = info.EmergencyContact,
                     footer_text = info.FooterText,
-                    membership_details = info.MembershipDetails != null && info.MembershipDetails.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.MembershipDetails) : info.MembershipDetails,
                     testimonials = info.Testimonials != null && info.Testimonials.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.Testimonials) : info.Testimonials,
-                    registration_process = info.RegistrationProcess,
-                    required_documents = info.RequiredDocuments,
-                    membership_benefits = info.MembershipBenefits,
-                    library_rules = info.LibraryRules,
                     created_at = info.CreatedAt,
                     updated_at = info.UpdatedAt
                 });
@@ -249,11 +244,7 @@ namespace WebApplication1.Services
                 if (dto.Testimonials != null) info.Testimonials = System.Text.Json.JsonSerializer.Serialize(dto.Testimonials);
                 if (dto.EmergencyContact != null) info.EmergencyContact = dto.EmergencyContact;
                 if (dto.FooterText != null) info.FooterText = dto.FooterText;
-                if (dto.MembershipDetails != null) info.MembershipDetails = System.Text.Json.JsonSerializer.Serialize(dto.MembershipDetails);
-                if (dto.RegistrationProcess != null) info.RegistrationProcess = dto.RegistrationProcess;
-                if (dto.RequiredDocuments != null) info.RequiredDocuments = dto.RequiredDocuments;
-                if (dto.MembershipBenefits != null) info.MembershipBenefits = dto.MembershipBenefits;
-                if (dto.LibraryRules != null) info.LibraryRules = dto.LibraryRules;
+
 
                 if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
                 if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
@@ -278,7 +269,7 @@ namespace WebApplication1.Services
                     country = info.Country,
                     pin_code = info.PinCode,
                     established_year = info.EstablishedYear,
-                    membership_details = info.MembershipDetails != null && info.MembershipDetails.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.MembershipDetails) : info.MembershipDetails,
+
                     testimonials = info.Testimonials != null && info.Testimonials.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.Testimonials) : info.Testimonials,
                     updated_at = info.UpdatedAt
                 });
