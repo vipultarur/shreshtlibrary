@@ -13,11 +13,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _config;
+        private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
 
-        public AuthService(ApplicationDbContext context, IConfiguration config)
+        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger)
         {
             _context = context;
             _config = config;
+            _logger = logger;
         }
 
         public async Task<IActionResult> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
@@ -363,7 +365,7 @@ namespace WebApplication1.Services
 
             if (!isValidPassword || user == null || !user.IsActive)
             {
-                Console.WriteLine("[AdminLogin] Password verification failed or user invalid/inactive!");
+                _logger.LogWarning("Admin login failed: password verification failed or user invalid/inactive.");
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid credentials or not an admin.", errors = new { non_field_errors = new[] { "Invalid credentials or not an admin." } } });
             }
 
@@ -548,7 +550,7 @@ namespace WebApplication1.Services
                 }
                 catch (Exception ex) 
                 { 
-                    System.Console.WriteLine($"[Logout] Token decode error for refresh token: {ex.Message}");
+                    _logger.LogWarning(ex, "Token decode error for refresh token during logout.");
                 }
             }
 
@@ -582,7 +584,7 @@ namespace WebApplication1.Services
                 }
                 catch (Exception ex)
                 {
-                    System.Console.WriteLine($"[Logout] Token decode error for access token: {ex.Message}");
+                    _logger.LogWarning(ex, "Token decode error for access token during logout.");
                 }
             }
 

@@ -99,18 +99,15 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> SeatsReleaseAllAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.ReleaseAllSeatsAsync(ct);
-            var dynamicData = (dynamic)result.Data;
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, dynamicData?.message));
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, result.Message));
         }
         
         [HttpPost("seats/reserve-bulk")]
         public async Task<IActionResult> SeatsReserveBulkAsync([FromBody] SeatReserveBulkDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.ReserveBulkSeatsAsync(dto.SeatIds, dto.IsReservedForGirls, ct);
-            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
-            
-            var dynamicData = (dynamic)result.Data;
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, dynamicData?.message));
+            if (!result.Success) return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, result.Message));
         }
 
         [HttpGet("seats/available")]
@@ -145,6 +142,8 @@ namespace WebApplication1.Controllers
         [HttpGet("seats")]
         public async Task<IActionResult> SeatsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 200)
         {
+            page_size = Math.Clamp(page_size, 1, 500);
+            page = Math.Max(1, page);
             var nextTemplate = $"{Request.Scheme}://{Request.Host}{Request.Path}?page={{P}}&page_size={page_size}";
             var prevTemplate = $"{Request.Scheme}://{Request.Host}{Request.Path}?page={{P}}&page_size={page_size}";
             
@@ -228,7 +227,8 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> FloorDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.DeleteFloorAsync(pk, ct);
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }));
+            if (result.IsNotFound) return NotFound(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, "Floor deleted successfully."));
         }
 
         [HttpGet("rows")]
@@ -257,7 +257,8 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> RowDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.DeleteRowAsync(pk, ct);
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }));
+            if (result.IsNotFound) return NotFound(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, "Row deleted successfully."));
         }
 
         [HttpPut("floors/{pk}")]

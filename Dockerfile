@@ -23,4 +23,8 @@ ENV DOTNET_SYSTEM_NET_DISABLEIPV6=1
 # Install fonts for QuestPDF
 RUN apt-get update && apt-get install -y fontconfig fonts-liberation && rm -rf /var/lib/apt/lists/*
 
+# L2: Run as non-root user for security
+RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+USER appuser
+
 ENTRYPOINT ["dotnet", "WebApplication1.dll"]

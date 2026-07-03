@@ -26,6 +26,10 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> ToggleAchiever(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> DeleteAchiever(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviews(CancellationToken ct = default);
+        Task<ServiceResult<object>> GetPendingReviews(CancellationToken ct = default);
+        Task<ServiceResult<object>> ApproveReview(long id, CancellationToken ct = default);
+        Task<ServiceResult<object>> RejectReview(long id, string reason, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeleteReview(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> GetReviewSummary(CancellationToken ct = default);
         Task<ServiceResult<object>> GetGalleryImages(CancellationToken ct = default);
         Task<ServiceResult<object>> UploadGalleryImage(AdminLibraryController.GalleryImageDto dto, CancellationToken ct = default);
@@ -85,7 +89,34 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> GetLibraryInfo(CancellationToken ct = default)
         {
             var info = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
-            if (info == null) return ServiceResult<object>.Ok(new { });
+            if (info == null)
+            {
+                info = new LibraryLibraryinfo
+                {
+                    LibraryName = "Shresht Library",
+                    Logo = "",
+                    Description = "Welcome to Shresht Library",
+                    OwnerName = "Admin",
+                    ContactNumber = "0000000000",
+                    Email = "admin@shreshtlibrary.com",
+                    OpeningTime = new TimeOnly(8, 0),
+                    ClosingTime = new TimeOnly(22, 0),
+                    TotalCapacity = 100,
+                    AvailableSeats = 100,
+                    AddressLine1 = "Library Address",
+                    Area = "Area",
+                    City = "City",
+                    State = "State",
+                    Country = "India",
+                    PinCode = "000000",
+                    Latitude = 0,
+                    Longitude = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.LibraryLibraryinfos.Add(info);
+                await _context.SaveChangesAsync(ct);
+            }
             
             return ServiceResult<object>.Ok(new {
                 library_name = info.LibraryName,
@@ -373,16 +404,67 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetReviews(CancellationToken ct = default)
         {
-            var reviews = await _context.LibraryReviews.AsNoTracking().OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+            var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
             var data = reviews.Select(r => new {
                 id = r.Id,
                 student_id = r.StudentId,
+                student_name = r.Student != null ? r.Student.FirstName + " " + r.Student.LastName : "Unknown",
                 rating = r.Rating,
                 comment = r.Comment,
                 is_published = r.IsApproved,
                 created_at = r.CreatedAt
             });
             return ServiceResult<object>.Ok(data);
+        }
+
+        public async Task<ServiceResult<object>> GetPendingReviews(CancellationToken ct = default)
+        {
+            var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student).Where(r => r.IsApproved == false).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+            var data = reviews.Select(r => new {
+                id = r.Id,
+                student_id = r.StudentId,
+                student_name = r.Student != null ? r.Student.FirstName + " " + r.Student.LastName : "Unknown",
+                rating = r.Rating,
+                comment = r.Comment,
+                is_published = r.IsApproved,
+                created_at = r.CreatedAt
+            });
+            return ServiceResult<object>.Ok(data);
+        }
+
+        public async Task<ServiceResult<object>> ApproveReview(long id, CancellationToken ct = default)
+        {
+            var review = await _context.LibraryReviews.FindAsync(new object[] { id }, ct);
+            if (review == null) return ServiceResult<object>.NotFound("Review not found");
+            
+            review.IsApproved = true;
+            review.RejectionReason = null;
+            review.ApprovedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok("Review approved");
+        }
+
+        public async Task<ServiceResult<object>> RejectReview(long id, string reason, CancellationToken ct = default)
+        {
+            var review = await _context.LibraryReviews.FindAsync(new object[] { id }, ct);
+            if (review == null) return ServiceResult<object>.NotFound("Review not found");
+            
+            review.IsApproved = false;
+            review.RejectionReason = reason;
+            
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok("Review rejected");
+        }
+
+        public async Task<ServiceResult<object>> DeleteReview(long id, CancellationToken ct = default)
+        {
+            var review = await _context.LibraryReviews.FindAsync(new object[] { id }, ct);
+            if (review == null) return ServiceResult<object>.NotFound("Review not found");
+            
+            _context.LibraryReviews.Remove(review);
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok("Review deleted");
         }
 
         public async Task<ServiceResult<object>> GetReviewSummary(CancellationToken ct = default)

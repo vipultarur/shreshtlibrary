@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -27,10 +28,12 @@ namespace WebApplication1.Services
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
@@ -48,8 +51,7 @@ namespace WebApplication1.Services
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
             {
-                // SMTP not configured, log and return
-                Console.WriteLine("Email not sent. SMTP not configured in appsettings.");
+                _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
                 return;
             }
 
@@ -74,11 +76,11 @@ namespace WebApplication1.Services
             try
             {
                 await client.SendMailAsync(mailMessage);
-                Console.WriteLine($"Email successfully sent to {toEmail} with subject '{subject}'.");
+                _logger.LogInformation("Email sent to {ToEmail} with subject '{Subject}'.", toEmail, subject);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error sending email to {toEmail}: {ex.Message}");
+                _logger.LogError(ex, "Error sending email to {ToEmail}", toEmail);
             }
         }
 
@@ -97,7 +99,7 @@ namespace WebApplication1.Services
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
             {
-                Console.WriteLine("Email not sent. SMTP not configured in appsettings.");
+                _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
                 return;
             }
 
@@ -128,11 +130,11 @@ namespace WebApplication1.Services
             try
             {
                 await client.SendMailAsync(mailMessage);
-                Console.WriteLine($"Email successfully sent to {toEmail} with subject '{subject}'.");
+                _logger.LogInformation("Email with attachment sent to {ToEmail} with subject '{Subject}'.", toEmail, subject);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error sending email to {toEmail}: {ex.Message}");
+                _logger.LogError(ex, "Error sending email to {ToEmail}", toEmail);
             }
         }
 

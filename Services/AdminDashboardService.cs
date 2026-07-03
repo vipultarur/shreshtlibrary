@@ -127,7 +127,7 @@ namespace WebApplication1.Services
             var studentsTotal = studentStatusGroups.Where(g => g.Status != "EXPIRED" && g.Status != "SUSPENDED").Sum(g => g.Count);
             var studentsNewThisMonth = await _context.StudentsStudentprofiles.CountAsync(s => s.CreatedAt != null && s.CreatedAt >= firstDayOfMonth, ct);
 
-            var attendanceGroups = await _context.AttendanceAttendances.Where(a => a.Date == todayDateOnly).ToListAsync(ct);
+            var attendanceGroups = await _context.AttendanceAttendances.AsNoTracking().Where(a => a.Date == todayDateOnly).ToListAsync(ct);
             var todayPresent = attendanceGroups.Count(a => a.IsPresent);
             var todaySystemAbsent = attendanceGroups.Count(a => !a.IsPresent && a.Method != "PENDING");
             var todayPending = attendanceGroups.Count(a => !a.IsPresent && a.Method == "PENDING");
@@ -176,9 +176,9 @@ namespace WebApplication1.Services
             var availableSeats = totalSeats - occupiedSeats;
             
             var genderGroups = await _context.StudentsStudentprofiles.GroupBy(s => s.Gender).Select(g => new { Gender = g.Key, Count = g.Count() }).ToListAsync(ct);
-            var girls = genderGroups.Where(g => g.Gender.ToLower().StartsWith("f") || g.Gender.ToLower() == "girl").Sum(g => g.Count);
-            var boys = genderGroups.Where(g => g.Gender.ToLower().StartsWith("m") || g.Gender.ToLower() == "boy").Sum(g => g.Count);
-            var other = genderGroups.Where(g => !g.Gender.ToLower().StartsWith("f") && !g.Gender.ToLower().StartsWith("m") && g.Gender.ToLower() != "girl" && g.Gender.ToLower() != "boy").Sum(g => g.Count);
+            var girls = genderGroups.Where(g => g.Gender != null && (g.Gender.ToLower().StartsWith("f") || g.Gender.ToLower() == "girl")).Sum(g => g.Count);
+            var boys = genderGroups.Where(g => g.Gender != null && (g.Gender.ToLower().StartsWith("m") || g.Gender.ToLower() == "boy")).Sum(g => g.Count);
+            var other = genderGroups.Where(g => g.Gender == null || (!g.Gender.ToLower().StartsWith("f") && !g.Gender.ToLower().StartsWith("m") && g.Gender.ToLower() != "girl" && g.Gender.ToLower() != "boy")).Sum(g => g.Count);
 
             var paymentsMonthCount = await _context.PaymentsPayments.CountAsync(p => p.PaymentDate >= monthIstDate && p.PaymentDate <= todayIstDate && p.Status.ToLower() == "verified", ct);
 

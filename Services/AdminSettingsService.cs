@@ -48,6 +48,16 @@ namespace WebApplication1.Services
             var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
 
+            JsonElement safePermissions;
+            try
+            {
+                safePermissions = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrEmpty(appConfig.ExpiredStudentPermissions) ? "{}" : appConfig.ExpiredStudentPermissions);
+            }
+            catch
+            {
+                safePermissions = JsonSerializer.Deserialize<JsonElement>("{}");
+            }
+
             return ServiceResult<object>.Ok(new
             {
                 library_open_time = openTime.ToString(@"HH\:mm"),
@@ -58,8 +68,9 @@ namespace WebApplication1.Services
                 allow_non_premium_notifications = appConfig.AllowNonPremiumNotifications,
                 allow_non_premium_sliders = appConfig.AllowNonPremiumSliders,
                 allow_non_premium_library_info = appConfig.AllowNonPremiumLibraryInfo,
-                expired_student_permissions = JsonSerializer.Deserialize<JsonElement>(appConfig.ExpiredStudentPermissions)
+                expired_student_permissions = safePermissions
             });
+
         }
 
         public async Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, CancellationToken ct = default)

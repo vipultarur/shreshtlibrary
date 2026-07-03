@@ -14,12 +14,20 @@ namespace WebApplication1.Controllers
     [Authorize]
     public class StudentController : ControllerBase
     {
-        private readonly IStudentService _studentService;
+        private readonly IStudentProfileService _profileService;
+        private readonly IStudentDashboardService _dashboardService;
+        private readonly IStudentReferralService _referralService;
         private readonly ICurrentUserService _currentUserService;
 
-        public StudentController(IStudentService studentService, ICurrentUserService currentUserService)
+        public StudentController(
+            IStudentProfileService profileService,
+            IStudentDashboardService dashboardService,
+            IStudentReferralService referralService,
+            ICurrentUserService currentUserService)
         {
-            _studentService = studentService;
+            _profileService = profileService;
+            _dashboardService = dashboardService;
+            _referralService = referralService;
             _currentUserService = currentUserService;
         }
 
@@ -34,7 +42,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Unauthorized"));
 
-            var result = await _studentService.GetProfileAsync(userId.Value, Request.Scheme, Request.Host.ToString(), ct);
+            var result = await _profileService.GetProfileAsync(userId.Value, Request.Scheme, Request.Host.ToString(), ct);
             if (result == null) return NotFound(ApiResponse<object>.Fail("Profile not found"));
 
             return Ok(result);
@@ -47,7 +55,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Unauthorized"));
 
-            var result = await _studentService.UpdateProfileAsync(userId.Value, dto, ct);
+            var result = await _profileService.UpdateProfileAsync(userId.Value, dto, ct);
             if (result == null) return NotFound(ApiResponse<object>.Fail("Profile not found"));
 
             return Ok(result);
@@ -60,7 +68,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _studentService.UploadPhotoAsync(userId.Value, profile_photo, Request.Scheme, Request.Host.ToString(), ct);
+            var result = await _profileService.UploadPhotoAsync(userId.Value, profile_photo, Request.Scheme, Request.Host.ToString(), ct);
             if (!result.Success) return BadRequest(result);
 
             return Ok(result);
@@ -72,7 +80,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Unauthorized"));
 
-            var result = await _studentService.GetDashboardAsync(userId.Value, ct);
+            var result = await _dashboardService.GetDashboardAsync(userId.Value, ct);
             if (result == null) return NotFound(ApiResponse<object>.Fail("Profile not found"));
 
             return Ok(result);
@@ -84,7 +92,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Unauthorized"));
 
-            var result = await _studentService.GetIdCardAsync(userId.Value, Request.Scheme, Request.Host.ToString(), ct);
+            var result = await _profileService.GetIdCardAsync(userId.Value, Request.Scheme, Request.Host.ToString(), ct);
             if (result == null) return NotFound(ApiResponse<object>.Fail("Profile not found"));
 
             return Ok(result);
@@ -97,7 +105,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _studentService.GetReferralCodeAsync(userId.Value, ct);
+            var result = await _referralService.GetReferralCodeAsync(userId.Value, ct);
             if (!result.Success) return NotFound(result);
 
             return Ok(result);
@@ -110,7 +118,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _studentService.GenerateReferralCodeAsync(userId.Value, ct);
+            var result = await _referralService.GenerateReferralCodeAsync(userId.Value, ct);
             if (!result.Success) return BadRequest(result);
 
             return StatusCode(201, result);
@@ -127,7 +135,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _studentService.ApplyReferralAsync(userId.Value, request?.code, ct);
+            var result = await _referralService.ApplyReferralAsync(userId.Value, request?.code, ct);
             if (!result.Success) return BadRequest(result);
 
             return Ok(result);
@@ -140,7 +148,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _studentService.GetReferralHistoryAsync(userId.Value, ct);
+            var result = await _referralService.GetReferralHistoryAsync(userId.Value, ct);
             return Ok(result);
         }
     }

@@ -8,10 +8,12 @@ namespace WebApplication1.Utils
     public class ApiExceptionFilter : IExceptionFilter
     {
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
+        private readonly Microsoft.Extensions.Logging.ILogger<ApiExceptionFilter> _logger;
 
-        public ApiExceptionFilter(Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
+        public ApiExceptionFilter(Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Microsoft.Extensions.Logging.ILogger<ApiExceptionFilter> logger)
         {
             _env = env;
+            _logger = logger;
         }
 
         public void OnException(ExceptionContext context)
@@ -23,8 +25,7 @@ namespace WebApplication1.Utils
                 Detail = _env.EnvironmentName == "Development" ? context.Exception.Message : "An unexpected error occurred.",
                 Instance = context.HttpContext.Request.Path
             };
-            Console.WriteLine("API EXCEPTION:");
-            Console.WriteLine(context.Exception.ToString());
+            _logger.LogError(context.Exception, "Unhandled exception on {Path}", context.HttpContext.Request.Path);
 
             context.Result = new ObjectResult(problemDetails)
             {

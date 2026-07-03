@@ -22,13 +22,21 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetNotificationTemplatesAsync(CancellationToken ct = default)
         {
-            var templates = new[]
-            {
-                new { id = "1", title = "Payment Reminder", body = "Your membership payment is due soon. Please renew to continue using the library." },
-                new { id = "2", title = "Holiday Notice", body = "The library will be closed tomorrow for public holiday." },
-                new { id = "3", title = "Welcome!", body = "Welcome to Shresht Library. Let's start your study journey." }
-            };
-            return await Task.FromResult(ServiceResult<object>.Ok(templates));
+            var templates = await _context.NotificationsNotifications
+                .Where(n => !string.IsNullOrEmpty(n.Title) && !string.IsNullOrEmpty(n.Body))
+                .OrderByDescending(n => n.CreatedAt)
+                .Select(n => new { title = n.Title, body = n.Body })
+                .Distinct()
+                .Take(10)
+                .ToListAsync(ct);
+
+            var result = templates.Select((t, i) => new {
+                id = (i + 1).ToString(),
+                title = t.title,
+                body = t.body
+            }).ToArray();
+
+            return ServiceResult<object>.Ok(result);
         }
 
         public async Task<ServiceResult<object>> GetScheduledNotificationsAsync(CancellationToken ct = default)
@@ -202,7 +210,14 @@ namespace WebApplication1.Services
                         { "type", notification.Type },
                         { "link_url", notification.LinkUrl ?? "" }
                     };
-                    successCount = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                    try
+                    {
+                        successCount = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                    }
+                    catch (Exception)
+                    {
+                        successCount = 0;
+                    }
                 }
 
                 notification.SentAt = DateTime.UtcNow;

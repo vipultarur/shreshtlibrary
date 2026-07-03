@@ -82,7 +82,6 @@ namespace WebApplication1.Controllers
             public int? paused_minutes { get; set; }
         }
 
-        [HttpPost("session/update")]
         [HttpPut("session/update")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> UpdateSessionAsync([FromBody] UpdateSessionRequest request, CancellationToken ct)

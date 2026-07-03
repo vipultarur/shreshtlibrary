@@ -27,6 +27,7 @@ namespace WebApplication1.Controllers
             return _currentUserService.GetUserId();
         }
 
+        [AllowAnonymous]
         [HttpGet("library/info")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetLibraryInfoAsync(CancellationToken ct)
@@ -36,6 +37,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("library/facilities")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetFacilitiesAsync(CancellationToken ct)
@@ -45,6 +47,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("library/achievers")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetAchieversAsync([FromQuery] bool? featured, CancellationToken ct)
@@ -54,6 +57,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("library/reviews")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetReviewsAsync(CancellationToken ct)
@@ -62,6 +66,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("library/reviews/summary")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetReviewsSummaryAsync(CancellationToken ct)
@@ -89,6 +94,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("sliders")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetSlidersAsync(CancellationToken ct)
@@ -98,6 +104,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [AllowAnonymous]
         [HttpGet("library/gallery")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetGalleryImagesAsync(CancellationToken ct)

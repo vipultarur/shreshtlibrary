@@ -71,8 +71,14 @@ builder.Services.AddHostedService<WebApplication1.Services.AttendanceBackgroundS
 // Add Email Service
 builder.Services.AddScoped<WebApplication1.Services.IEmailService, WebApplication1.Services.EmailService>();
 
+// Add Repositories
+builder.Services.AddScoped<WebApplication1.Repositories.IStudentRepository, WebApplication1.Repositories.StudentRepository>();
+builder.Services.AddScoped<WebApplication1.Repositories.IAttendanceRepository, WebApplication1.Repositories.AttendanceRepository>();
+
 // Add Domain Services
-builder.Services.AddScoped<WebApplication1.Services.IStudentService, WebApplication1.Services.StudentService>();
+builder.Services.AddScoped<WebApplication1.Services.IStudentProfileService, WebApplication1.Services.StudentProfileService>();
+builder.Services.AddScoped<WebApplication1.Services.IStudentDashboardService, WebApplication1.Services.StudentDashboardService>();
+builder.Services.AddScoped<WebApplication1.Services.IStudentReferralService, WebApplication1.Services.StudentReferralService>();
 builder.Services.AddScoped<WebApplication1.Services.IPaymentService, WebApplication1.Services.PaymentService>();
 builder.Services.AddScoped<WebApplication1.Services.IStudentAdminService, WebApplication1.Services.StudentAdminService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminSeatService, WebApplication1.Services.AdminSeatService>();
@@ -107,8 +113,8 @@ builder.Services.AddCors(options =>
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
         if (allowedOrigins == null || allowedOrigins.Length == 0)
         {
-            Log.Warning("CORS AllowedOrigins is empty. APIs will reject all cross-origin traffic in production.");
-            allowedOrigins = Array.Empty<string>();
+            Log.Warning("CORS AllowedOrigins is empty. Using secure defaults.");
+            allowedOrigins = new[] { "https://shreshtlibrary.com", "https://admin.shreshtlibrary.com", "https://shreshtlibrary.onrender.com" };
         }
         
         if (builder.Environment.IsDevelopment())
@@ -132,7 +138,7 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -249,28 +255,6 @@ using (var scope = app.Services.CreateScope())
             );
         ");
 
-        // Run safe script to create any missing tables before doing EF migrations
-        var scriptPath = Path.Combine(AppContext.BaseDirectory, "script_safe.sql");
-        if (!File.Exists(scriptPath)) scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "script_safe.sql");
-        
-        if (File.Exists(scriptPath))
-        {
-            try 
-            {
-                var sql = File.ReadAllText(scriptPath);
-                db.Database.ExecuteSqlRaw(sql);
-                Log.Information("Executed script_safe.sql successfully from {Path}", scriptPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred while executing script_safe.sql, continuing anyway.");
-            }
-        }
-        else
-        {
-            Log.Warning("script_safe.sql was not found! Checked AppContext.BaseDirectory ({BaseDir}) and CurrentDirectory ({CurDir}).", AppContext.BaseDirectory, Directory.GetCurrentDirectory());
-        }
-
         // Insert the initial migration so it doesn't fail trying to recreate Django tables
         db.Database.ExecuteSqlRaw(@"
             INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
@@ -290,6 +274,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseForwardedHeaders();
+app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
 {
@@ -423,3 +408,5 @@ app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnv
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

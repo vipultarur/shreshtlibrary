@@ -61,42 +61,42 @@ namespace WebApplication1.Controllers
 
 
 
-        [HttpGet("/api/v1/dashboard/stats")]
-        [HttpGet("/api/v1/dashboard/stats/{section}")]
+        [HttpGet("dashboard/stats")]
+        [HttpGet("dashboard/stats/{section}")]
         public async Task<IActionResult> GetStatsOverviewAsync(string section = "overview", CancellationToken ct = default)
         {
             var stats = await _adminDashboardService.GetStatsOverviewAsync(section, ct);
             return Ok(ApiResponse<object>.Ok(stats));
         }
 
-        [HttpGet("/api/v1/dashboard/charts")]
+        [HttpGet("dashboard/charts")]
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
         {
             var charts = await _adminDashboardService.GetDashboardChartsAsync(range, ct);
             return Ok(ApiResponse<object>.Ok(charts));
         }
-        [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
+        [HttpGet("dashboard/charts/attendance/overview")]
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetAttendanceOverviewChartsAsync(ct);
             return Ok(ApiResponse<object>.Ok(data));
         }
 
-        [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
+        [HttpGet("dashboard/charts/revenue/overview")]
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRevenueOverviewChartsAsync(ct);
             return Ok(ApiResponse<object>.Ok(data));
         }
 
-        [HttpGet("/api/v1/dashboard/charts/students/overview")]
+        [HttpGet("dashboard/charts/students/overview")]
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetStudentsOverviewChartsAsync(ct);
             return Ok(ApiResponse<object>.Ok(data));
         }
 
-        [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
+        [HttpGet("dashboard/charts/memberships/overview")]
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetMembershipsOverviewChartsAsync(ct);
@@ -105,14 +105,14 @@ namespace WebApplication1.Controllers
 
 
 
-        [HttpGet("/api/v1/dashboard/alerts")]
+        [HttpGet("dashboard/alerts")]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetDashboardAlertsAsync(ct);
             return Ok(ApiResponse<object>.Ok(data));
         }
 
-        [HttpGet("/api/v1/dashboard/activity/recent")]
+        [HttpGet("dashboard/activity/recent")]
         public async Task<IActionResult> GetRecentActivityAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRecentActivityAsync(ct);

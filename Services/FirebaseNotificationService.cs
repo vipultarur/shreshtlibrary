@@ -4,6 +4,7 @@ using Google.Apis.Auth.OAuth2;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace WebApplication1.Services
 {
@@ -16,9 +17,11 @@ namespace WebApplication1.Services
     public class FirebaseNotificationService : INotificationService
     {
         private bool _isFirebaseInitialized = false;
+        private readonly ILogger<FirebaseNotificationService> _logger;
 
-        public FirebaseNotificationService()
+        public FirebaseNotificationService(ILogger<FirebaseNotificationService> logger)
         {
+            _logger = logger;
             try
             {
                 if (FirebaseApp.DefaultInstance == null)
@@ -33,7 +36,7 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Firebase initialization failed: {ex.Message}. Using Mock Push Service.");
+                _logger.LogWarning(ex, "Firebase initialization failed. Using Mock Push Service.");
             }
         }
 
@@ -41,7 +44,7 @@ namespace WebApplication1.Services
         {
             if (!_isFirebaseInitialized)
             {
-                Console.WriteLine($"[Mock] Sending Push Notification to {token}: {title} - {body}");
+                _logger.LogDebug("[Mock] Sending Push Notification to {Token}: {Title}", token, title);
                 return true;
             }
 
@@ -63,7 +66,7 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error sending push notification: {ex.Message}");
+                _logger.LogError(ex, "Error sending push notification to {Token}", token);
                 return false;
             }
         }
@@ -74,7 +77,7 @@ namespace WebApplication1.Services
 
             if (!_isFirebaseInitialized)
             {
-                Console.WriteLine($"[Mock] Sending Multicast Push Notification to {tokens.Count} devices: {title} - {body}");
+                _logger.LogDebug("[Mock] Sending Multicast Push Notification to {Count} devices: {Title}", tokens.Count, title);
                 return tokens.Count;
             }
 
@@ -96,7 +99,7 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error sending multicast push notification: {ex.Message}");
+                _logger.LogError(ex, "Error sending multicast push notification to {Count} devices", tokens.Count);
                 return 0;
             }
         }

@@ -767,7 +767,7 @@ namespace WebApplication1.Services
                         
                         var p = await db.PaymentsPayments
                             .Include(x => x.Student)
-                            .Include(x => x.Membership).ThenInclude(m => m.Plan)
+                            .Include(x => x.Membership).ThenInclude(m => m!.Plan)
                             .FirstOrDefaultAsync(x => x.Id == id);
                             
                         if (p?.Student != null && !string.IsNullOrWhiteSpace(p.Student.Email))

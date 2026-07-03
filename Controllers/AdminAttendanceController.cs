@@ -148,7 +148,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AttendanceManualAsync([FromBody] WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.RecordManualAttendanceAsync(dto, ct);
-            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
+            if (!result.Success) return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, "Attendance manually recorded"));
         }
 
@@ -156,14 +156,15 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AttendanceManualBulkAsync([FromBody] List<WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto> dtos, CancellationToken ct)
         {
             var result = await _adminAttendanceService.RecordManualBulkAttendanceAsync(dtos, ct);
-            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
-            var dynamicData = (dynamic)result.Data;
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, dynamicData?.message));
+            if (!result.Success) return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, result.Message));
         }
 
         [HttpGet("attendance")]
         public async Task<IActionResult> AttendanceListAsync(CancellationToken ct, [FromQuery] string? date = null, [FromQuery] string? from_date = null, [FromQuery] string? to_date = null, [FromQuery] int page = 1, [FromQuery] int page_size = 100)
         {
+            page_size = Math.Clamp(page_size, 1, 500);
+            page = Math.Max(1, page);
             var nextTemplate = $"{Request.Scheme}://{Request.Host}{Request.Path}?page={{P}}&page_size={page_size}{(date != null ? $"&date={date}" : "")}";
             var prevTemplate = $"{Request.Scheme}://{Request.Host}{Request.Path}?page={{P}}&page_size={page_size}{(date != null ? $"&date={date}" : "")}";
 

@@ -12,19 +12,13 @@ namespace WebApplication1.Services
 
     public class DateTimeProvider : IDateTimeProvider
     {
+        private static readonly TimeZoneInfo _istTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "India Standard Time" : "Asia/Kolkata");
+
         public DateTime UtcNow => DateTime.UtcNow;
 
-        public TimeZoneInfo IstTimeZone
-        {
-            get
-            {
-                string tzName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
-                    ? "India Standard Time" 
-                    : "Asia/Kolkata";
-                return TimeZoneInfo.FindSystemTimeZoneById(tzName);
-            }
-        }
+        public TimeZoneInfo IstTimeZone => _istTimeZone;
 
-        public DateTime IstNow => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, IstTimeZone);
+        public DateTime IstNow => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _istTimeZone);
     }
 }

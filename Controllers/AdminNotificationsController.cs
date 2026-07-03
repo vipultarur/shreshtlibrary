@@ -37,8 +37,8 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> NotificationScheduledCancelAsync(int pk, CancellationToken ct)
         {
             var result = await _adminNotificationService.CancelScheduledNotificationAsync(pk, ct);
-            var dynamicData = (dynamic)result.Data;
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, dynamicData?.message));
+            if (result.IsNotFound) return NotFound(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, result.Message));
         }
 
         [HttpPost("notifications/schedule")]
@@ -70,16 +70,10 @@ namespace WebApplication1.Controllers
         [HttpGet("notifications")]
         public async Task<IActionResult> NotificationsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 50)
         {
+            page_size = Math.Clamp(page_size, 1, 200);
+            page = Math.Max(1, page);
             var result = await _adminNotificationService.GetNotificationsListAsync(page, page_size, ct);
-            var dynamicData = (dynamic)result.Data;
-            return Ok(new { 
-                success = true, 
-                status = "success", 
-                data = dynamicData?.data, 
-                count = dynamicData?.count, 
-                total_pages = dynamicData?.total_pages, 
-                current_page = dynamicData?.current_page 
-            });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
         [HttpGet("notifications/{pk}")]

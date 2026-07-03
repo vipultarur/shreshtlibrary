@@ -42,6 +42,8 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ManageStudentsGetAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "")
         {
+            page_size = Math.Clamp(page_size, 1, 100);
+            page = Math.Max(1, page);
             var result = await _studentAdminService.GetStudentsAsync(page, page_size, search, status, Request.Scheme, Request.Host.Value, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
@@ -101,8 +103,7 @@ namespace WebApplication1.Controllers
                 return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Validation error", result.Errors));
             }
 
-            var userId = result.Data?.GetType().GetProperty("user_id")?.GetValue(result.Data);
-            return Created($"/api/v1/admin/students/{userId}", WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+            return Created("/api/v1/admin/students/new", WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
         [HttpPut("{pk}")]

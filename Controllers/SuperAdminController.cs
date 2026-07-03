@@ -126,17 +126,50 @@ namespace WebApplication1.Controllers
             var result = await _superAdminService.GetBackupDataAsync(id, ct);
             if (result.IsNotFound) return NotFound(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Backup file not found."));
 
-            return File((byte[])result.Data, "application/json", $"{id}.json");
+            if (result.Data is not byte[] bytes)
+                return StatusCode(500, WebApplication1.Models.Responses.ApiResponse<object>.Fail("Backup data is corrupted."));
+
+            return File(bytes, "application/json", $"{id}.json");
         }
 
         [HttpGet("activity-log")]
         public async Task<IActionResult> ActivityLogAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, System.Threading.CancellationToken ct = default)
         {
+            page_size = System.Math.Clamp(page_size, 1, 100);
+            page = System.Math.Max(1, page);
             var result = await _superAdminService.GetActivityLogAsync(page, page_size, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
         [HttpGet("health")]
-        public IActionResult HealthAsync() => Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { status = "healthy", uptime = "unknown" }));
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<IActionResult> HealthAsync(System.Threading.CancellationToken ct)
+        {
+            var startTime = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool dbHealthy = false;
+            try
+            {
+                var scope = HttpContext.RequestServices.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+                dbHealthy = await db.Database.CanConnectAsync(ct);
+            }
+            catch { /* DB connection failed */ }
+            var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startTime);
+
+            var status = dbHealthy ? "healthy" : "degraded";
+            var response = new
+            {
+                status,
+                timestamp = System.DateTime.UtcNow.ToString("O"),
+                checks = new
+                {
+                    database = dbHealthy ? "connected" : "unreachable",
+                    response_time_ms = elapsed.TotalMilliseconds
+                }
+            };
+            if (!dbHealthy)
+                return StatusCode(503, WebApplication1.Models.Responses.ApiResponse<object>.Fail("Service degraded", response));
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(response));
+        }
     }
 }
