@@ -778,8 +778,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.ContactNumber).HasMaxLength(50).HasColumnName("contact_number");
             entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("email");
             entity.Property(e => e.Website).HasMaxLength(255).HasColumnName("website");
-            entity.Property(e => e.OpeningTime).HasColumnName("opening_time");
-            entity.Property(e => e.ClosingTime).HasColumnName("closing_time");
+            entity.Property(e => e.OpeningTime).HasColumnName("open_time");
+            entity.Property(e => e.ClosingTime).HasColumnName("close_time");
             entity.Property(e => e.WeeklyOff).HasMaxLength(100).HasColumnName("weekly_off");
             entity.Property(e => e.TotalCapacity).HasColumnName("total_capacity");
             entity.Property(e => e.AvailableSeats).HasColumnName("available_seats");
