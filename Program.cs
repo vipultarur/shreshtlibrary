@@ -415,17 +415,43 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
     try
     {
-        var scriptPath = System.IO.Path.Combine(AppContext.BaseDirectory, "script_safe.sql");
-        if (System.IO.File.Exists(scriptPath))
-        {
-            var sql = await System.IO.File.ReadAllTextAsync(scriptPath);
-            await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(dbContext.Database, sql);
-            Console.WriteLine("Successfully executed script_safe.sql on startup.");
-        }
-        else
-        {
-            Console.WriteLine($"script_safe.sql not found at {scriptPath}");
-        }
+        var alterSql = @"
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS wifi boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS ac boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS cctv boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS drinking_water boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS lockers boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS charging_points boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS parking boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS reading_area boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS computer_access boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS printing boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS facebook_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS instagram_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS whatsapp_number character varying(50);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS telegram_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS youtube_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS tagline character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS mission text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS vision text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS history text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS welcome_message text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS services text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS courses_supported text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS statistics_description text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS faq jsonb;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS testimonials jsonb;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS emergency_contact character varying(100);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS footer_text character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_details jsonb;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS registration_process text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS required_documents text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_benefits text;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS library_rules text;
+";
+        await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(dbContext.Database, alterSql);
+        Console.WriteLine("Successfully executed direct ALTER TABLE statements for library_libraryinfo on startup.");
+
     }
     catch (Exception ex)
     {
