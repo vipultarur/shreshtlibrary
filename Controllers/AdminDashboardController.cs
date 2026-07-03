@@ -62,13 +62,9 @@ namespace WebApplication1.Controllers
 
 
         [HttpGet("dashboard/stats")]
-        [HttpGet("dashboard/stats/")]
         [HttpGet("/api/v1/dashboard/stats")]
-        [HttpGet("/api/v1/dashboard/stats/")]
         [HttpGet("dashboard/stats/{section}")]
-        [HttpGet("dashboard/stats/{section}/")]
         [HttpGet("/api/v1/dashboard/stats/{section}")]
-        [HttpGet("/api/v1/dashboard/stats/{section}/")]
         public async Task<IActionResult> GetStatsOverviewAsync(string section = "overview", CancellationToken ct = default)
         {
             var stats = await _adminDashboardService.GetStatsOverviewAsync(section, ct);
@@ -76,9 +72,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard/charts")]
-        [HttpGet("dashboard/charts/")]
         [HttpGet("/api/v1/dashboard/charts")]
-        [HttpGet("/api/v1/dashboard/charts/")]
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
         {
             var charts = await _adminDashboardService.GetDashboardChartsAsync(range, ct);
@@ -86,9 +80,7 @@ namespace WebApplication1.Controllers
         }
         
         [HttpGet("dashboard/charts/attendance/overview")]
-        [HttpGet("dashboard/charts/attendance/overview/")]
         [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
-        [HttpGet("/api/v1/dashboard/charts/attendance/overview/")]
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetAttendanceOverviewChartsAsync(ct);
@@ -96,9 +88,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard/charts/revenue/overview")]
-        [HttpGet("dashboard/charts/revenue/overview/")]
         [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
-        [HttpGet("/api/v1/dashboard/charts/revenue/overview/")]
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRevenueOverviewChartsAsync(ct);
@@ -106,9 +96,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard/charts/students/overview")]
-        [HttpGet("dashboard/charts/students/overview/")]
         [HttpGet("/api/v1/dashboard/charts/students/overview")]
-        [HttpGet("/api/v1/dashboard/charts/students/overview/")]
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetStudentsOverviewChartsAsync(ct);
@@ -116,9 +104,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard/charts/memberships/overview")]
-        [HttpGet("dashboard/charts/memberships/overview/")]
         [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
-        [HttpGet("/api/v1/dashboard/charts/memberships/overview/")]
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetMembershipsOverviewChartsAsync(ct);
@@ -128,9 +114,7 @@ namespace WebApplication1.Controllers
 
 
         [HttpGet("dashboard/alerts")]
-        [HttpGet("dashboard/alerts/")]
         [HttpGet("/api/v1/dashboard/alerts")]
-        [HttpGet("/api/v1/dashboard/alerts/")]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetDashboardAlertsAsync(ct);
@@ -138,9 +122,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard/activity/recent")]
-        [HttpGet("dashboard/activity/recent/")]
         [HttpGet("/api/v1/dashboard/activity/recent")]
-        [HttpGet("/api/v1/dashboard/activity/recent/")]
         public async Task<IActionResult> GetRecentActivityAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRecentActivityAsync(ct);
