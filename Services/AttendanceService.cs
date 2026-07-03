@@ -63,27 +63,41 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException("Attendance cannot be marked on a holiday.");
             }
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
+            
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var startTime = openTime.AddMinutes(-paddingMinutes);
+            var endTime = closeTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
-            if (currentTime < openTime)
+            if (startTime <= endTime)
             {
-                throw new InvalidOperationException("Attendance window has not opened yet.");
-            }
+                if (currentTime < startTime)
+                {
+                    throw new InvalidOperationException("Attendance window has not opened yet.");
+                }
 
-            if (currentTime > cutoffTime)
+                if (currentTime > endTime)
+                {
+                    throw new InvalidOperationException("Attendance window has expired for today.");
+                }
+            }
+            else
             {
-                throw new InvalidOperationException("Attendance window has expired for today.");
+                // Wraps around midnight
+                if (currentTime > endTime && currentTime < startTime)
+                {
+                    throw new InvalidOperationException("Attendance window is closed.");
+                }
             }
 
             var existing = await _context.AttendanceAttendances

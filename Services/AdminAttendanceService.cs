@@ -308,21 +308,34 @@ namespace WebApplication1.Services
             var unaccounted = total - records.Count;
             if (unaccounted < 0) unaccounted = 0;
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = openTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            bool isPastCutoff = targetDate < todayDate || (targetDate == todayDate && currentTime > cutoffTime);
+            bool isPastCutoff = targetDate < todayDate;
+            if (targetDate == todayDate)
+            {
+                var startTime = openTime.AddMinutes(-paddingMinutes);
+                var endTime = closeTime.AddMinutes(paddingMinutes);
+                if (startTime <= endTime)
+                {
+                    isPastCutoff = currentTime > endTime;
+                }
+                else
+                {
+                    isPastCutoff = currentTime > endTime && currentTime < startTime;
+                }
+            }
 
             int absent, pending;
             if (isPastCutoff)
@@ -349,21 +362,34 @@ namespace WebApplication1.Services
         {
             if (!DateOnly.TryParse(date, out var targetDate)) targetDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = openTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            bool isPastCutoff = targetDate < todayDate || (targetDate == todayDate && currentTime > cutoffTime);
+            bool isPastCutoff = targetDate < todayDate;
+            if (targetDate == todayDate)
+            {
+                var startTime = openTime.AddMinutes(-paddingMinutes);
+                var endTime = closeTime.AddMinutes(paddingMinutes);
+                if (startTime <= endTime)
+                {
+                    isPastCutoff = currentTime > endTime;
+                }
+                else
+                {
+                    isPastCutoff = currentTime > endTime && currentTime < startTime;
+                }
+            }
 
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
             var presentIds = records.Where(r => r.IsPresent).Select(r => r.StudentId).ToHashSet();

@@ -204,21 +204,33 @@ namespace WebApplication1.Services
                 return;
             }
 
-            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(stoppingToken);
+            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
             var paddingSetting = await context.CoreGlobalsettings
                 .FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", stoppingToken);
             
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             int paddingMinutes = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int parsedPadding))
             {
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = openTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            if (currentTime <= cutoffTime) return; // Window is still open
+            var startTime = openTime.AddMinutes(-paddingMinutes);
+            var endTime = closeTime.AddMinutes(paddingMinutes);
+            bool isPastCutoff = false;
+            if (startTime <= endTime)
+            {
+                isPastCutoff = currentTime > endTime;
+            }
+            else
+            {
+                isPastCutoff = currentTime > endTime && currentTime < startTime;
+            }
+
+            if (!isPastCutoff) return; // Window is still open
 
             // Find all PENDING records for today and convert them to Absent
             var pendingRecords = await context.AttendanceAttendances
