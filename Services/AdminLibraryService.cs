@@ -91,27 +91,6 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetLibraryInfo(CancellationToken ct = default)
         {
-            var info = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
-            if (info == null)
-            {
-                info = new LibraryLibraryinfo
-                {
-                    LibraryName = "Shresht Library",
-                    Logo = "",
-                    Description = "Welcome to Shresht Library",
-                    OwnerName = "Admin",
-                    ContactNumber = "0000000000",
-                    Email = "admin@shreshtlibrary.com",
-                    OpeningTime = new TimeOnly(8, 0),
-                    ClosingTime = new TimeOnly(22, 0),
-                    TotalCapacity = 100,
-                    AvailableSeats = 100,
-                    AddressLine1 = "Library Address",
-                    Area = "Area",
-                    City = "City",
-                    State = "State",
-                    Country = "India",
-                    PinCode = "000000",
             try
             {
                 var info = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
@@ -186,7 +165,7 @@ namespace WebApplication1.Services
             catch (Exception ex)
             {
                 var innerMsg = ex.InnerException != null ? ex.InnerException.Message : "";
-                return ServiceResult<object>.Error($"DB Error in GetLibraryInfo: {ex.Message} | {innerMsg}");
+                return ServiceResult<object>.Fail($"DB Error in GetLibraryInfo: {ex.Message} | {innerMsg}");
             }
         }
 
