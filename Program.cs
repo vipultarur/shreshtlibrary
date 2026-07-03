@@ -410,6 +410,29 @@ app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnv
 });
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+    try
+    {
+        var scriptPath = System.IO.Path.Combine(AppContext.BaseDirectory, "script_safe.sql");
+        if (System.IO.File.Exists(scriptPath))
+        {
+            var sql = await System.IO.File.ReadAllTextAsync(scriptPath);
+            await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(dbContext.Database, sql);
+            Console.WriteLine("Successfully executed script_safe.sql on startup.");
+        }
+        else
+        {
+            Console.WriteLine($"script_safe.sql not found at {scriptPath}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to execute script_safe.sql: {ex.Message}");
+    }
+}
+
 app.Run();
 
 public partial class Program { }
