@@ -31,6 +31,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> UpdateLibraryInfo([FromForm] LibraryInfoUpdateDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateLibraryInfo(dto, ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -45,6 +46,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> CreateFacility([FromForm] FacilityDto dto, CancellationToken ct)
         {
             var result = await _libraryService.CreateFacility(dto, ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -52,7 +54,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> UpdateFacility(long id, [FromForm] FacilityDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateFacility(id, dto, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -60,7 +62,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ToggleFacility(long id, CancellationToken ct)
         {
             var result = await _libraryService.ToggleFacility(id, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -68,7 +70,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> DeleteFacility(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteFacility(id, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -83,6 +85,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> CreateAchiever([FromForm] AchieverDto dto, CancellationToken ct)
         {
             var result = await _libraryService.CreateAchiever(dto, ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -90,7 +93,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> UpdateAchiever(long id, [FromForm] AchieverDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateAchiever(id, dto, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -98,7 +101,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ToggleAchiever(long id, CancellationToken ct)
         {
             var result = await _libraryService.ToggleAchiever(id, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -106,7 +109,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> DeleteAchiever(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteAchiever(id, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -135,6 +138,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> UploadGalleryImage([FromForm] GalleryImageDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UploadGalleryImage(dto, ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -142,7 +146,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> DeleteGalleryImage(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteGalleryImage(id, ct);
-            if (result.IsNotFound) return NotFound(ApiResponse<object>.Fail(result.Message));
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 

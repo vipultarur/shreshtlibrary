@@ -408,6 +408,7 @@ app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnv
     
     return Results.Content(html, "text/html");
 });
+
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
