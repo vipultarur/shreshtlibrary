@@ -291,24 +291,39 @@ namespace WebApplication1.Services
         public async Task<object> GetDashboardAlertsAsync(CancellationToken ct)
         {
             var alerts = new System.Collections.Generic.List<object>();
-            var pendingPayments = await _context.PaymentsPayments.CountAsync(p => p.Status.ToLower() == "pending", ct);
-            if (pendingPayments > 0)
+            
+            try
             {
-                alerts.Add(new {
-                    type = "pending_payments",
-                    label = "Pending Payments",
-                    count = pendingPayments
-                });
+                var pendingPayments = await _context.PaymentsPayments.CountAsync(p => p.Status != null && p.Status.ToLower() == "pending", ct);
+                if (pendingPayments > 0)
+                {
+                    alerts.Add(new {
+                        type = "pending_payments",
+                        label = "Pending Payments",
+                        count = pendingPayments
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ignore DB error for this specific alert
             }
             
-            var unreadMessages = await _context.NotificationsAdmininboxnotifications.CountAsync(n => !n.IsRead, ct);
-            if (unreadMessages > 0)
+            try
             {
-                alerts.Add(new {
-                    type = "unread_messages",
-                    label = "Unread Messages",
-                    count = unreadMessages
-                });
+                var unreadMessages = await _context.NotificationsAdmininboxnotifications.CountAsync(n => !n.IsRead, ct);
+                if (unreadMessages > 0)
+                {
+                    alerts.Add(new {
+                        type = "unread_messages",
+                        label = "Unread Messages",
+                        count = unreadMessages
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ignore DB error for this specific alert
             }
 
             return alerts;
