@@ -230,8 +230,8 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "description")] public string? Description { get; set; }
             [FromForm(Name = "icon_key")] public string? IconKey { get; set; }
             [FromForm(Name = "image")] public IFormFile? Image { get; set; }
-            [FromForm(Name = "order")] public int? Order { get; set; }
-            [FromForm(Name = "is_active")] public bool? IsActive { get; set; }
+            [FromForm(Name = "order")] public string? Order { get; set; }
+            [FromForm(Name = "is_active")] public string? IsActive { get; set; }
         }
 
         public class AchieverDto
@@ -239,10 +239,10 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "name")] public string? Name { get; set; }
             [FromForm(Name = "achievement")] public string? Achievement { get; set; }
             [FromForm(Name = "goal")] public string? Goal { get; set; }
-            [FromForm(Name = "year")] public int? Year { get; set; }
-            [FromForm(Name = "is_featured")] public bool? IsFeatured { get; set; }
-            [FromForm(Name = "order")] public int? Order { get; set; }
-            [FromForm(Name = "is_active")] public bool? IsActive { get; set; }
+            [FromForm(Name = "year")] public string? Year { get; set; }
+            [FromForm(Name = "is_featured")] public string? IsFeatured { get; set; }
+            [FromForm(Name = "order")] public string? Order { get; set; }
+            [FromForm(Name = "is_active")] public string? IsActive { get; set; }
             [FromForm(Name = "photo")] public IFormFile? Photo { get; set; }
         }
 
@@ -250,7 +250,7 @@ namespace WebApplication1.Controllers
         {
             [FromForm(Name = "image")] public IFormFile Image { get; set; }
             [FromForm(Name = "caption")] public string? Caption { get; set; }
-            [FromForm(Name = "order")] public int? Order { get; set; }
+            [FromForm(Name = "order")] public string? Order { get; set; }
         }
     }
 }

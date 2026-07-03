@@ -469,10 +469,13 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS services text
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS courses_supported text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS statistics_description text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS faq text;
+ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN faq TYPE text USING faq::text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS testimonials text;
+ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN testimonials TYPE text USING testimonials::text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS emergency_contact character varying(100);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS footer_text character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_details text;
+ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN membership_details TYPE text USING membership_details::text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS registration_process text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS required_documents text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_benefits text;

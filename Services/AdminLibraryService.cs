@@ -309,14 +309,20 @@ namespace WebApplication1.Services
         {
             if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
             var iconPath = await SaveImageAsync(dto.Image);
+            int order = 0;
+            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
+
+            bool isActive = true;
+            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) isActive = a;
+
             var facility = new LibraryFacility
             {
                 Name = dto.Name,
                 Description = dto.Description ?? "",
                 Image = iconPath ?? "",
                 IconKey = dto.IconKey ?? "default",
-                Order = dto.Order ?? 0,
-                IsActive = dto.IsActive ?? true
+                Order = order,
+                IsActive = isActive
             };
             _context.LibraryFacilities.Add(facility);
             await _context.SaveChangesAsync(ct);
@@ -340,8 +346,8 @@ namespace WebApplication1.Services
             if (dto.Name != null) facility.Name = dto.Name;
             if (dto.Description != null) facility.Description = dto.Description;
             if (dto.IconKey != null) facility.IconKey = dto.IconKey;
-            if (dto.Order.HasValue) facility.Order = dto.Order.Value;
-            if (dto.IsActive.HasValue) facility.IsActive = dto.IsActive.Value;
+            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) facility.Order = o;
+            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) facility.IsActive = a;
             if (dto.Image != null)
             {
                 facility.Image = await SaveImageAsync(dto.Image) ?? facility.Image;
@@ -399,16 +405,28 @@ namespace WebApplication1.Services
         {
             if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
             var imagePath = await SaveImageAsync(dto.Photo);
+            int year = DateTime.Now.Year;
+            if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) year = y;
+
+            bool isFeatured = false;
+            if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) isFeatured = f;
+
+            int order = 0;
+            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
+
+            bool isActive = true;
+            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) isActive = a;
+
             var achiever = new LibraryAchiever
             {
                 Name = dto.Name,
                 Achievement = dto.Achievement ?? "",
                 Goal = dto.Goal ?? "",
-                Year = dto.Year ?? DateTime.Now.Year,
-                IsFeatured = dto.IsFeatured ?? false,
+                Year = year,
+                IsFeatured = isFeatured,
                 Photo = imagePath ?? "",
-                Order = dto.Order ?? 0,
-                IsActive = dto.IsActive ?? true
+                Order = order,
+                IsActive = isActive
             };
             _context.LibraryAchievers.Add(achiever);
             await _context.SaveChangesAsync(ct);
@@ -434,10 +452,10 @@ namespace WebApplication1.Services
             if (dto.Name != null) achiever.Name = dto.Name;
             if (dto.Achievement != null) achiever.Achievement = dto.Achievement;
             if (dto.Goal != null) achiever.Goal = dto.Goal;
-            if (dto.Year.HasValue) achiever.Year = dto.Year.Value;
-            if (dto.IsFeatured.HasValue) achiever.IsFeatured = dto.IsFeatured.Value;
-            if (dto.Order.HasValue) achiever.Order = dto.Order.Value;
-            if (dto.IsActive.HasValue) achiever.IsActive = dto.IsActive.Value;
+            if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) achiever.Year = y;
+            if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) achiever.IsFeatured = f;
+            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) achiever.Order = o;
+            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) achiever.IsActive = a;
             if (dto.Photo != null)
             {
                 achiever.Photo = await SaveImageAsync(dto.Photo) ?? achiever.Photo;
@@ -565,11 +583,14 @@ namespace WebApplication1.Services
             var imagePath = await SaveImageAsync(dto.Image);
             if (string.IsNullOrEmpty(imagePath)) return ServiceResult<object>.Fail("Failed to upload image.");
 
+            int order = 0;
+            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
+
             var galleryImage = new LibraryGalleryImage
             {
                 ImageUrl = imagePath,
                 Caption = dto.Caption,
-                Order = dto.Order ?? 0,
+                Order = order,
                 CreatedAt = DateTime.UtcNow
             };
             _context.LibraryGalleryImages.Add(galleryImage);
