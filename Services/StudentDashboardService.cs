@@ -64,7 +64,7 @@ namespace WebApplication1.Services
                     HolidayRecord = _context.AttendanceHolidays
                         .FirstOrDefault(h => h.Date == today && h.IsActive),
                     AppConfig = _context.LibraryAppconfigs.FirstOrDefault(),
-                    LibraryInfo = _context.LibraryLibraryinfos.Select(l => new { l.OpeningTime }).FirstOrDefault(),
+                    LibraryInfo = _context.LibraryLibraryinfos.Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefault(),
                     PaddingSetting = _context.CoreGlobalsettings.Where(gs => gs.Key == "ATTENDANCE_PADDING_MINUTES").Select(gs => gs.Value).FirstOrDefault(),
                     RazorpayKey = _context.CoreGlobalsettings.Where(gs => gs.Key == "RAZORPAY_KEY").Select(gs => gs.Value).FirstOrDefault()
                 })
@@ -170,13 +170,14 @@ namespace WebApplication1.Services
             string? attendanceTime = null;
             
             var openTime = data.LibraryInfo?.OpeningTime ?? new System.TimeOnly(10, 0);
+            var closeTime = data.LibraryInfo?.ClosingTime ?? new System.TimeOnly(22, 0);
             int paddingMinutes = 60;
             if (data.PaddingSetting != null && int.TryParse(data.PaddingSetting, out int parsedPadding))
             {
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = openTime.AddMinutes(paddingMinutes);
+            var cutoffTime = closeTime.AddMinutes(paddingMinutes);
             var currentTime = System.TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             bool allowQrScan = false;
 
@@ -197,7 +198,7 @@ namespace WebApplication1.Services
                     {
                         attendanceTime = data.AttendanceToday.TimeIn.ToString("hh:mm tt");
                     }
-                    attendanceStatus = data.AttendanceToday.LateMark ? "Arrived late" : "Present";
+                    attendanceStatus = data.AttendanceToday.LateMark ? "Present (Arrived Late)" : "Present";
                 }
                 else if (data.AttendanceToday.Method == "PENDING")
                 {
@@ -208,12 +209,17 @@ namespace WebApplication1.Services
                     else
                     {
                         attendanceStatus = "Pending";
-                        allowQrScan = currentTime >= openTime;
+                        allowQrScan = currentTime >= openTime && currentTime <= cutoffTime;
                     }
                 }
                 else
                 {
                     attendanceStatus = "Absent";
+                    if (data.AttendanceToday.MarkedAt.HasValue)
+                    {
+                        var istMarkedAt = TimeZoneInfo.ConvertTimeFromUtc(data.AttendanceToday.MarkedAt.Value, _dateTimeProvider.IstTimeZone);
+                        attendanceTime = istMarkedAt.ToString("hh:mm tt");
+                    }
                 }
             }
             else
@@ -225,7 +231,7 @@ namespace WebApplication1.Services
                 else
                 {
                     attendanceStatus = "Pending";
-                    allowQrScan = currentTime >= openTime;
+                    allowQrScan = currentTime >= openTime && currentTime <= cutoffTime;
                 }
             }
 

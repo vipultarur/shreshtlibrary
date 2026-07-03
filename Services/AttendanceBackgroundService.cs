@@ -218,7 +218,7 @@ namespace WebApplication1.Services
             
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            var startTime = openTime.AddMinutes(-paddingMinutes);
+            var startTime = openTime;
             var endTime = closeTime.AddMinutes(paddingMinutes);
             bool isPastCutoff = false;
             if (startTime <= endTime)
@@ -251,6 +251,24 @@ namespace WebApplication1.Services
             {
                 record.Method = "SYSTEM";
                 record.MarkedAt = now;
+                
+                context.CoreActivitylogs.Add(new CoreActivitylog
+                {
+                    Action = "ATTENDANCE_UPDATE",
+                    UserId = record.StudentId,
+                    Timestamp = now,
+                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        Student = record.StudentId,
+                        AttendanceDate = today.ToString("yyyy-MM-dd"),
+                        PreviousStatus = "Pending",
+                        NewStatus = "Absent",
+                        Method = "SYSTEM",
+                        AttendanceTime = (string)null,
+                        UpdatedBy = "SYSTEM",
+                        LateMark = false
+                    })
+                });
                 
                 // Add Notification
                 var notification = new NotificationsNotification

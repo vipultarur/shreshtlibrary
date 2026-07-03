@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
+using WebApplication1.Models;
 
 namespace WebApplication1.Services
 {
@@ -75,7 +76,7 @@ namespace WebApplication1.Services
                 paddingMinutes = parsedPadding;
             }
             
-            var startTime = openTime.AddMinutes(-paddingMinutes);
+            var startTime = openTime;
             var endTime = closeTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
@@ -113,8 +114,26 @@ namespace WebApplication1.Services
                     existing.QrCodeId = qr.Id;
                     existing.MarkedAt = _dateTimeProvider.UtcNow;
                     existing.Method = "QR";
-                    existing.LateMark = false;
+                    existing.LateMark = currentTime > openTime.AddMinutes(paddingMinutes);
                     existing.UnderTime = false;
+
+                    _context.CoreActivitylogs.Add(new CoreActivitylog
+                    {
+                        Action = "ATTENDANCE_UPDATE",
+                        UserId = userId,
+                        Timestamp = _dateTimeProvider.UtcNow,
+                        Details = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            Student = userId,
+                            AttendanceDate = today.ToString("yyyy-MM-dd"),
+                            PreviousStatus = "Pending",
+                            NewStatus = "Present",
+                            Method = "QR",
+                            AttendanceTime = _dateTimeProvider.IstNow.ToString("HH:mm:ss"),
+                            UpdatedBy = "SYSTEM",
+                            LateMark = currentTime > openTime.AddMinutes(paddingMinutes)
+                        })
+                    });
 
                     await _context.SaveChangesAsync(ct);
 
@@ -142,11 +161,29 @@ namespace WebApplication1.Services
                 IsPresent = true,
                 MarkedAt = _dateTimeProvider.UtcNow,
                 Method = "QR",
-                LateMark = false,
+                LateMark = currentTime > openTime.AddMinutes(paddingMinutes),
                 UnderTime = false
             };
 
             _context.AttendanceAttendances.Add(attendance);
+            _context.CoreActivitylogs.Add(new CoreActivitylog
+            {
+                Action = "ATTENDANCE_UPDATE",
+                UserId = userId,
+                Timestamp = _dateTimeProvider.UtcNow,
+                Details = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Student = userId,
+                    AttendanceDate = today.ToString("yyyy-MM-dd"),
+                    PreviousStatus = "Pending",
+                    NewStatus = "Present",
+                    Method = "QR",
+                    AttendanceTime = _dateTimeProvider.IstNow.ToString("HH:mm:ss"),
+                    UpdatedBy = "SYSTEM",
+                    LateMark = currentTime > openTime.AddMinutes(paddingMinutes)
+                })
+            });
+
             await _context.SaveChangesAsync(ct);
 
             return new
@@ -177,7 +214,8 @@ namespace WebApplication1.Services
                     note = a.Note,
                     late_mark = a.LateMark,
                     under_time = a.UnderTime,
-                    total_hours = a.TotalHours
+                    total_hours = a.TotalHours,
+                    status = a.Method == "PENDING" ? "Pending" : (!a.IsPresent ? "Absent" : (a.LateMark ? "Present (Arrived Late)" : "Present"))
                 })
                 .ToListAsync(ct);
 

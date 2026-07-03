@@ -553,12 +553,12 @@ namespace WebApplication1.Services
                 .FirstOrDefaultAsync(a => a.StudentId == targetStudentId && a.Date == targetDate, ct);
 
             // Determine cutoff for LateMark
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.ClosingTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
-            var manualCutoff = openTime.AddMinutes(manualPadding);
+            var manualCutoff = closeTime.AddMinutes(manualPadding);
             var manualCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
             if (existingRecord != null)
@@ -599,6 +599,24 @@ namespace WebApplication1.Services
                 };
                 _context.AttendanceAttendances.Add(newRecord);
             }
+            
+            _context.CoreActivitylogs.Add(new CoreActivitylog
+            {
+                Action = "ATTENDANCE_UPDATE",
+                UserId = targetStudentId.Value,
+                Timestamp = _dateTimeProvider.UtcNow,
+                Details = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Student = targetStudentId.Value,
+                    AttendanceDate = targetDate.ToString("yyyy-MM-dd"),
+                    PreviousStatus = existingRecord?.Method == "PENDING" ? "Pending" : (existingRecord != null ? (existingRecord.IsPresent ? "Present" : "Absent") : "None"),
+                    NewStatus = isPresent ? "Present" : "Absent",
+                    Method = "MANUAL",
+                    AttendanceTime = isPresent ? _dateTimeProvider.IstNow.ToString("HH:mm:ss") : null,
+                    UpdatedBy = "ADMIN",
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute)
+                })
+            });
 
             await _context.SaveChangesAsync(ct);
             return ServiceResult<bool>.Ok(true);
@@ -650,12 +668,12 @@ namespace WebApplication1.Services
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
                 .ToListAsync(ct);
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.ClosingTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
-            var manualCutoff = openTime.AddMinutes(manualPadding);
+            var manualCutoff = closeTime.AddMinutes(manualPadding);
 
             foreach (var dto in dtos)
             {
@@ -702,6 +720,24 @@ namespace WebApplication1.Services
                     _context.AttendanceAttendances.Add(newRecord);
                     existingRecords.Add(newRecord);
                 }
+
+                _context.CoreActivitylogs.Add(new CoreActivitylog
+                {
+                    Action = "ATTENDANCE_UPDATE",
+                    UserId = targetStudentId.Value,
+                    Timestamp = _dateTimeProvider.UtcNow,
+                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        Student = targetStudentId.Value,
+                        AttendanceDate = targetDate.ToString("yyyy-MM-dd"),
+                        PreviousStatus = existingRecord?.Method == "PENDING" ? "Pending" : (existingRecord != null ? (existingRecord.IsPresent ? "Present" : "Absent") : "None"),
+                        NewStatus = isPresent ? "Present" : "Absent",
+                        Method = "MANUAL",
+                        AttendanceTime = isPresent ? _dateTimeProvider.IstNow.ToString("HH:mm:ss") : null,
+                        UpdatedBy = "ADMIN",
+                        LateMark = isLate
+                    })
+                });
             }
 
             await _context.SaveChangesAsync(ct);
