@@ -24,6 +24,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetLibraryInfo(CancellationToken ct)
         {
             var result = await _libraryService.GetLibraryInfo(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -39,6 +40,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetFacilities(CancellationToken ct)
         {
             var result = await _libraryService.GetFacilities(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -78,6 +80,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetAchievers(CancellationToken ct)
         {
             var result = await _libraryService.GetAchievers(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -117,6 +120,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetReviews(CancellationToken ct)
         {
             var result = await _libraryService.GetReviews(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -124,6 +128,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetReviewSummary(CancellationToken ct)
         {
             var result = await _libraryService.GetReviewSummary(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
@@ -131,6 +136,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetGalleryImages(CancellationToken ct)
         {
             var result = await _libraryService.GetGalleryImages(ct);
+            if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
