@@ -416,6 +416,30 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var alterSql = @"
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS library_name character varying(255) DEFAULT 'Shresht Library';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS logo character varying(255) DEFAULT '';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS banner_image character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS established_year integer;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS owner_name character varying(255) DEFAULT 'Admin';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS contact_number character varying(50) DEFAULT '0000000000';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS email character varying(255) DEFAULT 'admin@shreshtlibrary.com';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS website character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS opening_time time without time zone DEFAULT '08:00:00';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS closing_time time without time zone DEFAULT '22:00:00';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS weekly_off character varying(100);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS total_capacity integer DEFAULT 100;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS available_seats integer DEFAULT 100;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS address_line1 character varying(255) DEFAULT 'Library Address';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS address_line2 character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS area character varying(100) DEFAULT 'Area';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS city character varying(100) DEFAULT 'City';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS state character varying(100) DEFAULT 'State';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS country character varying(100) DEFAULT 'India';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS pin_code character varying(20) DEFAULT '000000';
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS latitude numeric(10,6) DEFAULT 0.0;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS longitude numeric(10,6) DEFAULT 0.0;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS google_map_url character varying(500);
+
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS wifi boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS ac boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS cctv boolean;
