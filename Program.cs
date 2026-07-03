@@ -329,7 +329,10 @@ if (app.Environment.IsDevelopment())
     // Minimal setup for local dev
 }
 
-var mediaPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "shreshtlibrary", "media"));
+var mediaPath = app.Environment.IsDevelopment() 
+    ? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "shreshtlibrary", "media"))
+    : Path.Combine(builder.Environment.ContentRootPath, "media");
+
 if (!Directory.Exists(mediaPath))
 {
     Directory.CreateDirectory(mediaPath);
