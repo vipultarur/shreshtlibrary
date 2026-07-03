@@ -112,75 +112,82 @@ namespace WebApplication1.Services
                     State = "State",
                     Country = "India",
                     PinCode = "000000",
-                    Latitude = 0,
-                    Longitude = 0,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _context.LibraryLibraryinfos.Add(info);
-                await _context.SaveChangesAsync(ct);
+            try
+            {
+                var info = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+                if (info == null)
+                {
+                    return ServiceResult<object>.Ok(new { message = "Library information not configured yet." });
+                }
+
+                return ServiceResult<object>.Ok(new
+                {
+                    id = info.Id,
+                    library_name = info.LibraryName,
+                    logo = !string.IsNullOrEmpty(info.Logo) ? $"/media/{info.Logo}" : null,
+                    banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"/media/{info.BannerImage}" : null,
+                    description = info.Description,
+                    established_year = info.EstablishedYear,
+                    owner_name = info.OwnerName,
+                    contact_number = info.ContactNumber,
+                    email = info.Email,
+                    website = info.Website,
+                    opening_time = info.OpeningTime.ToString(@"hh\:mm tt"),
+                    closing_time = info.ClosingTime.ToString(@"hh\:mm tt"),
+                    weekly_off = info.WeeklyOff,
+                    total_capacity = info.TotalCapacity,
+                    available_seats = info.AvailableSeats,
+                    address_line1 = info.AddressLine1,
+                    address_line2 = info.AddressLine2,
+                    area = info.Area,
+                    city = info.City,
+                    state = info.State,
+                    country = info.Country,
+                    pin_code = info.PinCode,
+                    latitude = info.Latitude,
+                    longitude = info.Longitude,
+                    google_map_url = info.GoogleMapUrl,
+                    wifi = info.Wifi ?? false,
+                    ac = info.Ac ?? false,
+                    cctv = info.Cctv ?? false,
+                    drinking_water = info.DrinkingWater ?? false,
+                    lockers = info.Lockers ?? false,
+                    charging_points = info.ChargingPoints ?? false,
+                    parking = info.Parking ?? false,
+                    reading_area = info.ReadingArea ?? false,
+                    computer_access = info.ComputerAccess ?? false,
+                    printing = info.Printing ?? false,
+                    facebook_url = info.FacebookUrl,
+                    instagram_url = info.InstagramUrl,
+                    whatsapp_number = info.WhatsappNumber,
+                    telegram_url = info.TelegramUrl,
+                    youtube_url = info.YoutubeUrl,
+                    tagline = info.Tagline,
+                    mission = info.Mission,
+                    vision = info.Vision,
+                    history = info.History,
+                    welcome_message = info.WelcomeMessage,
+                    services = info.Services,
+                    courses_supported = info.CoursesSupported,
+                    statistics_description = info.StatisticsDescription,
+                    faq = info.Faq,
+                    testimonials = info.Testimonials,
+                    emergency_contact = info.EmergencyContact,
+                    footer_text = info.FooterText,
+                    membership_details = info.MembershipDetails,
+                    registration_process = info.RegistrationProcess,
+                    required_documents = info.RequiredDocuments,
+                    membership_benefits = info.MembershipBenefits,
+                    library_rules = info.LibraryRules,
+                    created_at = info.CreatedAt,
+                    updated_at = info.UpdatedAt
+                });
             }
-            
-            return ServiceResult<object>.Ok(new {
-                library_name = info.LibraryName,
-                logo = !string.IsNullOrEmpty(info.Logo) ? $"/media/{info.Logo}" : null,
-                banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"/media/{info.BannerImage}" : null,
-                description = info.Description,
-                established_year = info.EstablishedYear,
-                owner_name = info.OwnerName,
-                contact_number = info.ContactNumber,
-                email = info.Email,
-                website = info.Website,
-                opening_time = info.OpeningTime.ToString(@"HH\:mm"),
-                closing_time = info.ClosingTime.ToString(@"HH\:mm"),
-                weekly_off = info.WeeklyOff,
-                total_capacity = info.TotalCapacity,
-                available_seats = info.AvailableSeats,
-                address_line1 = info.AddressLine1,
-                address_line2 = info.AddressLine2,
-                area = info.Area,
-                city = info.City,
-                state = info.State,
-                country = info.Country,
-                pin_code = info.PinCode,
-                latitude = info.Latitude,
-                longitude = info.Longitude,
-                google_map_url = info.GoogleMapUrl,
-                wifi = info.Wifi,
-                ac = info.Ac,
-                cctv = info.Cctv,
-                drinking_water = info.DrinkingWater,
-                lockers = info.Lockers,
-                charging_points = info.ChargingPoints,
-                parking = info.Parking,
-                reading_area = info.ReadingArea,
-                computer_access = info.ComputerAccess,
-                printing = info.Printing,
-                facebook_url = info.FacebookUrl,
-                instagram_url = info.InstagramUrl,
-                whatsapp_number = info.WhatsappNumber,
-                telegram_url = info.TelegramUrl,
-                youtube_url = info.YoutubeUrl,
-                tagline = info.Tagline,
-                mission = info.Mission,
-                vision = info.Vision,
-                history = info.History,
-                welcome_message = info.WelcomeMessage,
-                services = info.Services,
-                courses_supported = info.CoursesSupported,
-                statistics_description = info.StatisticsDescription,
-                faq = info.Faq,
-                testimonials = info.Testimonials,
-                emergency_contact = info.EmergencyContact,
-                footer_text = info.FooterText,
-                membership_details = info.MembershipDetails,
-                registration_process = info.RegistrationProcess,
-                required_documents = info.RequiredDocuments,
-                membership_benefits = info.MembershipBenefits,
-                library_rules = info.LibraryRules,
-                created_at = info.CreatedAt,
-                updated_at = info.UpdatedAt
-            });
+            catch (Exception ex)
+            {
+                var innerMsg = ex.InnerException != null ? ex.InnerException.Message : "";
+                return ServiceResult<object>.Error($"DB Error in GetLibraryInfo: {ex.Message} | {innerMsg}");
+            }
         }
 
         public async Task<ServiceResult<object>> UpdateLibraryInfo(AdminLibraryController.LibraryInfoUpdateDto dto, CancellationToken ct = default)

@@ -450,6 +450,7 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS parking boole
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS reading_area boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS computer_access boolean;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS printing boolean;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS facebook_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS instagram_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS whatsapp_number character varying(50);
