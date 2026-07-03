@@ -778,8 +778,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.ContactNumber).HasMaxLength(50).HasColumnName("contact_number");
             entity.Property(e => e.Email).HasMaxLength(255).HasColumnName("email");
             entity.Property(e => e.Website).HasMaxLength(255).HasColumnName("website");
-            entity.Property(e => e.OpeningTime).HasColumnName("open_time");
-            entity.Property(e => e.ClosingTime).HasColumnName("close_time");
+            entity.Property(e => e.OpeningTime).HasColumnName("opening_time");
+            entity.Property(e => e.ClosingTime).HasColumnName("closing_time");
             entity.Property(e => e.WeeklyOff).HasMaxLength(100).HasColumnName("weekly_off");
             entity.Property(e => e.TotalCapacity).HasColumnName("total_capacity");
             entity.Property(e => e.AvailableSeats).HasColumnName("available_seats");
@@ -810,6 +810,25 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.WhatsappNumber).HasMaxLength(50).HasColumnName("whatsapp_number");
             entity.Property(e => e.TelegramUrl).HasMaxLength(255).HasColumnName("telegram_url");
             entity.Property(e => e.YoutubeUrl).HasMaxLength(255).HasColumnName("youtube_url");
+
+            entity.Property(e => e.Tagline).HasColumnName("tagline");
+            entity.Property(e => e.Mission).HasColumnName("mission");
+            entity.Property(e => e.Vision).HasColumnName("vision");
+            entity.Property(e => e.History).HasColumnName("history");
+            entity.Property(e => e.WelcomeMessage).HasColumnName("welcome_message");
+            entity.Property(e => e.Services).HasColumnName("services");
+            entity.Property(e => e.CoursesSupported).HasColumnName("courses_supported");
+            entity.Property(e => e.StatisticsDescription).HasColumnName("statistics_description");
+            entity.Property(e => e.Faq).HasColumnName("faq");
+            entity.Property(e => e.Testimonials).HasColumnName("testimonials");
+            entity.Property(e => e.EmergencyContact).HasColumnName("emergency_contact");
+            entity.Property(e => e.FooterText).HasColumnName("footer_text");
+
+            entity.Property(e => e.MembershipDetails).HasColumnName("membership_details");
+            entity.Property(e => e.RegistrationProcess).HasColumnName("registration_process");
+            entity.Property(e => e.RequiredDocuments).HasColumnName("required_documents");
+            entity.Property(e => e.MembershipBenefits).HasColumnName("membership_benefits");
+            entity.Property(e => e.LibraryRules).HasColumnName("library_rules");
 
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
