@@ -189,6 +189,8 @@ namespace WebApplication1.Controllers
             [FromForm(Name = "whatsapp_number")] public string? WhatsappNumber { get; set; }
             [FromForm(Name = "telegram_url")] public string? TelegramUrl { get; set; }
             [FromForm(Name = "youtube_url")] public string? YoutubeUrl { get; set; }
+            [FromForm(Name = "twitter_url")] public string? TwitterUrl { get; set; }
+            [FromForm(Name = "linkedin_url")] public string? LinkedinUrl { get; set; }
 
             // About Content
             [FromForm(Name = "tagline")] public string? Tagline { get; set; }

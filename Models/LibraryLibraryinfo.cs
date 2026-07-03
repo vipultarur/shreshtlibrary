@@ -50,6 +50,8 @@ public partial class LibraryLibraryinfo
     public string? WhatsappNumber { get; set; }
     public string? TelegramUrl { get; set; }
     public string? YoutubeUrl { get; set; }
+    public string? TwitterUrl { get; set; }
+    public string? LinkedinUrl { get; set; }
     // About Content
     public string? Tagline { get; set; }
     public string? Mission { get; set; }

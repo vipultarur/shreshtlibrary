@@ -141,6 +141,8 @@ namespace WebApplication1.Services
                     whatsapp_number = info.WhatsappNumber,
                     telegram_url = info.TelegramUrl,
                     youtube_url = info.YoutubeUrl,
+                    twitter_url = info.TwitterUrl,
+                    linkedin_url = info.LinkedinUrl,
                     tagline = info.Tagline,
                     mission = info.Mission,
                     vision = info.Vision,
@@ -219,6 +221,8 @@ namespace WebApplication1.Services
             if (dto.WhatsappNumber != null) info.WhatsappNumber = dto.WhatsappNumber;
             if (dto.TelegramUrl != null) info.TelegramUrl = dto.TelegramUrl;
             if (dto.YoutubeUrl != null) info.YoutubeUrl = dto.YoutubeUrl;
+            if (dto.TwitterUrl != null) info.TwitterUrl = dto.TwitterUrl;
+            if (dto.LinkedinUrl != null) info.LinkedinUrl = dto.LinkedinUrl;
 
             if (dto.Tagline != null) info.Tagline = dto.Tagline;
             if (dto.Mission != null) info.Mission = dto.Mission;

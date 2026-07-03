@@ -194,6 +194,8 @@ CREATE TABLE IF NOT EXISTS library_libraryinfo (
     whatsapp_number character varying(50),
     telegram_url character varying(255),
     youtube_url character varying(255),
+    twitter_url character varying(255),
+    linkedin_url character varying(255),
     created_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
     updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
     CONSTRAINT library_libraryinfo_pkey PRIMARY KEY (id)
@@ -1191,3 +1193,5 @@ ALTER TABLE IF EXISTS seats_seatchangelog ADD COLUMN IF NOT EXISTS changed_by_id
 ALTER TABLE IF EXISTS seats_seatchangelog ADD COLUMN IF NOT EXISTS previous_seat_id bigint;
 ALTER TABLE IF EXISTS seats_seatchangelog ADD COLUMN IF NOT EXISTS seat_id bigint NOT NULL;
 ALTER TABLE IF EXISTS seats_seatchangelog ADD COLUMN IF NOT EXISTS student_id bigint;
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS twitter_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS linkedin_url character varying(255);

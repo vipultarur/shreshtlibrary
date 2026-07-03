@@ -456,6 +456,8 @@ ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS instagram_url
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS whatsapp_number character varying(50);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS telegram_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS youtube_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS twitter_url character varying(255);
+ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS linkedin_url character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS tagline character varying(255);
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS mission text;
 ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS vision text;

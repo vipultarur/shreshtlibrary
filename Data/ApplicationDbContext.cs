@@ -810,6 +810,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.WhatsappNumber).HasMaxLength(50).HasColumnName("whatsapp_number");
             entity.Property(e => e.TelegramUrl).HasMaxLength(255).HasColumnName("telegram_url");
             entity.Property(e => e.YoutubeUrl).HasMaxLength(255).HasColumnName("youtube_url");
+            entity.Property(e => e.TwitterUrl).HasMaxLength(255).HasColumnName("twitter_url");
+            entity.Property(e => e.LinkedinUrl).HasMaxLength(255).HasColumnName("linkedin_url");
 
             entity.Property(e => e.Tagline).HasColumnName("tagline");
             entity.Property(e => e.Mission).HasColumnName("mission");
