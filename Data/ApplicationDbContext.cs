@@ -822,11 +822,11 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CoursesSupported).HasColumnName("courses_supported");
             entity.Property(e => e.StatisticsDescription).HasColumnName("statistics_description");
             entity.Property(e => e.Faq).HasColumnType("jsonb").HasColumnName("faq");
-            entity.Property(e => e.Testimonials).HasColumnName("testimonials");
+            entity.Property(e => e.Testimonials).HasColumnType("jsonb").HasColumnName("testimonials");
             entity.Property(e => e.EmergencyContact).HasColumnName("emergency_contact");
             entity.Property(e => e.FooterText).HasColumnName("footer_text");
 
-            entity.Property(e => e.MembershipDetails).HasColumnName("membership_details");
+            entity.Property(e => e.MembershipDetails).HasColumnType("jsonb").HasColumnName("membership_details");
             entity.Property(e => e.RegistrationProcess).HasColumnName("registration_process");
             entity.Property(e => e.RequiredDocuments).HasColumnName("required_documents");
             entity.Property(e => e.MembershipBenefits).HasColumnName("membership_benefits");
