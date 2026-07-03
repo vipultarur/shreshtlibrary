@@ -146,10 +146,10 @@ namespace WebApplication1.Services
                     courses_supported = info.CoursesSupported,
                     statistics_description = info.StatisticsDescription,
                     faq = !string.IsNullOrEmpty(info.Faq) ? System.Text.Json.JsonSerializer.Deserialize<object>(info.Faq) : null,
-                    testimonials = info.Testimonials,
                     emergency_contact = info.EmergencyContact,
                     footer_text = info.FooterText,
-                    membership_details = info.MembershipDetails,
+                    membership_details = info.MembershipDetails != null && info.MembershipDetails.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.MembershipDetails) : info.MembershipDetails,
+                    testimonials = info.Testimonials != null && info.Testimonials.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.Testimonials) : info.Testimonials,
                     registration_process = info.RegistrationProcess,
                     required_documents = info.RequiredDocuments,
                     membership_benefits = info.MembershipBenefits,
@@ -246,10 +246,10 @@ namespace WebApplication1.Services
                 if (dto.CoursesSupported != null) info.CoursesSupported = dto.CoursesSupported;
                 if (dto.StatisticsDescription != null) info.StatisticsDescription = dto.StatisticsDescription;
                 if (dto.Faq != null) info.Faq = dto.Faq;
-                if (dto.Testimonials != null) info.Testimonials = dto.Testimonials;
+                if (dto.Testimonials != null) info.Testimonials = System.Text.Json.JsonSerializer.Serialize(dto.Testimonials);
                 if (dto.EmergencyContact != null) info.EmergencyContact = dto.EmergencyContact;
                 if (dto.FooterText != null) info.FooterText = dto.FooterText;
-                if (dto.MembershipDetails != null) info.MembershipDetails = dto.MembershipDetails;
+                if (dto.MembershipDetails != null) info.MembershipDetails = System.Text.Json.JsonSerializer.Serialize(dto.MembershipDetails);
                 if (dto.RegistrationProcess != null) info.RegistrationProcess = dto.RegistrationProcess;
                 if (dto.RequiredDocuments != null) info.RequiredDocuments = dto.RequiredDocuments;
                 if (dto.MembershipBenefits != null) info.MembershipBenefits = dto.MembershipBenefits;
@@ -261,7 +261,27 @@ namespace WebApplication1.Services
                 info.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync(ct);
-                return ServiceResult<object>.Ok("Library info updated.");
+                return ServiceResult<object>.Ok(new
+                {
+                    id = info.Id,
+                    library_name = info.LibraryName,
+                    description = info.Description,
+                    tagline = info.Tagline,
+                    owner_name = info.OwnerName,
+                    contact_number = info.ContactNumber,
+                    email = info.Email,
+                    website = info.Website,
+                    address_line1 = info.AddressLine1,
+                    address_line2 = info.AddressLine2,
+                    city = info.City,
+                    state = info.State,
+                    country = info.Country,
+                    pin_code = info.PinCode,
+                    established_year = info.EstablishedYear,
+                    membership_details = info.MembershipDetails != null && info.MembershipDetails.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.MembershipDetails) : info.MembershipDetails,
+                    testimonials = info.Testimonials != null && info.Testimonials.StartsWith("\"") ? System.Text.Json.JsonSerializer.Deserialize<string>(info.Testimonials) : info.Testimonials,
+                    updated_at = info.UpdatedAt
+                });
             }
             catch (Exception ex)
             {
@@ -300,7 +320,16 @@ namespace WebApplication1.Services
             };
             _context.LibraryFacilities.Add(facility);
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Facility created.");
+            return ServiceResult<object>.Ok(new
+            {
+                id = facility.Id,
+                name = facility.Name,
+                description = facility.Description,
+                image = !string.IsNullOrEmpty(facility.Image) ? $"/media/{facility.Image}" : null,
+                icon_key = facility.IconKey,
+                order = facility.Order,
+                is_active = facility.IsActive
+            });
         }
 
         public async Task<ServiceResult<object>> UpdateFacility(long id, AdminLibraryController.FacilityDto dto, CancellationToken ct = default)
@@ -319,7 +348,16 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Facility updated.");
+            return ServiceResult<object>.Ok(new
+            {
+                id = facility.Id,
+                name = facility.Name,
+                description = facility.Description,
+                image = !string.IsNullOrEmpty(facility.Image) ? $"/media/{facility.Image}" : null,
+                icon_key = facility.IconKey,
+                order = facility.Order,
+                is_active = facility.IsActive
+            });
         }
 
         public async Task<ServiceResult<object>> ToggleFacility(long id, CancellationToken ct = default)
@@ -374,7 +412,18 @@ namespace WebApplication1.Services
             };
             _context.LibraryAchievers.Add(achiever);
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Achiever created.");
+            return ServiceResult<object>.Ok(new
+            {
+                id = achiever.Id,
+                name = achiever.Name,
+                achievement = achiever.Achievement,
+                goal = achiever.Goal,
+                year = achiever.Year,
+                is_featured = achiever.IsFeatured,
+                photo = !string.IsNullOrEmpty(achiever.Photo) ? $"/media/{achiever.Photo}" : null,
+                order = achiever.Order,
+                is_active = achiever.IsActive
+            });
         }
 
         public async Task<ServiceResult<object>> UpdateAchiever(long id, AdminLibraryController.AchieverDto dto, CancellationToken ct = default)
@@ -395,7 +444,18 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Achiever updated.");
+            return ServiceResult<object>.Ok(new
+            {
+                id = achiever.Id,
+                name = achiever.Name,
+                achievement = achiever.Achievement,
+                goal = achiever.Goal,
+                year = achiever.Year,
+                is_featured = achiever.IsFeatured,
+                photo = !string.IsNullOrEmpty(achiever.Photo) ? $"/media/{achiever.Photo}" : null,
+                order = achiever.Order,
+                is_active = achiever.IsActive
+            });
         }
 
         public async Task<ServiceResult<object>> ToggleAchiever(long id, CancellationToken ct = default)
@@ -515,7 +575,14 @@ namespace WebApplication1.Services
             _context.LibraryGalleryImages.Add(galleryImage);
             await _context.SaveChangesAsync(ct);
 
-            return ServiceResult<object>.Ok("Gallery image uploaded.");
+            return ServiceResult<object>.Ok(new
+            {
+                id = galleryImage.Id,
+                image_url = !string.IsNullOrEmpty(galleryImage.ImageUrl) ? $"/media/{galleryImage.ImageUrl}" : null,
+                caption = galleryImage.Caption,
+                order = galleryImage.Order,
+                created_at = galleryImage.CreatedAt
+            });
         }
 
         public async Task<ServiceResult<object>> DeleteGalleryImage(long id, CancellationToken ct = default)
