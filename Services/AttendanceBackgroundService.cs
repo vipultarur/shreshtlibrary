@@ -349,11 +349,13 @@ namespace WebApplication1.Services
             
             foreach (var record in recordsToCheckout)
             {
-                DateTime cutoffDateTime;
+                DateTime cutoffIst;
                 if (closeTime < openTime)
-                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1);
+                    cutoffIst = record.Date.ToDateTime(closeTime).AddDays(1);
                 else
-                    cutoffDateTime = record.Date.ToDateTime(closeTime);
+                    cutoffIst = record.Date.ToDateTime(closeTime);
+                    
+                DateTime cutoffUtc = TimeZoneInfo.ConvertTimeToUtc(cutoffIst, _dateTimeProvider.IstTimeZone);
 
                 record.TimeOut = closeTime;
                 
@@ -382,8 +384,8 @@ namespace WebApplication1.Services
                 if (activeSessions.TryGetValue(record.StudentId, out var activeSession))
                 {
                     activeSession.Status = "completed";
-                    activeSession.EndTime = cutoffDateTime;
-                    var sessionDuration = cutoffDateTime - activeSession.StartTime;
+                    activeSession.EndTime = cutoffUtc;
+                    var sessionDuration = cutoffUtc - activeSession.StartTime;
                     activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
 
                     context.CoreActivitylogs.Add(new CoreActivitylog
