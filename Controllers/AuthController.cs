@@ -130,16 +130,37 @@ namespace WebApplication1.Controllers
 
     public class UserRegisterRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("first_name")]
         public string FirstName { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("last_name")]
         public string LastName { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
         public string Email { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("mobile")]
         public string Mobile { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
         public string Password { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("confirm_password")]
         public string ConfirmPassword { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("goal")]
         public string Goal { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("dob")]
         public System.DateTime Dob { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("caste")]
         public string Caste { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("address")]
         public string Address { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("parent_mobile")]
         public string ParentMobile { get; set; }
     }
 
