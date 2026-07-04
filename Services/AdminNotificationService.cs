@@ -268,7 +268,15 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
             }
 
-            return ServiceResult<object>.Ok(notification);
+            return ServiceResult<object>.Ok(new {
+                id = notification.Id,
+                title = notification.Title,
+                body = notification.Body,
+                type = notification.Type,
+                success_count = notification.SuccessCount,
+                failure_count = notification.FailureCount,
+                total_recipients = notification.TotalRecipients
+            });
         }
 
         public async Task<ServiceResult<object>> GetNotificationsListAsync(int page, int pageSize, CancellationToken ct = default)

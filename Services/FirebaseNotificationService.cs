@@ -26,17 +26,28 @@ namespace WebApplication1.Services
             {
                 if (FirebaseApp.DefaultInstance == null)
                 {
-                    // In production, the GOOGLE_APPLICATION_CREDENTIALS environment variable should be set
-                    FirebaseApp.Create(new AppOptions()
+                    var jsonCredentials = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
+                    if (!string.IsNullOrEmpty(jsonCredentials))
                     {
-                        Credential = GoogleCredential.GetApplicationDefault()
-                    });
+                        FirebaseApp.Create(new AppOptions()
+                        {
+                            Credential = GoogleCredential.FromJson(jsonCredentials)
+                        });
+                    }
+                    else
+                    {
+                        // Fallback to GOOGLE_APPLICATION_CREDENTIALS (file path)
+                        FirebaseApp.Create(new AppOptions()
+                        {
+                            Credential = GoogleCredential.GetApplicationDefault()
+                        });
+                    }
                 }
                 _isFirebaseInitialized = true;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Firebase initialization failed. Using Mock Push Service.");
+                _logger.LogWarning(ex, "Firebase initialization failed (Check FIREBASE_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS). Using Mock Push Service.");
             }
         }
 
