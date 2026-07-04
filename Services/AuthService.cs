@@ -95,7 +95,7 @@ namespace WebApplication1.Services
                         Dob = System.DateOnly.FromDateTime(request.Dob),
                         Address = request.Address ?? "",
                         ParentMobile = request.ParentMobile ?? "",
-                        Gender = "Other", // Default from Django
+                        Gender = request.Gender ?? "Other",
                         Status = WebApplication1.Utils.Constants.StudentStatus.Pending,
                         PreferredLanguage = "en",
                         JoiningDate = System.DateOnly.FromDateTime(System.DateTime.UtcNow),

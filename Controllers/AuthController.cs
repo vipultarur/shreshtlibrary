@@ -211,6 +211,9 @@ namespace WebApplication1.Controllers
         
         [System.Text.Json.Serialization.JsonPropertyName("parent_mobile")]
         public string ParentMobile { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("gender")]
+        public string Gender { get; set; }
     }
 
     public class SendOtpRequest
