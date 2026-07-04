@@ -24,6 +24,31 @@ namespace WebApplication1.Services
 
         public async Task<IActionResult> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
         {
+            // Trim inputs
+            request.FirstName = request.FirstName?.Trim();
+            request.LastName = request.LastName?.Trim();
+            request.Email = request.Email?.Trim();
+            request.Mobile = request.Mobile?.Trim();
+            request.Goal = request.Goal?.Trim();
+            request.Caste = request.Caste?.Trim();
+            request.Address = request.Address?.Trim();
+            request.ParentMobile = request.ParentMobile?.Trim();
+
+            // Validate required fields
+            var errors = new Dictionary<string, string[]>();
+
+            if (string.IsNullOrWhiteSpace(request.FirstName)) errors["first_name"] = new[] { "First name is required." };
+            if (string.IsNullOrWhiteSpace(request.LastName)) errors["last_name"] = new[] { "Last name is required." };
+            if (string.IsNullOrWhiteSpace(request.Email)) errors["email"] = new[] { "Email is required." };
+            if (string.IsNullOrWhiteSpace(request.Mobile)) errors["mobile"] = new[] { "Mobile number is required." };
+            if (string.IsNullOrWhiteSpace(request.Password)) errors["password"] = new[] { "Password is required." };
+            if (request.Dob == default) errors["dob"] = new[] { "Date of birth is required." };
+
+            if (errors.Any())
+            {
+                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors });
+            }
+
             if (request.Password != request.ConfirmPassword)
             {
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Passwords do not match.", errors = new { password = new[] { "Passwords do not match." } } });
@@ -189,6 +214,7 @@ namespace WebApplication1.Services
 
         public async Task<IActionResult> LoginEmailAsync(LoginEmailRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
+            request.Email = request.Email?.Trim();
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             {
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { email = new[] { "This field is required." }, password = new[] { "This field is required." } } });
@@ -221,6 +247,7 @@ namespace WebApplication1.Services
 
         public async Task<IActionResult> LoginMobileAsync(LoginMobileRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
+            request.Mobile = request.Mobile?.Trim();
             if (string.IsNullOrWhiteSpace(request.Mobile) || string.IsNullOrWhiteSpace(request.Password))
             {
                 return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { mobile = new[] { "This field is required." }, password = new[] { "This field is required." } } });
