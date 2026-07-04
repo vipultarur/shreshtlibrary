@@ -30,7 +30,6 @@ namespace WebApplication1.Services
             request.Email = request.Email?.Trim();
             request.Mobile = request.Mobile?.Trim();
             request.Goal = request.Goal?.Trim();
-            request.Caste = request.Caste?.Trim();
             request.Address = request.Address?.Trim();
             request.ParentMobile = request.ParentMobile?.Trim();
 
@@ -92,7 +91,6 @@ namespace WebApplication1.Services
                     UserId = user.Id,
                     Goal = request.Goal ?? "Other",
                     Dob = System.DateOnly.FromDateTime(request.Dob),
-                    Caste = request.Caste ?? "",
                     Address = request.Address ?? "",
                     ParentMobile = request.ParentMobile ?? "",
                     Gender = "Other", // Default from Django

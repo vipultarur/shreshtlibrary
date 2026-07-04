@@ -160,9 +160,6 @@ namespace WebApplication1.Controllers
         [System.Text.Json.Serialization.JsonPropertyName("dob")]
         public System.DateTime Dob { get; set; }
         
-        [System.Text.Json.Serialization.JsonPropertyName("caste")]
-        public string Caste { get; set; }
-        
         [System.Text.Json.Serialization.JsonPropertyName("address")]
         public string Address { get; set; }
         
