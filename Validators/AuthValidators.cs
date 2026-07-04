@@ -25,6 +25,10 @@ namespace WebApplication1.Validators
                 .NotEmpty().WithMessage("Mobile number is required.")
                 .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("A valid mobile number is required.");
 
+            RuleFor(x => x.ParentMobile)
+                .Matches(@"^\d{10}$").When(x => !string.IsNullOrEmpty(x.ParentMobile))
+                .WithMessage("Parent mobile number must be exactly 10 digits.");
+
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("Password is required.")
                 .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
