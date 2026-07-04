@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WebApplication1.Models.Responses;
 using WebApplication1.Services;
+using WebApplication1.Models.DTOs.Admin;
 
 namespace WebApplication1.Controllers
 {
@@ -17,11 +18,6 @@ namespace WebApplication1.Controllers
         public AdminReviewsController(IAdminLibraryService libraryService)
         {
             _libraryService = libraryService;
-        }
-
-        public class RejectReviewDto
-        {
-            public string Reason { get; set; } = "";
         }
 
         [HttpGet("")]

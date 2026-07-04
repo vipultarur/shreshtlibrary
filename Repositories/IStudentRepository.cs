@@ -11,9 +11,9 @@ namespace WebApplication1.Repositories
         Task<StudentsReferralcode?> GetReferralCodeAsync(long userId, CancellationToken ct = default);
         Task<StudentsReferralcode?> GetReferralCodeByCodeAsync(string code, CancellationToken ct = default);
         Task<bool> HasAppliedReferralAsync(long userId, CancellationToken ct = default);
-        Task<System.Collections.Generic.List<object>> GetReferralHistoryAsync(long userId, CancellationToken ct = default);
-        void AddReferralCodeAsync(StudentsReferralcode referralCode, CancellationToken ct = default);
-        void AddReferralHistoryAsync(StudentsReferralhistory history, CancellationToken ct = default);
+        Task<System.Collections.Generic.List<object>> GetReferralHistoryAsync(long userId, int page = 1, int pageSize = 20, CancellationToken ct = default);
+        void AddReferralCode(StudentsReferralcode referralCode, CancellationToken ct = default);
+        void AddReferralHistory(StudentsReferralhistory history, CancellationToken ct = default);
         Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

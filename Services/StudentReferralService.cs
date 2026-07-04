@@ -54,7 +54,7 @@ namespace WebApplication1.Services
                 BenefitGiven = "1 month free extension"
             };
             
-            _repository.AddReferralCodeAsync(refCode, ct);
+            _repository.AddReferralCode(refCode, ct);
             await _repository.SaveChangesAsync(ct);
 
             return ApiResponse<object>.Ok(new
@@ -91,15 +91,19 @@ namespace WebApplication1.Services
 
             refCode.UsedByCount++;
             
-            _repository.AddReferralHistoryAsync(history, ct);
+            _repository.AddReferralHistory(history, ct);
             await _repository.SaveChangesAsync(ct);
 
             return ApiResponse<object>.Ok(new { message = "Referral code applied successfully" });
         }
 
-        public async Task<ApiResponse<object>> GetReferralHistoryAsync(long userId, CancellationToken ct = default)
+        public async Task<ApiResponse<object>> GetReferralHistoryAsync(long userId, int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
-            var history = await _repository.GetReferralHistoryAsync(userId, ct);
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 50) pageSize = 50;
+
+            var history = await _repository.GetReferralHistoryAsync(userId, page, pageSize, ct);
             return ApiResponse<object>.Ok(history);
         }
     }

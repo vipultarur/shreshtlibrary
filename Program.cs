@@ -64,18 +64,18 @@ if (!string.IsNullOrEmpty(connectionString))
     connBuilder.Timeout = 30;
     connBuilder.CommandTimeout = 60;
     connectionString = connBuilder.ConnectionString;
-}
 
-builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString, 
-        npgsqlOptionsAction: sqlOptions =>
-        {
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorCodesToAdd: null);
-        })
-    .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+    builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
+        options.UseNpgsql(connectionString, 
+            npgsqlOptionsAction: sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null);
+            })
+        .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+}
 
 // Add Notification Services
 builder.Services.AddSingleton<WebApplication1.Services.INotificationService, WebApplication1.Services.FirebaseNotificationService>();
@@ -141,7 +141,7 @@ builder.Services.AddCors(options =>
         else
         {
             policy.WithOrigins(allowedOrigins)
-                  .AllowAnyMethod()
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                   .AllowAnyHeader()
                   .DisallowCredentials();
         }
@@ -202,8 +202,10 @@ builder.Services.AddRateLimiter(options =>
     });
     options.AddPolicy("UserRateThrottle", context =>
     {
-        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ip, _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        var userId = context.User?.FindFirst("user_id")?.Value
+            ?? context.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(userId, _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
         {
             PermitLimit = 100,
             Window = TimeSpan.FromMinutes(1)
@@ -260,25 +262,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
-        // First ensure EF migration history table exists
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
-                ""MigrationId"" character varying(150) NOT NULL,
-                ""ProductVersion"" character varying(32) NOT NULL,
-                CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
-            );
-        ");
-
-        // Insert the initial migration so it doesn't fail trying to recreate Django tables
-        db.Database.ExecuteSqlRaw(@"
-            INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
-            SELECT '20260702161914_UpdateLibraryInfoSchema', '8.0.0'
-            WHERE NOT EXISTS (
-                SELECT 1 FROM ""__EFMigrationsHistory"" WHERE ""MigrationId"" = '20260702161914_UpdateLibraryInfoSchema'
-            );
-        ");
-
-        db.Database.Migrate();
+        await db.Database.MigrateAsync();
         Log.Information("Database migration completed successfully.");
     }
     catch (Exception ex)
@@ -289,6 +273,8 @@ using (var scope = app.Services.CreateScope())
 
 app.UseForwardedHeaders();
 app.UseSerilogRequestLogging();
+app.UseMiddleware<WebApplication1.Middleware.CorrelationIdMiddleware>();
+app.UseResponseCompression();
 
 if (app.Environment.IsDevelopment())
 {
@@ -318,7 +304,6 @@ else
             });
         });
     });
-    app.UseStatusCodePages();
     app.UseHsts();
 }
 
@@ -331,12 +316,15 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
-    c.RoutePrefix = "api-docs";
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
+        c.RoutePrefix = "api-docs";
+    });
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -392,15 +380,13 @@ app.MapGet("/media/{*path}", async (string path, WebApplication1.Data.Applicatio
             ".svg" => "image/svg+xml",
             _ => "application/octet-stream"
         };
-        var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
-        return Results.File(bytes, mime);
+        return Results.File(fullPath, mime, enableRangeProcessing: true);
     }
 
     logger.LogInformation("File not found. Path requested: {Path}, Physical path checked: {FullPath}", path, fullPath);
     return Results.NotFound(new { message = "File not found in DB or Disk", requestedPath = path, physicalPath = fullPath });
 });
 
-app.UseResponseCompression();
 app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
@@ -411,100 +397,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
-app.MapGet("/", async (WebApplication1.Data.ApplicationDbContext db, IWebHostEnvironment env) =>
+app.MapGet("/", () =>
 {
-    var path = System.IO.Path.Combine(env.ContentRootPath, "landing.html");
-    if (!System.IO.File.Exists(path))
-    {
-        return Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" });
-    }
-
-    var html = await System.IO.File.ReadAllTextAsync(path);
-    
-    return Results.Content(html, "text/html");
+    return Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" });
 });
 
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
-    try
-    {
-        var alterSql = @"
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS library_name character varying(255) DEFAULT 'Shresht Library';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS logo character varying(255) DEFAULT '';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS banner_image character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS established_year integer;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS owner_name character varying(255) DEFAULT 'Admin';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS contact_number character varying(50) DEFAULT '0000000000';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS email character varying(255) DEFAULT 'admin@shreshtlibrary.com';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS website character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS opening_time time without time zone DEFAULT '08:00:00';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS closing_time time without time zone DEFAULT '22:00:00';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS weekly_off character varying(100);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS total_capacity integer DEFAULT 100;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS available_seats integer DEFAULT 100;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS address_line1 character varying(255) DEFAULT 'Library Address';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS address_line2 character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS area character varying(100) DEFAULT 'Area';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS city character varying(100) DEFAULT 'City';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS state character varying(100) DEFAULT 'State';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS country character varying(100) DEFAULT 'India';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS pin_code character varying(20) DEFAULT '000000';
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS latitude numeric(10,6) DEFAULT 0.0;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS longitude numeric(10,6) DEFAULT 0.0;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS google_map_url character varying(500);
 
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS wifi boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS ac boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS cctv boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS drinking_water boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS lockers boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS charging_points boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS parking boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS reading_area boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS computer_access boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS printing boolean;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS facebook_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS instagram_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS whatsapp_number character varying(50);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS telegram_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS youtube_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS twitter_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS linkedin_url character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS tagline character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS mission text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS vision text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS history text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS welcome_message text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS services text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS courses_supported text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS statistics_description text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS faq text;
-ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN faq TYPE text USING faq::text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS testimonials text;
-ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN testimonials TYPE text USING testimonials::text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS emergency_contact character varying(100);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS footer_text character varying(255);
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_details text;
-ALTER TABLE IF EXISTS library_libraryinfo ALTER COLUMN membership_details TYPE text USING membership_details::text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS registration_process text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS required_documents text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS membership_benefits text;
-ALTER TABLE IF EXISTS library_libraryinfo ADD COLUMN IF NOT EXISTS library_rules text;
-";
-        await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(dbContext.Database, alterSql);
-        Console.WriteLine("Successfully executed direct ALTER TABLE statements for library_libraryinfo on startup.");
-
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Failed to execute script_safe.sql: {ex.Message}");
-    }
-}
 
 app.Run();
 

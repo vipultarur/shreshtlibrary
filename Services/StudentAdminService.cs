@@ -240,7 +240,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(student);
         }
 
-        public async Task<ServiceResult<object>> CreateStudentAsync(AdminStudentsController.StudentPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> CreateStudentAsync(WebApplication1.Models.DTOs.Admin.StudentPayload payload, CancellationToken ct = default)
         {
             var validationErrors = new Dictionary<string, string[]>();
 
@@ -343,7 +343,7 @@ namespace WebApplication1.Services
             });
         }
 
-        public async Task<ServiceResult<object>> UpdateStudentAsync(string pk, AdminStudentsController.StudentPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> UpdateStudentAsync(string pk, WebApplication1.Models.DTOs.Admin.StudentPayload payload, CancellationToken ct = default)
         {
             var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<object>.NotFound("Student not found");

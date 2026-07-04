@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
+using WebApplication1.Models;
+using System.Text.Json;
+using WebApplication1.Models.DTOs.Study;
 
 namespace WebApplication1.Services
 {
@@ -58,7 +61,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(FormatSession(session));
         }
 
-        public async Task<ServiceResult<object>> EndSessionAsync(long userId, StudyController.EndSessionRequest request, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> EndSessionAsync(long userId, EndSessionRequest request, CancellationToken ct = default)
         {
             var session = await _context.StudyStudysessions
                 .Where(s => s.StudentId == userId && s.Status != "completed" && s.Status != "ended")
@@ -109,7 +112,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(FormatSession(session));
         }
 
-        public async Task<ServiceResult<object>> UpdateSessionAsync(long userId, StudyController.UpdateSessionRequest request, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> UpdateSessionAsync(long userId, UpdateSessionRequest request, CancellationToken ct = default)
         {
             var session = await _context.StudyStudysessions
                 .Where(s => s.StudentId == userId && s.Status != "completed" && s.Status != "ended")

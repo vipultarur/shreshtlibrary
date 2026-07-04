@@ -9,6 +9,6 @@ namespace WebApplication1.Services
         Task<ApiResponse<object>> GetReferralCodeAsync(long userId, CancellationToken ct = default);
         Task<ApiResponse<object>> GenerateReferralCodeAsync(long userId, CancellationToken ct = default);
         Task<ApiResponse<object>> ApplyReferralAsync(long userId, string code, CancellationToken ct = default);
-        Task<ApiResponse<object>> GetReferralHistoryAsync(long userId, CancellationToken ct = default);
+        Task<ApiResponse<object>> GetReferralHistoryAsync(long userId, int page = 1, int pageSize = 20, CancellationToken ct = default);
     }
 }

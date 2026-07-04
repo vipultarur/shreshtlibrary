@@ -5,26 +5,20 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
+using WebApplication1.Models.DTOs.Billing;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1")]
     [Authorize]
-    public class BillingController : ControllerBase
+    public class BillingController : BaseApiController
     {
         private readonly IPaymentService _paymentService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public BillingController(IPaymentService paymentService, ICurrentUserService currentUserService)
+        public BillingController(IPaymentService paymentService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _paymentService = paymentService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [AllowAnonymous]
@@ -53,14 +47,6 @@ namespace WebApplication1.Controllers
 
             var result = await _paymentService.GetMembershipHistoryAsync(userId.Value, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
-        }
-
-        public class InitiatePaymentPayload
-        {
-            public int plan_id { get; set; }
-            public string payment_mode { get; set; } = "UPI";
-            public string? transaction_id { get; set; }
-            public int duration_days { get; set; } = 30;
         }
 
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("UserRateThrottle")]

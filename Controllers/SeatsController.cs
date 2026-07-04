@@ -11,20 +11,13 @@ namespace WebApplication1.Controllers
     [ApiController]
     [Route("api/v1/seats")]
     [Authorize]
-    public class SeatsController : ControllerBase
+    public class SeatsController : BaseApiController
     {
         private readonly IStudentSeatService _seatService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public SeatsController(IStudentSeatService seatService, ICurrentUserService currentUserService)
+        public SeatsController(IStudentSeatService seatService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _seatService = seatService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [HttpGet("layout")]

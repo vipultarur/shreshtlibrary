@@ -3,7 +3,7 @@ using WebApplication1.Controllers;
 
 namespace WebApplication1.Validators
 {
-    public class StudentPayloadValidator : AbstractValidator<AdminStudentsController.StudentPayload>
+    public class StudentPayloadValidator : AbstractValidator<WebApplication1.Models.DTOs.Admin.StudentPayload>
     {
         public StudentPayloadValidator()
         {

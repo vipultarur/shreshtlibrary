@@ -21,6 +21,7 @@ namespace WebApplication1.Repositories
         public async Task<AttendanceAttendance?> GetAttendanceAsync(long id, CancellationToken ct = default)
         {
             return await _context.AttendanceAttendances
+                .AsNoTracking()
                 .Include(a => a.Student)
                 .FirstOrDefaultAsync(a => a.Id == id, ct);
         }
@@ -28,6 +29,7 @@ namespace WebApplication1.Repositories
         public async Task<List<AttendanceAttendance>> GetAttendanceForDateAsync(DateOnly date, CancellationToken ct = default)
         {
             return await _context.AttendanceAttendances
+                .AsNoTracking()
                 .Include(a => a.Student)
                 .Where(a => a.Date == date)
                 .ToListAsync(ct);

@@ -71,6 +71,12 @@ namespace WebApplication1.Controllers
         [HttpGet("export/{kind}")]
         public async Task<IActionResult> ReportsExportAsync(string kind, CancellationToken ct)
         {
+            var allowedKinds = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+                { "attendance", "payments", "students", "memberships", "seats", "daily-summary" };
+            if (!allowedKinds.Contains(kind))
+                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>
+                    .Fail($"Invalid report kind '{kind}'."));
+
             var fileBytes = await _reportsService.ExportReportCsvAsync(kind, ct);
             if (fileBytes == null) return NotFound();
             return File(fileBytes, "text/csv", $"{kind}_report.csv");

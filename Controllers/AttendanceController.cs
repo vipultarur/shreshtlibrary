@@ -5,21 +5,20 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Models.Responses;
 using WebApplication1.Services;
 using System;
+using WebApplication1.Models.DTOs.Attendance;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1")]
     [Authorize]
-    public class AttendanceController : ControllerBase
+    public class AttendanceController : BaseApiController
     {
         private readonly IAttendanceService _attendanceService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public AttendanceController(IAttendanceService attendanceService, ICurrentUserService currentUserService)
+        public AttendanceController(IAttendanceService attendanceService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _attendanceService = attendanceService;
-            _currentUserService = currentUserService;
         }
 
         [HttpGet("qr/today")]
@@ -30,18 +29,11 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(qr));
         }
 
-        public class ScanQrRequest
-        {
-            public string qr_hash { get; set; }
-        }
-
-        [HttpPost("qr/scan")]
         [HttpPost("attendance/scan")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> ScanQrAsync([FromBody] ScanQrRequest request, CancellationToken ct)
         {
-            var userId = _currentUserService.GetUserId();
-            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
+            if (!TryGetUserId(out var userId)) return UnauthorizedResponse("User not found");
 
             if (string.IsNullOrEmpty(request?.qr_hash))
             {
@@ -50,7 +42,7 @@ namespace WebApplication1.Controllers
 
             try
             {
-                var result = await _attendanceService.ScanQrAsync(userId.Value, request.qr_hash, ct);
+                var result = await _attendanceService.ScanQrAsync(userId, request.qr_hash, ct);
                 return Ok(ApiResponse<object>.Ok(result));
             }
             catch (InvalidOperationException ex)
@@ -63,12 +55,11 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> CheckoutAsync(CancellationToken ct)
         {
-            var userId = _currentUserService.GetUserId();
-            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
+            if (!TryGetUserId(out var userId)) return UnauthorizedResponse("User not found");
 
             try
             {
-                var result = await _attendanceService.CheckoutAsync(userId.Value, ct);
+                var result = await _attendanceService.CheckoutAsync(userId, ct);
                 return Ok(ApiResponse<object>.Ok(result));
             }
             catch (InvalidOperationException ex)
@@ -81,10 +72,9 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetAttendanceLogsAsync(CancellationToken ct)
         {
-            var userId = _currentUserService.GetUserId();
-            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
+            if (!TryGetUserId(out var userId)) return UnauthorizedResponse("User not found");
 
-            var logs = await _attendanceService.GetAttendanceLogsAsync(userId.Value, ct);
+            var logs = await _attendanceService.GetAttendanceLogsAsync(userId, ct);
             return Ok(ApiResponse<object>.Ok(logs));
         }
 

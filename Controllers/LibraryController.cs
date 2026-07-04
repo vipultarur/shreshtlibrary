@@ -6,25 +6,19 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
 using System;
+using WebApplication1.Models.DTOs.Library;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1")]
-    public class LibraryController : ControllerBase
+    public class LibraryController : BaseApiController
     {
         private readonly ILibraryService _libraryService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public LibraryController(ILibraryService libraryService, ICurrentUserService currentUserService)
+        public LibraryController(ILibraryService libraryService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _libraryService = libraryService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [AllowAnonymous]
@@ -73,12 +67,6 @@ namespace WebApplication1.Controllers
         {
             var result = await _libraryService.GetReviewsSummaryAsync(ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
-        }
-
-        public class SubmitReviewRequest
-        {
-            public int rating { get; set; }
-            public string comment { get; set; } = string.Empty;
         }
 
         [HttpPost("library/reviews/submit")]

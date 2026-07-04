@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using WebApplication1.Models.DTOs.Admin;
 
 namespace WebApplication1.Controllers
 {
@@ -9,27 +10,7 @@ namespace WebApplication1.Controllers
     [Authorize(Roles = "super_admin")]
     public class SuperAdminController : ControllerBase
     {
-        public class AdminPayload
-        {
-            public string? Username { get; set; }
-            [System.Text.Json.Serialization.JsonPropertyName("first_name")]
-            public string? FirstName { get; set; }
-            [System.Text.Json.Serialization.JsonPropertyName("last_name")]
-            public string? LastName { get; set; }
-            public string? Email { get; set; }
-            public string? Mobile { get; set; }
-            public string? Password { get; set; }
-            public string? Role { get; set; }
-            [System.Text.Json.Serialization.JsonPropertyName("is_active")]
-            public bool? IsActive { get; set; }
-            public System.Collections.Generic.Dictionary<string, bool>? Permissions { get; set; }
-        }
 
-        public class PermissionPayload
-        {
-            public long AdminId { get; set; }
-            public string[]? Permissions { get; set; }
-        }
 
         private readonly WebApplication1.Services.ISuperAdminService _superAdminService;
 
@@ -113,10 +94,14 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        public record RestoreBackupRequest(string BackupId);
+
         [HttpPost("backup/restore")]
-        public async Task<IActionResult> BackupRestoreAsync([FromQuery] string backup_id, System.Threading.CancellationToken ct)
+        public async Task<IActionResult> BackupRestoreAsync([FromBody] RestoreBackupRequest request, System.Threading.CancellationToken ct)
         {
-            var result = await _superAdminService.RestoreBackupAsync(backup_id, ct);
+            if (string.IsNullOrWhiteSpace(request?.BackupId))
+                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail("backup_id is required"));
+            var result = await _superAdminService.RestoreBackupAsync(request.BackupId, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, "Backup restored"));
         }
         [HttpGet("backup/{id}/download")]
@@ -141,8 +126,8 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        // Health check requires super_admin — use /api/v1/superadmin/health with a valid super_admin token
         [HttpGet("health")]
-        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public async Task<IActionResult> HealthAsync(System.Threading.CancellationToken ct)
         {
             var startTime = System.Diagnostics.Stopwatch.GetTimestamp();

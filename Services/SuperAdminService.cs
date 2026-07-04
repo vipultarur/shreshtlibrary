@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using WebApplication1.Models.DTOs.Admin;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -18,7 +19,7 @@ namespace WebApplication1.Services
             _context = context;
         }
 
-        private ServiceResult<object>? ValidateAdminPayload(SuperAdminController.AdminPayload payload)
+        private ServiceResult<object>? ValidateAdminPayload(AdminPayload payload)
         {
             var errors = new System.Collections.Generic.Dictionary<string, string[]>();
 
@@ -40,7 +41,7 @@ namespace WebApplication1.Services
             return null;
         }
 
-        public async Task<ServiceResult<object>> AddAdminAsync(SuperAdminController.AdminPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> AddAdminAsync(AdminPayload payload, CancellationToken ct = default)
         {
             var validationError = ValidateAdminPayload(payload);
             if (validationError != null) return validationError;
@@ -67,7 +68,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(new { id = newUser.Id, email = newUser.Email });
         }
 
-        public async Task<ServiceResult<object>> UpdateAdminAsync(long pk, SuperAdminController.AdminPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> UpdateAdminAsync(long pk, AdminPayload payload, CancellationToken ct = default)
         {
             var validationError = ValidateAdminPayload(payload);
             if (validationError != null) return validationError;
@@ -194,7 +195,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(permissions);
         }
 
-        public async Task<ServiceResult<object>> AssignPermissionsAsync(SuperAdminController.PermissionPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> AssignPermissionsAsync(PermissionPayload payload, CancellationToken ct = default)
         {
             return ServiceResult<object>.Ok(new { message = "Permissions updated" });
         }

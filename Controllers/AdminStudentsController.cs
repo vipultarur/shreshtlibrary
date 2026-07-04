@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
+using WebApplication1.Models.DTOs.Admin;
 
 namespace WebApplication1.Controllers
 {
@@ -57,41 +58,6 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
-        public class StudentPayload
-        {
-            [JsonPropertyName("first_name")]
-            public string? FirstName { get; set; }
-            [JsonPropertyName("middle_name")]
-            public string? MiddleName { get; set; }
-            [JsonPropertyName("last_name")]
-            public string? LastName { get; set; }
-            [JsonPropertyName("email")]
-            public string? Email { get; set; }
-            [JsonPropertyName("mobile")]
-            public string? Mobile { get; set; }
-            [JsonPropertyName("is_active")]
-            public bool? IsActive { get; set; }
-            [JsonPropertyName("goal")]
-            public string? Goal { get; set; }
-            [JsonPropertyName("dob")]
-            public string? Dob { get; set; }
-            [JsonPropertyName("gender")]
-            public string? Gender { get; set; }
-            [JsonPropertyName("caste")]
-            public string? Caste { get; set; }
-            [JsonPropertyName("address")]
-            public string? Address { get; set; }
-            [JsonPropertyName("parent_mobile")]
-            public string? ParentMobile { get; set; }
-            [JsonPropertyName("status")]
-            public string? Status { get; set; }
-            [JsonPropertyName("preferred_language")]
-            public string? PreferredLanguage { get; set; }
-            [JsonPropertyName("username")]
-            public string? Username { get; set; }
-            [JsonPropertyName("password")]
-            public string? Password { get; set; }
-        }
 
         [HttpPost]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 201)]
@@ -103,7 +69,8 @@ namespace WebApplication1.Controllers
                 return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Validation error", result.Errors));
             }
 
-            return Created("/api/v1/admin/students/new", WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+            return Created($"/api/v1/admin/students/{(result.Data as dynamic)?.id ?? "new"}",
+                WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
         [HttpPut("{pk}")]
@@ -149,10 +116,6 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
-        public class SuspendStudentRequest
-        {
-            public string? Reason { get; set; }
-        }
 
         [HttpPost("{pk}/suspend")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]

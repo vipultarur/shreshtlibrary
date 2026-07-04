@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+
 using WebApplication1.Controllers;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
@@ -6,6 +6,7 @@ using WebApplication1.Models;
 using System.Threading.Tasks;
 using System.Net;
 using System.Security.Claims;
+using WebApplication1.Models.DTOs.Auth;
 
 namespace WebApplication1.Services
 {
@@ -22,7 +23,7 @@ namespace WebApplication1.Services
             _logger = logger;
         }
 
-        public async Task<IActionResult> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
         {
             // Trim inputs
             request.FirstName = request.FirstName?.Trim();
@@ -45,102 +46,103 @@ namespace WebApplication1.Services
 
             if (errors.Any())
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors });
+                return ServiceResult<object>.Fail("Validation failed.", errors);
             }
 
             if (request.Password != request.ConfirmPassword)
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Passwords do not match.", errors = new { password = new[] { "Passwords do not match." } } });
+                return ServiceResult<object>.Fail("Passwords do not match.", new Dictionary<string, string[]> { { "password", new[] { "Passwords do not match." } } });
             }
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Mobile number already registered.", errors = new { mobile = new[] { "Mobile number already registered." } } });
+                return ServiceResult<object>.Fail("Mobile number already registered.", new Dictionary<string, string[]> { { "mobile", new[] { "Mobile number already registered." } } });
             }
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Email == request.Email, ct))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Email already registered.", errors = new { email = new[] { "Email already registered." } } });
+                return ServiceResult<object>.Fail("Email already registered.", new Dictionary<string, string[]> { { "email", new[] { "Email already registered." } } });
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async () =>
             {
-                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                var isRelational = _context.Database.IsRelational();
+                var transaction = isRelational ? await _context.Database.BeginTransactionAsync(ct) : null;
                 try
-            {
-                var user = new AccountsCustomuser
                 {
-                    Username = request.Mobile, // Mobile as username
-                    Email = request.Email,
-                    Mobile = request.Mobile,
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Role = WebApplication1.Utils.Constants.Roles.Student,
-                    Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.Password),
-                    DateJoined = System.DateTime.UtcNow,
-                    IsActive = true
-                };
+                    var user = new AccountsCustomuser
+                    {
+                        Username = request.Mobile, // Mobile as username
+                        Email = request.Email,
+                        Mobile = request.Mobile,
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Role = WebApplication1.Utils.Constants.Roles.Student,
+                        Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.Password),
+                        DateJoined = System.DateTime.UtcNow,
+                        IsActive = true
+                    };
 
-                _context.AccountsCustomusers.Add(user);
-                await _context.SaveChangesAsync(ct);
+                    _context.AccountsCustomusers.Add(user);
+                    await _context.SaveChangesAsync(ct);
 
-                // Generate Student ID atomically using the uniquely generated user.Id
-                string nextStudentId = $"SHR-{user.Id:D4}";
+                    // Generate Student ID atomically using the uniquely generated user.Id
+                    string nextStudentId = $"SHR-{user.Id:D4}";
 
-                var profile = new StudentsStudentprofile
+                    var profile = new StudentsStudentprofile
+                    {
+                        UserId = user.Id,
+                        Goal = request.Goal ?? "Other",
+                        Dob = System.DateOnly.FromDateTime(request.Dob),
+                        Address = request.Address ?? "",
+                        ParentMobile = request.ParentMobile ?? "",
+                        Gender = "Other", // Default from Django
+                        Status = WebApplication1.Utils.Constants.StudentStatus.Pending,
+                        PreferredLanguage = "en",
+                        JoiningDate = System.DateOnly.FromDateTime(System.DateTime.UtcNow),
+                        StudentId = nextStudentId,
+                        CreatedAt = System.DateTime.UtcNow,
+                        UpdatedAt = System.DateTime.UtcNow
+                    };
+
+                    _context.StudentsStudentprofiles.Add(profile);
+
+                    // Add Notification
+                    var notification = new NotificationsAdmininboxnotification
+                    {
+                        Type = "NEW_STUDENT",
+                        Title = "New Student Registered",
+                        Message = $"Student {user.Username} has just registered.",
+                        RelatedId = user.Id.ToString(),
+                        StudentId = user.Id,
+                        CreatedAt = System.DateTime.UtcNow,
+                        IsRead = false
+                    };
+                    _context.NotificationsAdmininboxnotifications.Add(notification);
+
+                    await _context.SaveChangesAsync(ct);
+                    if (transaction != null) await transaction.CommitAsync(ct);
+
+                    return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
+                }
+                catch (System.Exception)
                 {
-                    UserId = user.Id,
-                    Goal = request.Goal ?? "Other",
-                    Dob = System.DateOnly.FromDateTime(request.Dob),
-                    Address = request.Address ?? "",
-                    ParentMobile = request.ParentMobile ?? "",
-                    Gender = "Other", // Default from Django
-                    Status = WebApplication1.Utils.Constants.StudentStatus.Pending,
-                    PreferredLanguage = "en",
-                    JoiningDate = System.DateOnly.FromDateTime(System.DateTime.UtcNow),
-                    StudentId = nextStudentId,
-                    CreatedAt = System.DateTime.UtcNow,
-                    UpdatedAt = System.DateTime.UtcNow
-                };
-
-                _context.StudentsStudentprofiles.Add(profile);
-
-                // Add Notification
-                var notification = new NotificationsAdmininboxnotification
-                {
-                    Type = "NEW_STUDENT",
-                    Title = "New Student Registered",
-                    Message = $"Student {user.Username} has just registered.",
-                    RelatedId = user.Id.ToString(),
-                    StudentId = user.Id,
-                    CreatedAt = System.DateTime.UtcNow,
-                    IsRead = false
-                };
-                _context.NotificationsAdmininboxnotifications.Add(notification);
-
-                await _context.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-
-                return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
-            }
-            catch (System.Exception)
-            {
-                await transaction.RollbackAsync(ct);
-                return new ObjectResult(new { success = false, status = "error", message = "Internal server error during registration.", errors = new { non_field_errors = new[] { "Internal server error during registration." } } }) { StatusCode = 500 };
-            }
+                    if (transaction != null) await transaction.RollbackAsync(ct);
+                    return ServiceResult<object>.Fail("Internal server error during registration.", new Dictionary<string, string[]> { { "non_field_errors", new[] { "Internal server error during registration." } } });
+                }
             });
         }
 
-        public async Task<IActionResult> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Mobile))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { mobile = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "This field is required." } } });
             }
 
             var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Mobile == request.Mobile, ct);
             if (user == null)
             {
-                return new NotFoundObjectResult(new { success = false, status = "error", message = "Mobile number not registered.", errors = new { mobile = new[] { "Mobile number not registered." } } });
+                return ServiceResult<object>.NotFound("Mobile number not registered.");
             }
 
             string rawOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
@@ -163,30 +165,30 @@ namespace WebApplication1.Services
             // In production, integrate SMS gateway here
             // OTP must never be logged.
 
-            return new OkObjectResult(new { success = true, status = "success", message = "OTP sent successfully." });
+            return ServiceResult<object>.Ok(null, "OTP sent successfully.");
         }
 
-        public async Task<IActionResult> VerifyOtpAsync(VerifyOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> VerifyOtpAsync(VerifyOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Mobile) || string.IsNullOrWhiteSpace(request.Otp))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { mobile = new[] { "This field is required." }, otp = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "This field is required." } }, { "otp", new[] { "This field is required." } } });
             }
 
             var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Mobile == request.Mobile, ct);
             if (user == null)
             {
-                return new NotFoundObjectResult(new { success = false, status = "error", message = "Mobile number not registered.", errors = new { mobile = new[] { "Mobile number not registered." } } });
+                return ServiceResult<object>.NotFound("Mobile number not registered.");
             }
 
             if (user.OtpAttempts >= 5)
             {
-                return new ObjectResult(new { success = false, status = "error", message = "Too many failed attempts. Please request a new OTP." }) { StatusCode = 403 };
+                return ServiceResult<object>.Fail("Too many failed attempts. Please request a new OTP.");
             }
 
             if (user.OtpExpiry < System.DateTime.UtcNow)
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "OTP has expired.", errors = new { otp = new[] { "OTP has expired." } } });
+                return ServiceResult<object>.Fail("OTP has expired.", new Dictionary<string, string[]> { { "otp", new[] { "OTP has expired." } } });
             }
 
             if (!string.IsNullOrEmpty(user.Otp) && WebApplication1.Utils.PasswordHasher.VerifyDjangoPassword(request.Otp, user.Otp))
@@ -206,16 +208,16 @@ namespace WebApplication1.Services
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(u => u.OtpAttempts, u => u.OtpAttempts + 1), ct);
 
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid OTP.", errors = new { otp = new[] { "Invalid OTP." } } });
+                return ServiceResult<object>.Fail("Invalid OTP.", new Dictionary<string, string[]> { { "otp", new[] { "Invalid OTP." } } });
             }
         }
 
-        public async Task<IActionResult> LoginEmailAsync(LoginEmailRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> LoginEmailAsync(LoginEmailRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             request.Email = request.Email?.Trim();
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { email = new[] { "This field is required." }, password = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "email", new[] { "This field is required." } }, { "password", new[] { "This field is required." } } });
             }
 
             // Fallback: DRF auth checks username=email, then if not found, checks email=email
@@ -237,18 +239,18 @@ namespace WebApplication1.Services
 
             if (!isValidPassword || user == null || !user.IsActive)
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid credentials or not a student.", errors = new { non_field_errors = new[] { "Invalid credentials or not a student." } } });
+                return ServiceResult<object>.Fail("Invalid credentials or not a student.", new Dictionary<string, string[]> { { "non_field_errors", new[] { "Invalid credentials or not a student." } } });
             }
 
             return await GenerateStudentTokensAndLogAsync(user, "Logged in via Email/Password", ipAddress, path, method, ct);
         }
 
-        public async Task<IActionResult> LoginMobileAsync(LoginMobileRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> LoginMobileAsync(LoginMobileRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             request.Mobile = request.Mobile?.Trim();
             if (string.IsNullOrWhiteSpace(request.Mobile) || string.IsNullOrWhiteSpace(request.Password))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { mobile = new[] { "This field is required." }, password = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "This field is required." } }, { "password", new[] { "This field is required." } } });
             }
 
             var user = await _context.AccountsCustomusers
@@ -267,13 +269,13 @@ namespace WebApplication1.Services
 
             if (!isValidPassword || user == null || !user.IsActive)
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid credentials or not a student.", errors = new { non_field_errors = new[] { "Invalid credentials or not a student." } } });
+                return ServiceResult<object>.Fail("Invalid credentials or not a student.", new Dictionary<string, string[]> { { "non_field_errors", new[] { "Invalid credentials or not a student." } } });
             }
 
             return await GenerateStudentTokensAndLogAsync(user, "Logged in via Mobile/Password", ipAddress, path, method, ct);
         }
 
-        private async Task<IActionResult> GenerateStudentTokensAndLogAsync(AccountsCustomuser user, string actionDesc, string ipAddress, string path, string method, CancellationToken ct)
+        private async Task<ServiceResult<object>> GenerateStudentTokensAndLogAsync(AccountsCustomuser user, string actionDesc, string ipAddress, string path, string method, CancellationToken ct)
         {
             var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
             var jwtSettings = _config.GetSection("Jwt");
@@ -330,25 +332,19 @@ namespace WebApplication1.Services
             });
             await _context.SaveChangesAsync(ct);
 
-            return new OkObjectResult(new
+            return ServiceResult<object>.Ok(new
             {
-                success = true,
-                status = "success",
-                message = "Login successful.",
-                data = new
+                tokens = new { refresh = refreshToken, access = accessToken },
+                user = new
                 {
-                    tokens = new { refresh = refreshToken, access = accessToken },
-                    user = new
-                    {
-                        id = user.Id,
-                        username = user.Username,
-                        email = user.Email,
-                        mobile = user.Mobile,
-                        role = user.Role,
-                        is_active = user.IsActive
-                    }
+                    id = user.Id,
+                    username = user.Username,
+                    email = user.Email,
+                    mobile = user.Mobile,
+                    role = user.Role,
+                    is_active = user.IsActive
                 }
-            });
+            }, "Login successful.");
         }
 
 
@@ -366,7 +362,7 @@ namespace WebApplication1.Services
             }
         }
 
-        public async Task<IActionResult> AdminLoginAsync(AdminLoginRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> AdminLoginAsync(AdminLoginRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             // Credential logging removed - security violation
             // Fallback checking logic matching DRF (username -> email -> mobile)
@@ -391,7 +387,7 @@ namespace WebApplication1.Services
             if (!isValidPassword || user == null || !user.IsActive)
             {
                 _logger.LogWarning("Admin login failed: password verification failed or user invalid/inactive.");
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid credentials or not an admin.", errors = new { non_field_errors = new[] { "Invalid credentials or not an admin." } } });
+                return ServiceResult<object>.Fail("Invalid credentials or not an admin.", new Dictionary<string, string[]> { { "non_field_errors", new[] { "Invalid credentials or not an admin." } } });
             }
 
             var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
@@ -447,38 +443,14 @@ namespace WebApplication1.Services
             });
             await _context.SaveChangesAsync(ct);
 
-            return new OkObjectResult(new
-            {
-                success = true,
-                status = "success",
-                message = "Admin login successful.",
-                data = new
-                {
-                    tokens = new { access = accessToken, refresh = refreshToken },
-                    user = new
-                    {
-                        id = user.Id,
-                        username = user.Username,
-                        first_name = user.FirstName,
-                        last_name = user.LastName,
-                        email = user.Email,
-                        mobile = user.Mobile,
-                        role = user.Role,
-                        permissions = ParsePermissions(user.Permissions),
-                        profile_image = user.ProfileImage != null ? $"/media/{user.ProfileImage}" : null,
-                        is_active = user.IsActive,
-                        date_joined = user.DateJoined.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"),
-                        last_login = user.LastLogin?.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ")
-                    }
-                }
-            });
+            return ServiceResult<object>.Ok(new { tokens = new { access = accessToken, refresh = refreshToken }, user = new { id = user.Id, username = user.Username, first_name = user.FirstName, last_name = user.LastName, email = user.Email, mobile = user.Mobile, role = user.Role, permissions = ParsePermissions(user.Permissions), profile_image = user.ProfileImage != null ? $"/media/{user.ProfileImage}" : null, is_active = user.IsActive, date_joined = user.DateJoined.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"), last_login = user.LastLogin?.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ") } }, "Admin login successful.");
         }
 
-        public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> ForgotPasswordAsync(ForgotPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { email = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "email", new[] { "This field is required." } } });
             }
 
             var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Email == request.Email, ct);
@@ -506,17 +478,17 @@ namespace WebApplication1.Services
                 // Reset link: https://shreshtlibrary.onrender.com/reset-password?token={rawToken}
                 // Reset token must never be logged.
 
-                return new OkObjectResult(new { success = true, status = "success", message = "Password reset link sent to your email." });
+                return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }
 
-            return new NotFoundObjectResult(new { success = false, status = "error", message = "User not found.", errors = new { detail = new[] { "User not found." } } });
+            return ServiceResult<object>.NotFound("User not found.");
         }
 
-        public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> ResetPasswordAsync(ResetPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Validation failed.", errors = new { token = new[] { "This field is required." }, new_password = new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "token", new[] { "This field is required." } }, { "new_password", new[] { "This field is required." } } });
             }
 
             using var sha256 = System.Security.Cryptography.SHA256.Create();
@@ -539,14 +511,14 @@ namespace WebApplication1.Services
                 });
                 await _context.SaveChangesAsync(ct);
 
-                return new OkObjectResult(new { success = true, status = "success", message = "Password reset successfully." });
+                return ServiceResult<object>.Ok(null, "Password reset successfully.");
             }
 
-            return new BadRequestObjectResult(new { success = false, status = "error", message = "Invalid or expired reset token.", errors = new { token = new[] { "Invalid or expired reset token." } } });
+            return ServiceResult<object>.Fail("Invalid or expired reset token.", new Dictionary<string, string[]> { { "token", new[] { "Invalid or expired reset token." } } });
         }
 
         
-        public async Task<IActionResult> LogoutAsync(LogoutRequest request, string authHeader, string currentUserIdStr, string role, string ipAddress, string path, string method, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> LogoutAsync(LogoutRequest request, string authHeader, string currentUserIdStr, string role, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (request != null && !string.IsNullOrWhiteSpace(request.Refresh))
             {
@@ -632,14 +604,14 @@ namespace WebApplication1.Services
             _context.CoreActivitylogs.Add(log);
             await _context.SaveChangesAsync(ct);
 
-            return new OkObjectResult(new { success = true, status = "success", message = "Logged out successfully." });
+            return ServiceResult<object>.Ok(null, "Logged out successfully.");
         }
 
-        public async Task<IActionResult> RefreshTokenAsync(TokenRefreshRequest request, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> RefreshTokenAsync(TokenRefreshRequest request, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Refresh))
             {
-                return new BadRequestObjectResult(new { success = false, status = "error", message = "Refresh token is required.", errors = new { refresh = new[] { "Refresh token is required." } } });
+                return ServiceResult<object>.Fail("Refresh token is required.", new Dictionary<string, string[]> { { "refresh", new[] { "Refresh token is required." } } });
             }
 
             var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
@@ -649,7 +621,7 @@ namespace WebApplication1.Services
                 var tokenType = token.Claims.FirstOrDefault(c => c.Type == "token_type")?.Value;
                 if (tokenType != "refresh")
                 {
-                    return new UnauthorizedObjectResult(new { success = false, status = "error", message = "Invalid refresh token.", errors = new { detail = new[] { "Invalid refresh token." } } });
+                    return ServiceResult<object>.Fail("Invalid refresh token.", new Dictionary<string, string[]> { { "detail", new[] { "Invalid refresh token." } } });
                 }
 
                 // Check revocation
@@ -666,7 +638,7 @@ namespace WebApplication1.Services
                         
                     if (isRevoked)
                     {
-                        return new UnauthorizedObjectResult(new { success = false, status = "error", message = "Refresh token has been revoked.", errors = new { detail = new[] { "Refresh token has been revoked." } } });
+                        return ServiceResult<object>.Fail("Refresh token has been revoked.", new Dictionary<string, string[]> { { "detail", new[] { "Refresh token has been revoked." } } });
                     }
                 }
 
@@ -689,7 +661,7 @@ namespace WebApplication1.Services
 
                 if (!isActive)
                 {
-                    return new UnauthorizedObjectResult(new { success = false, status = "error", message = "User account is inactive.", errors = new { detail = new[] { "User account is inactive." } } });
+                    return ServiceResult<object>.Fail("User account is inactive.", new Dictionary<string, string[]> { { "detail", new[] { "User account is inactive." } } });
                 }
 
                 var jwtSettings = _config.GetSection("Jwt");
@@ -718,27 +690,21 @@ namespace WebApplication1.Services
 
                 var newAccessToken = handler.WriteToken(handler.CreateToken(tokenDescriptor));
 
-                return new OkObjectResult(new
+                return ServiceResult<object>.Ok(new
                 {
                     access = newAccessToken
                 });
             }
             catch
             {
-                return new UnauthorizedObjectResult(new { success = false, status = "error", message = "Invalid refresh token.", errors = new { detail = new[] { "Invalid refresh token." } } });
+                return ServiceResult<object>.Fail("Invalid refresh token.", new Dictionary<string, string[]> { { "detail", new[] { "Invalid refresh token." } } });
             }
         }
-        public class FcmTokenUpdateDto
-        {
-            public string Token { get; set; }
-        }
-
-        
-        public async Task<IActionResult> UpdateFcmTokenAsync(AuthController.FcmTokenUpdateDto dto, long userId, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> UpdateFcmTokenAsync(FcmTokenUpdateDto dto, long userId, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(dto?.Token))
             {
-                return new BadRequestObjectResult(new { success = false, message = "Token is required." });
+                return ServiceResult<object>.Fail("Token is required.");
             }
 
             
@@ -764,19 +730,19 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
-            return new OkObjectResult(new { success = true, status = "success" });
+            return ServiceResult<object>.Ok(null, "Success");
         }
 
-        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordRequest request, string userIdStr, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> ChangePasswordAsync(ChangePasswordRequest request, string userIdStr, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.OldPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
             {
-                return new BadRequestObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Old password and new password are required."));
+                return ServiceResult<object>.Fail("Old password and new password are required.");
             }
 
             if (!long.TryParse(userIdStr, out var userId))
             {
-                return new UnauthorizedObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Invalid user."));
+                return ServiceResult<object>.Fail("Invalid user.");
             }
 
             var adminUser = await _context.AccountsAdminusers.FindAsync(new object[] { userId }, ct);
@@ -784,11 +750,11 @@ namespace WebApplication1.Services
             {
                 if (!WebApplication1.Utils.PasswordHasher.VerifyDjangoPassword(request.OldPassword, adminUser.Password))
                 {
-                    return new BadRequestObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Incorrect old password."));
+                    return ServiceResult<object>.Fail("Incorrect old password.");
                 }
                 adminUser.Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.NewPassword);
                 await _context.SaveChangesAsync(ct);
-                return new OkObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Ok(null, "Password changed successfully."));
+                return ServiceResult<object>.Ok(null, "Password changed successfully.");
             }
 
             var customUser = await _context.AccountsCustomusers.FindAsync(new object[] { userId }, ct);
@@ -796,14 +762,14 @@ namespace WebApplication1.Services
             {
                 if (!WebApplication1.Utils.PasswordHasher.VerifyDjangoPassword(request.OldPassword, customUser.Password))
                 {
-                    return new BadRequestObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Fail("Incorrect old password."));
+                    return ServiceResult<object>.Fail("Incorrect old password.");
                 }
                 customUser.Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.NewPassword);
                 await _context.SaveChangesAsync(ct);
-                return new OkObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Ok(null, "Password changed successfully."));
+                return ServiceResult<object>.Ok(null, "Password changed successfully.");
             }
 
-            return new NotFoundObjectResult(WebApplication1.Models.Responses.ApiResponse<object>.Fail("User not found."));
+            return ServiceResult<object>.NotFound("User not found.");
         }
     }
 }

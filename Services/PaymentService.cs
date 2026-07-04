@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Controllers;
+using WebApplication1.Models.DTOs.Billing;
 using WebApplication1.Data;
 using WebApplication1.Models;
 
@@ -79,7 +80,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(memberships);
         }
 
-        public async Task<ServiceResult<object>> InitiatePaymentAsync(long studentId, BillingController.InitiatePaymentPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> InitiatePaymentAsync(long studentId, InitiatePaymentPayload payload, CancellationToken ct = default)
         {
             var plan = await _context.MembershipsMembershipplans.FindAsync(new object[] { (long)payload.plan_id }, ct);
             if (plan == null || !plan.IsActive) 

@@ -8,6 +8,7 @@ using System.Threading;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Controllers;
+using WebApplication1.Models.DTOs.Notifications;
 
 namespace WebApplication1.Services
 {
@@ -15,7 +16,7 @@ namespace WebApplication1.Services
     {
         Task<ServiceResult<object>> GetNotificationsAsync(long userId, int page = 1, int page_size = 20, CancellationToken ct = default);
         Task<ServiceResult<object>> MarkNotificationReadAsync(long userId, int id, CancellationToken ct = default);
-        Task<ServiceResult<object>> RegisterDeviceAsync(long userId, NotificationsController.DeviceTokenPayload payload, CancellationToken ct = default);
+        Task<ServiceResult<object>> RegisterDeviceAsync(long userId, DeviceTokenPayload payload, CancellationToken ct = default);
     }
 
     public class StudentNotificationService : IStudentNotificationService
@@ -74,7 +75,12 @@ namespace WebApplication1.Services
             var sn = await _context.NotificationsStudentnotifications
                 .FirstOrDefaultAsync(s => s.StudentId == userId && s.NotificationId == id, ct);
                 
-            if (sn != null && !sn.IsRead)
+            if (sn == null)
+            {
+                return ServiceResult<object>.NotFound("Notification not found.");
+            }
+
+            if (!sn.IsRead)
             {
                 sn.IsRead = true;
                 sn.ReadAt = DateTime.UtcNow;
@@ -84,7 +90,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(null, "Notification marked as read");
         }
 
-        public async Task<ServiceResult<object>> RegisterDeviceAsync(long userId, NotificationsController.DeviceTokenPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> RegisterDeviceAsync(long userId, DeviceTokenPayload payload, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(payload?.Token))
             {

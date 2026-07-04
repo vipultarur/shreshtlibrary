@@ -6,26 +6,20 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
 using System;
+using WebApplication1.Models.DTOs.Study;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/study")]
     [Authorize]
-    public class StudyController : ControllerBase
+    public class StudyController : BaseApiController
     {
         private readonly IStudyService _studyService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public StudyController(IStudyService studyService, ICurrentUserService currentUserService)
+        public StudyController(IStudyService studyService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _studyService = studyService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [HttpPost("session/start")]
@@ -37,15 +31,6 @@ namespace WebApplication1.Controllers
 
             var result = await _studyService.StartSessionAsync(userId.Value, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
-        }
-
-        public class EndSessionRequest
-        {
-            [System.ComponentModel.DataAnnotations.Range(0, 1440, ErrorMessage = "Duration minutes cannot exceed 1440 (24 hours).")]
-            public int duration_minutes { get; set; }
-
-            [System.ComponentModel.DataAnnotations.Range(0, 1440, ErrorMessage = "Paused minutes cannot exceed 1440.")]
-            public int paused_minutes { get; set; }
         }
 
         [HttpPost("session/end")]
@@ -69,17 +54,6 @@ namespace WebApplication1.Controllers
 
             var result = await _studyService.GetCurrentSessionAsync(userId.Value, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
-        }
-
-        public class UpdateSessionRequest
-        {
-            public string status { get; set; } = string.Empty;
-
-            [System.ComponentModel.DataAnnotations.Range(0, 1440, ErrorMessage = "Duration minutes cannot exceed 1440 (24 hours).")]
-            public int? duration_minutes { get; set; }
-
-            [System.ComponentModel.DataAnnotations.Range(0, 1440, ErrorMessage = "Paused minutes cannot exceed 1440.")]
-            public int? paused_minutes { get; set; }
         }
 
         [HttpPut("session/update")]

@@ -12,28 +12,21 @@ namespace WebApplication1.Controllers
     [ApiController]
     [Route("api/v1/student")]
     [Authorize]
-    public class StudentController : ControllerBase
+    public class StudentController : BaseApiController
     {
         private readonly IStudentProfileService _profileService;
         private readonly IStudentDashboardService _dashboardService;
         private readonly IStudentReferralService _referralService;
-        private readonly ICurrentUserService _currentUserService;
 
         public StudentController(
             IStudentProfileService profileService,
             IStudentDashboardService dashboardService,
             IStudentReferralService referralService,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService) : base(currentUserService)
         {
             _profileService = profileService;
             _dashboardService = dashboardService;
             _referralService = referralService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [HttpGet("profile")]
@@ -124,11 +117,6 @@ namespace WebApplication1.Controllers
             return StatusCode(201, result);
         }
 
-        public class ApplyReferralRequest
-        {
-            public string code { get; set; }
-        }
-
         [HttpPost("referral/apply")]
         public async Task<IActionResult> ApplyReferralAsync([FromBody] ApplyReferralRequest request, CancellationToken ct)
         {
@@ -143,12 +131,12 @@ namespace WebApplication1.Controllers
 
         [HttpGet("referral/history")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public async Task<IActionResult> GetReferralHistoryAsync(CancellationToken ct)
+        public async Task<IActionResult> GetReferralHistoryAsync([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
 
-            var result = await _referralService.GetReferralHistoryAsync(userId.Value, ct);
+            var result = await _referralService.GetReferralHistoryAsync(userId.Value, page, page_size, ct);
             return Ok(result);
         }
     }

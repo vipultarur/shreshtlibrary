@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Services;
 using WebApplication1.Models;
+using WebApplication1.Models.DTOs.Auth;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading;
+using System.Linq;
 
 namespace WebApplication1.Controllers
 {
@@ -20,93 +22,137 @@ namespace WebApplication1.Controllers
             _authService = authService;
         }
 
-        [HttpPost("register")]
-        public Task<IActionResult> RegisterAsync([FromBody] UserRegisterRequest request, CancellationToken ct)
+        private IActionResult HandleResult(ServiceResult<object> result)
         {
-            return _authService.RegisterAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), ct);
+            if (!result.Success)
+            {
+                if (result.IsNotFound) return NotFound(new { success = false, status = "error", message = result.Message, errors = result.Errors });
+                
+                if (result.Message != null && (result.Message.Contains("revoke") || result.Message.Contains("inactive") || result.Message.Contains("Invalid refresh token") || result.Message.Contains("Invalid user")))
+                {
+                    return Unauthorized(new { success = false, status = "error", message = result.Message, errors = result.Errors });
+                }
+                
+                return BadRequest(new { success = false, status = "error", message = result.Message, errors = result.Errors });
+            }
+            if (result.Data == null && (result.Message == "Success" || string.IsNullOrEmpty(result.Message)))
+            {
+                return Ok(new { success = true, status = "success" });
+            }
+            return Ok(new { success = true, status = "success", message = result.Message, data = result.Data });
+        }
+
+        [HttpPost("register")]
+        [ProducesResponseType(typeof(object), 201)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> RegisterAsync([FromBody] UserRegisterRequest request, CancellationToken ct)
+        {
+            var result = await _authService.RegisterAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), ct);
+            if (!result.Success) return HandleResult(result);
+            return StatusCode(201, new { success = true, status = "success", message = result.Message, data = result.Data });
         }
 
         [HttpPost("send-otp")]
-        public Task<IActionResult> SendOtpAsync([FromBody] SendOtpRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> SendOtpAsync([FromBody] SendOtpRequest request, CancellationToken ct)
         {
-            return _authService.SendOtpAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.SendOtpAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("verify-otp")]
-        public Task<IActionResult> VerifyOtpAsync([FromBody] VerifyOtpRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> VerifyOtpAsync([FromBody] VerifyOtpRequest request, CancellationToken ct)
         {
-            return _authService.VerifyOtpAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.VerifyOtpAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("login/email")]
-        public Task<IActionResult> LoginEmailAsync([FromBody] LoginEmailRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> LoginEmailAsync([FromBody] LoginEmailRequest request, CancellationToken ct)
         {
-            return _authService.LoginEmailAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.LoginEmailAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("login/mobile")]
-        public Task<IActionResult> LoginMobileAsync([FromBody] LoginMobileRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> LoginMobileAsync([FromBody] LoginMobileRequest request, CancellationToken ct)
         {
-            return _authService.LoginMobileAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.LoginMobileAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("login/admin")]
-        public Task<IActionResult> AdminLoginAsync([FromBody] AdminLoginRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> AdminLoginAsync([FromBody] AdminLoginRequest request, CancellationToken ct)
         {
-            return _authService.AdminLoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.AdminLoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("forgot-password")]
-        public Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+        public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequest request, CancellationToken ct)
         {
-            return _authService.ForgotPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.ForgotPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("reset-password")]
-        public Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request, CancellationToken ct)
+        public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request, CancellationToken ct)
         {
-            return _authService.ResetPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.ResetPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("logout")]
         [Authorize]
-        public Task<IActionResult> LogoutAsync([FromBody] LogoutRequest request, CancellationToken ct)
+        public async Task<IActionResult> LogoutAsync([FromBody] LogoutRequest request, CancellationToken ct)
         {
             var authHeader = Request.Headers["Authorization"].ToString();
             var currentUserIdStr = User.Claims.FirstOrDefault(c => c.Type == "user_id")?.Value;
             var role = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
-            return _authService.LogoutAsync(request, authHeader, currentUserIdStr, role, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            var result = await _authService.LogoutAsync(request, authHeader, currentUserIdStr, role, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("token/refresh")]
-        public Task<IActionResult> RefreshTokenAsync([FromBody] TokenRefreshRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> RefreshTokenAsync([FromBody] TokenRefreshRequest request, CancellationToken ct)
         {
-            return _authService.RefreshTokenAsync(request, ct);
+            var result = await _authService.RefreshTokenAsync(request, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("change-password")]
         [Authorize]
-        public Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request, CancellationToken ct)
+        public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request, CancellationToken ct)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
-            return _authService.ChangePasswordAsync(request, userIdStr, ct);
-        }
-
-        public class FcmTokenUpdateDto
-        {
-            public string Token { get; set; }
+            var result = await _authService.ChangePasswordAsync(request, userIdStr, ct);
+            return HandleResult(result);
         }
 
         [HttpPost("fcm-token/update")]
         [Authorize]
-        public Task<IActionResult> UpdateFcmTokenAsync([FromBody] FcmTokenUpdateDto dto, CancellationToken ct)
+        public async Task<IActionResult> UpdateFcmTokenAsync([FromBody] FcmTokenUpdateDto dto, CancellationToken ct)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
             if (!long.TryParse(userIdStr, out var userId))
             {
-                return Task.FromResult<IActionResult>(Unauthorized());
+                return Unauthorized();
             }
-            return _authService.UpdateFcmTokenAsync(dto, userId, ct);
+            var result = await _authService.UpdateFcmTokenAsync(dto, userId, ct);
+            return HandleResult(result);
         }
     }
 

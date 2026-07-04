@@ -26,6 +26,7 @@ namespace WebApplication1.Repositories
         public async Task<AccountsCustomuser?> GetUserWithProfileAsync(long userId, CancellationToken ct = default)
         {
             return await _context.AccountsCustomusers
+                .AsNoTracking()
                 .Include(u => u.StudentsStudentprofile)
                 .FirstOrDefaultAsync(u => u.Id == userId, ct);
         }
@@ -49,24 +50,25 @@ namespace WebApplication1.Repositories
                 .AnyAsync(h => h.ReferredStudentId == userId, ct);
         }
 
-        public void AddReferralCodeAsync(StudentsReferralcode referralCode, CancellationToken ct = default)
+        public void AddReferralCode(StudentsReferralcode referralCode, CancellationToken ct = default)
         {
             _context.StudentsReferralcodes.Add(referralCode);
         }
 
-        public void AddReferralHistoryAsync(StudentsReferralhistory history, CancellationToken ct = default)
+        public void AddReferralHistory(StudentsReferralhistory history, CancellationToken ct = default)
         {
             _context.StudentsReferralhistories.Add(history);
         }
 
-        public async Task<System.Collections.Generic.List<object>> GetReferralHistoryAsync(long userId, CancellationToken ct = default)
+        public async Task<System.Collections.Generic.List<object>> GetReferralHistoryAsync(long userId, int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
             return await _context.StudentsReferralhistories
                 .AsNoTracking()
                 .Include(h => h.ReferredStudent)
                 .Where(h => h.ReferrerId == userId)
                 .OrderByDescending(h => h.AppliedAt)
-                .Take(100)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(h => (object)new
                 {
                     id = h.Id,

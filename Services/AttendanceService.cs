@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace WebApplication1.Services
 {
@@ -12,15 +13,23 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public AttendanceService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+        public AttendanceService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _cache = cache;
         }
 
         public async Task<object?> GetTodayQrAsync(CancellationToken ct)
         {
+            const string cacheKey = "TodayQr";
+            if (_cache.TryGetValue(cacheKey, out object? cachedQr))
+            {
+                return cachedQr;
+            }
+
             var nowUtc = DateTime.UtcNow;
             var qr = await _context.AttendanceQrcodes
                 .AsNoTracking()
@@ -31,7 +40,7 @@ namespace WebApplication1.Services
             if (qr == null)
                 return null;
 
-            return new
+            var result = new
             {
                 id = qr.Id,
                 code = qr.Code,
@@ -41,6 +50,9 @@ namespace WebApplication1.Services
                 is_expired = qr.IsExpired,
                 expires_at = qr.ExpiresAt?.ToString("O")
             };
+            
+            _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+            return result;
         }
 
         public async Task<object?> ScanQrAsync(long userId, string qrHash, CancellationToken ct)

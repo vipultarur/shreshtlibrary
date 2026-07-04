@@ -5,26 +5,20 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
+using WebApplication1.Models.DTOs.Notifications;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/notifications")]
     [Authorize]
-    public class NotificationsController : ControllerBase
+    public class NotificationsController : BaseApiController
     {
         private readonly IStudentNotificationService _notificationService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public NotificationsController(IStudentNotificationService notificationService, ICurrentUserService currentUserService)
+        public NotificationsController(IStudentNotificationService notificationService, ICurrentUserService currentUserService) : base(currentUserService)
         {
             _notificationService = notificationService;
-            _currentUserService = currentUserService;
-        }
-
-        private long? GetCurrentUserId()
-        {
-            return _currentUserService.GetUserId();
         }
 
         [HttpGet("list")]
@@ -47,11 +41,6 @@ namespace WebApplication1.Controllers
 
             var result = await _notificationService.MarkNotificationReadAsync(userId.Value, id, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
-        }
-
-        public class DeviceTokenPayload
-        {
-            public string Token { get; set; }
         }
 
         [HttpPost("register-device")]
