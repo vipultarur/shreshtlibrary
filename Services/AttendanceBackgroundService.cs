@@ -191,7 +191,7 @@ namespace WebApplication1.Services
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
+            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().OrderBy(l => l.Id).Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
             var paddingSetting = await context.CoreGlobalsettings
                 .FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", stoppingToken);
             
@@ -315,7 +315,7 @@ namespace WebApplication1.Services
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
+            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().OrderBy(l => l.Id).Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             
@@ -328,70 +328,75 @@ namespace WebApplication1.Services
 
             if (!activeRecords.Any()) return;
 
+            var recordsToCheckout = activeRecords.Where(record => {
+                DateTime cutoffDateTime;
+                if (closeTime < openTime)
+                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1);
+                else
+                    cutoffDateTime = record.Date.ToDateTime(closeTime);
+                return currentIst > cutoffDateTime;
+            }).ToList();
+
+            if (!recordsToCheckout.Any()) return;
+
             var nowUtc = _dateTimeProvider.UtcNow;
             bool changesMade = false;
             
-            foreach (var record in activeRecords)
+            var studentIds = recordsToCheckout.Select(r => r.StudentId).ToList();
+            var activeSessions = await context.StudyStudysessions
+                .Where(s => studentIds.Contains(s.StudentId) && (s.Status == "active" || s.Status == "paused"))
+                .ToDictionaryAsync(s => s.StudentId, stoppingToken);
+            
+            foreach (var record in recordsToCheckout)
             {
-                // Calculate cutoff for auto-checkout
                 DateTime cutoffDateTime;
-                if (closeTime < openTime) // Wraps around midnight
-                {
+                if (closeTime < openTime)
                     cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1);
-                }
                 else
-                {
                     cutoffDateTime = record.Date.ToDateTime(closeTime);
-                }
 
-                if (currentIst > cutoffDateTime)
+                record.TimeOut = closeTime;
+                
+                var duration = closeTime.ToTimeSpan() - record.TimeIn.ToTimeSpan();
+                if (duration.TotalMinutes < 0) duration = duration.Add(TimeSpan.FromHours(24));
+                record.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
+                
+                changesMade = true;
+                
+                context.CoreActivitylogs.Add(new CoreActivitylog
                 {
-                    record.TimeOut = closeTime;
-                    
-                    var duration = closeTime.ToTimeSpan() - record.TimeIn.ToTimeSpan();
-                    if (duration.TotalMinutes < 0) duration = duration.Add(TimeSpan.FromHours(24));
-                    record.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
-                    
-                    changesMade = true;
-                    
+                    Action = "ATTENDANCE_AUTO_CHECKOUT",
+                    UserId = record.StudentId,
+                    Timestamp = nowUtc,
+                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        Student = record.StudentId,
+                        AttendanceDate = record.Date.ToString("yyyy-MM-dd"),
+                        CheckoutTime = closeTime.ToString("HH:mm:ss"),
+                        TotalHours = record.TotalHours,
+                        UpdatedBy = "SYSTEM"
+                    })
+                });
+
+                // Close active study session if any
+                if (activeSessions.TryGetValue(record.StudentId, out var activeSession))
+                {
+                    activeSession.Status = "completed";
+                    activeSession.EndTime = cutoffDateTime;
+                    var sessionDuration = cutoffDateTime - activeSession.StartTime;
+                    activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+
                     context.CoreActivitylogs.Add(new CoreActivitylog
                     {
-                        Action = "ATTENDANCE_AUTO_CHECKOUT",
+                        Action = "STUDY_SESSION_AUTO_CLOSED",
                         UserId = record.StudentId,
                         Timestamp = nowUtc,
                         Details = System.Text.Json.JsonSerializer.Serialize(new
                         {
-                            Student = record.StudentId,
-                            AttendanceDate = record.Date.ToString("yyyy-MM-dd"),
-                            CheckoutTime = closeTime.ToString("HH:mm:ss"),
-                            TotalHours = record.TotalHours,
-                            UpdatedBy = "SYSTEM"
+                            SessionId = activeSession.Id,
+                            Duration = activeSession.DurationMinutes
                         })
                     });
-
-                    // Close active study session if any
-                    var activeSession = await context.StudyStudysessions
-                        .FirstOrDefaultAsync(s => s.StudentId == record.StudentId && (s.Status == "active" || s.Status == "paused"), stoppingToken);
-
-                    if (activeSession != null)
-                    {
-                        activeSession.Status = "completed";
-                        activeSession.EndTime = cutoffDateTime;
-                        var sessionDuration = cutoffDateTime - activeSession.StartTime;
-                        activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
-
-                        context.CoreActivitylogs.Add(new CoreActivitylog
-                        {
-                            Action = "STUDY_SESSION_AUTO_CLOSED",
-                            UserId = record.StudentId,
-                            Timestamp = nowUtc,
-                            Details = System.Text.Json.JsonSerializer.Serialize(new
-                            {
-                                SessionId = activeSession.Id,
-                                Duration = activeSession.DurationMinutes
-                            })
-                        });
-                    }
                 }
             }
 

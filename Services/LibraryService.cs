@@ -31,7 +31,7 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Ok(cachedInfo);
             }
 
-            var info = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+            var info = await _context.LibraryLibraryinfos.AsNoTracking().OrderBy(i => i.Id).FirstOrDefaultAsync(ct);
             if (info == null) return ServiceResult<object>.Ok(null);
 
             var responseData = new

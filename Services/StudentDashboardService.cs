@@ -63,8 +63,8 @@ namespace WebApplication1.Services
                         .FirstOrDefault(),
                     HolidayRecord = _context.AttendanceHolidays
                         .FirstOrDefault(h => h.Date == today && h.IsActive),
-                    AppConfig = _context.LibraryAppconfigs.FirstOrDefault(),
-                    LibraryInfo = _context.LibraryLibraryinfos.Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefault(),
+                    AppConfig = _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefault(),
+                    LibraryInfo = _context.LibraryLibraryinfos.OrderBy(l => l.Id).Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefault(),
                     PaddingSetting = _context.CoreGlobalsettings.Where(gs => gs.Key == "ATTENDANCE_PADDING_MINUTES").Select(gs => gs.Value).FirstOrDefault(),
                     RazorpayKey = _context.CoreGlobalsettings.Where(gs => gs.Key == "RAZORPAY_KEY").Select(gs => gs.Value).FirstOrDefault()
                 })

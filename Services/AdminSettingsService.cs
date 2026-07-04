@@ -21,7 +21,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetSettingsAsync(CancellationToken ct = default)
         {
-            var appConfig = await _context.LibraryAppconfigs.FirstOrDefaultAsync(ct);
+            var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
             if (appConfig == null)
             {
                 appConfig = new LibraryAppconfig
@@ -45,7 +45,7 @@ namespace WebApplication1.Services
 
             string paddingTime = paddingSetting?.Value ?? "60";
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().OrderBy(l => l.Id).Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
 
             JsonElement safePermissions;
@@ -75,7 +75,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, CancellationToken ct = default)
         {
-            var appConfig = await _context.LibraryAppconfigs.FirstOrDefaultAsync(ct);
+            var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
             if (appConfig == null)
             {
                 appConfig = new LibraryAppconfig { UpdatedAt = DateTime.UtcNow, ExpiredStudentPermissions = "{}" };

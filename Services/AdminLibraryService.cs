@@ -164,7 +164,7 @@ namespace WebApplication1.Services
         {
             try
             {
-                var info = await _context.LibraryLibraryinfos.FirstOrDefaultAsync(ct);
+                var info = await _context.LibraryLibraryinfos.OrderBy(l => l.Id).FirstOrDefaultAsync(ct);
                 if (info == null)
                 {
                     info = new LibraryLibraryinfo
