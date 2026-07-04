@@ -39,7 +39,7 @@ namespace WebApplication1.Services
             {
                 return ServiceResult<object>.Fail("Validation failed", errors);
             }
-            return ServiceResult<object>.Success("Available");
+            return ServiceResult<object>.Ok(null, "Available");
         }
 
         public async Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
