@@ -26,13 +26,13 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default)
         {
             var errors = new Dictionary<string, string[]>();
-            if (!string.IsNullOrWhiteSpace(request.Email) && await _context.AccountsCustomusers.AnyAsync(u => u.Email == request.Email, ct))
+            if (!string.IsNullOrWhiteSpace(request.Email) && await _context.AccountsCustomusers.AnyAsync(u => EF.Functions.ILike(u.Email, request.Email.Trim()), ct))
             {
-                errors["email"] = new[] { "This email address is already registered." };
+                errors["email"] = new[] { "Email already exists." };
             }
-            if (!string.IsNullOrWhiteSpace(request.Mobile) && await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
+            if (!string.IsNullOrWhiteSpace(request.Mobile) && await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile.Trim(), ct))
             {
-                errors["mobile"] = new[] { "This mobile number is already registered." };
+                errors["mobile"] = new[] { "Mobile number already exists." };
             }
             
             if (errors.Any())
@@ -84,11 +84,11 @@ namespace WebApplication1.Services
             }
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
             {
-                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "mobile", new[] { "This mobile number is already registered." } } });
+                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "mobile", new[] { "Mobile number already exists." } } });
             }
-            if (await _context.AccountsCustomusers.AnyAsync(u => u.Email == request.Email, ct))
+            if (await _context.AccountsCustomusers.AnyAsync(u => EF.Functions.ILike(u.Email, request.Email), ct))
             {
-                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "email", new[] { "This email address is already registered." } } });
+                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "email", new[] { "Email already exists." } } });
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
