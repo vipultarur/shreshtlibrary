@@ -67,6 +67,17 @@ namespace WebApplication1.Services
 
             if (session == null)
             {
+                var latestSession = await _context.StudyStudysessions
+                    .AsNoTracking()
+                    .Where(s => s.StudentId == userId)
+                    .OrderByDescending(s => s.StartTime)
+                    .FirstOrDefaultAsync(ct);
+
+                if (latestSession != null)
+                {
+                    return ServiceResult<object>.Ok(FormatSession(latestSession));
+                }
+                
                 return ServiceResult<object>.Fail("No active session found.");
             }
 
