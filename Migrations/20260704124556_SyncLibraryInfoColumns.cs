@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,27 +10,14 @@ namespace WebApplication1.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<string>(
-                name: "faq",
-                table: "library_libraryinfo",
-                type: "jsonb",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
+            migrationBuilder.Sql("UPDATE library_libraryinfo SET faq = '[]' WHERE faq IS NULL OR btrim(faq) = '';");
+            migrationBuilder.Sql("ALTER TABLE library_libraryinfo ALTER COLUMN faq TYPE jsonb USING faq::jsonb;");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<string>(
-                name: "faq",
-                table: "library_libraryinfo",
-                type: "text",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "jsonb",
-                oldNullable: true);
+            migrationBuilder.Sql("ALTER TABLE library_libraryinfo ALTER COLUMN faq TYPE text USING faq::text;");
         }
     }
 }
