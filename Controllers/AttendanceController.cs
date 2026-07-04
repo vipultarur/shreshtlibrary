@@ -59,6 +59,24 @@ namespace WebApplication1.Controllers
             }
         }
 
+        [HttpPost("attendance/checkout")]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        public async Task<IActionResult> CheckoutAsync(CancellationToken ct)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
+
+            try
+            {
+                var result = await _attendanceService.CheckoutAsync(userId.Value, ct);
+                return Ok(ApiResponse<object>.Ok(result));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail(ex.Message));
+            }
+        }
+
         [HttpGet("attendance/logs")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetAttendanceLogsAsync(CancellationToken ct)

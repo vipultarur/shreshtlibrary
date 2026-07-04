@@ -196,6 +196,76 @@ namespace WebApplication1.Services
             };
         }
 
+        public async Task<object> CheckoutAsync(long userId, CancellationToken ct)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            var existing = await _context.AttendanceAttendances
+                .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == today, ct);
+
+            if (existing == null || !existing.IsPresent)
+            {
+                throw new InvalidOperationException("No active check-in found for today.");
+            }
+
+            if (existing.TimeOut != null)
+            {
+                throw new InvalidOperationException("Already checked out for today.");
+            }
+
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+            existing.TimeOut = currentTime;
+
+            // Calculate total hours
+            var duration = currentTime.ToTimeSpan() - existing.TimeIn.ToTimeSpan();
+            existing.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
+
+            _context.CoreActivitylogs.Add(new CoreActivitylog
+            {
+                Action = "ATTENDANCE_CHECKOUT",
+                UserId = userId,
+                Timestamp = _dateTimeProvider.UtcNow,
+                Details = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Student = userId,
+                    AttendanceDate = today.ToString("yyyy-MM-dd"),
+                    CheckoutTime = currentTime.ToString("HH:mm:ss"),
+                    TotalHours = existing.TotalHours
+                })
+            });
+
+            // Close active study session if any
+            var activeSession = await _context.StudyStudysessions
+                .FirstOrDefaultAsync(s => s.StudentId == userId && (s.Status == "active" || s.Status == "paused"), ct);
+
+            if (activeSession != null)
+            {
+                activeSession.Status = "completed";
+                var endDt = _dateTimeProvider.IstNow;
+                activeSession.EndTime = endDt;
+                var sessionDuration = endDt - activeSession.StartTime;
+                activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+
+                _context.CoreActivitylogs.Add(new CoreActivitylog
+                {
+                    Action = "STUDY_SESSION_AUTO_CLOSED",
+                    UserId = userId,
+                    Timestamp = _dateTimeProvider.UtcNow,
+                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        SessionId = activeSession.Id,
+                        Duration = activeSession.DurationMinutes
+                    })
+                });
+            }
+
+            await _context.SaveChangesAsync(ct);
+
+            return new
+            {
+                message = "Checked out successfully."
+            };
+        }
+
         public async Task<object> GetAttendanceLogsAsync(long userId, CancellationToken ct)
         {
             var logs = await _context.AttendanceAttendances

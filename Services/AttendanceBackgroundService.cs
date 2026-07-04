@@ -19,6 +19,7 @@ namespace WebApplication1.Services
         private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
         private DateOnly _lastResetDate = DateOnly.MinValue;
         private DateOnly _lastAbsentMarkedDate = DateOnly.MinValue;
+        private DateOnly _lastAutoCheckoutDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -37,6 +38,7 @@ namespace WebApplication1.Services
                     await MidnightResetAsync(stoppingToken);
                     await AutoGenerateQrAsync(stoppingToken);
                     await ProcessPendingToAbsentAsync(stoppingToken);
+                    await ProcessAutoCheckoutAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -305,6 +307,114 @@ namespace WebApplication1.Services
 
             await context.SaveChangesAsync(stoppingToken);
             _lastAbsentMarkedDate = today;
+        }
+
+        /// <summary>
+        /// Step 5: Once the attendance window closes, automatically check out any students who are still checked in.
+        /// </summary>
+        private async Task ProcessAutoCheckoutAsync(CancellationToken stoppingToken)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastAutoCheckoutDate >= today) return; // Already processed today
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var holidayRecord = await context.AttendanceHolidays
+                .AsNoTracking()
+                .FirstOrDefaultAsync(h => h.Date == today && h.IsActive, stoppingToken);
+
+            if (holidayRecord != null)
+            {
+                _lastAutoCheckoutDate = today;
+                return;
+            }
+
+            var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
+            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
+            
+            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+            
+            bool isPastCutoff = currentTime > closeTime;
+            // Handle midnight wrap-around
+            if (closeTime < new TimeOnly(12, 0))
+            {
+                isPastCutoff = currentTime > closeTime && currentTime < new TimeOnly(12,0);
+            }
+
+            if (!isPastCutoff) return; // Window is still open
+
+            // Find all checked-in records for today that haven't been checked out
+            var activeRecords = await context.AttendanceAttendances
+                .Where(a => a.Date == today && a.IsPresent && a.TimeOut == null)
+                .ToListAsync(stoppingToken);
+
+            if (!activeRecords.Any())
+            {
+                _lastAutoCheckoutDate = today;
+                return;
+            }
+
+            _logger.LogInformation("Auto-checking out {Count} students for {Date}.", activeRecords.Count, today);
+
+            var now = _dateTimeProvider.UtcNow;
+            
+            foreach (var record in activeRecords)
+            {
+                record.TimeOut = closeTime;
+                
+                var duration = closeTime.ToTimeSpan() - record.TimeIn.ToTimeSpan();
+                // Handle negative duration if closeTime is before TimeIn (e.g., midnight crossover)
+                if (duration.TotalMinutes < 0) duration = duration.Add(TimeSpan.FromHours(24));
+                record.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
+                
+                context.CoreActivitylogs.Add(new CoreActivitylog
+                {
+                    Action = "ATTENDANCE_AUTO_CHECKOUT",
+                    UserId = record.StudentId,
+                    Timestamp = now,
+                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        Student = record.StudentId,
+                        AttendanceDate = today.ToString("yyyy-MM-dd"),
+                        CheckoutTime = closeTime.ToString("HH:mm:ss"),
+                        TotalHours = record.TotalHours,
+                        UpdatedBy = "SYSTEM"
+                    })
+                });
+
+                // Close active study session if any
+                var activeSession = await context.StudyStudysessions
+                    .FirstOrDefaultAsync(s => s.StudentId == record.StudentId && (s.Status == "active" || s.Status == "paused"), stoppingToken);
+
+                if (activeSession != null)
+                {
+                    activeSession.Status = "completed";
+                    // End time is closeTime of the library
+                    var endDt = new DateTime(today.Year, today.Month, today.Day, closeTime.Hour, closeTime.Minute, closeTime.Second);
+                    // Handle wrap-around
+                    if (closeTime < new TimeOnly(12,0)) endDt = endDt.AddDays(1);
+                    
+                    activeSession.EndTime = endDt;
+                    var sessionDuration = endDt - activeSession.StartTime;
+                    activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+
+                    context.CoreActivitylogs.Add(new CoreActivitylog
+                    {
+                        Action = "STUDY_SESSION_AUTO_CLOSED",
+                        UserId = record.StudentId,
+                        Timestamp = now,
+                        Details = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            SessionId = activeSession.Id,
+                            Duration = activeSession.DurationMinutes
+                        })
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync(stoppingToken);
+            _lastAutoCheckoutDate = today;
         }
     }
 }
