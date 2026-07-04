@@ -44,27 +44,41 @@ namespace WebApplication1.Controllers
         [HttpPost("notifications/schedule")]
         public async Task<IActionResult> NotificationScheduleAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
-                    .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
-                return BadRequest(new { success = false, message = "Validation failed", errors });
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                    return BadRequest(new { success = false, message = "Validation failed", errors });
+                }
+                var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: true, ct);
+                return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
             }
-            var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: true, ct);
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+            catch (Exception ex)
+            {
+                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail($"Failed to schedule notification: {ex.Message}"));
+            }
         }
 
         [HttpPost("notifications/send")]
         public async Task<IActionResult> NotificationSendAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
-                    .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
-                return BadRequest(new { success = false, message = "Validation failed", errors });
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(x => x.Key, x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                    return BadRequest(new { success = false, message = "Validation failed", errors });
+                }
+                var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: false, ct);
+                return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
             }
-            var result = await _adminNotificationService.ProcessNotificationAsync(dto, isSchedule: false, ct);
-            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
+            catch (Exception ex)
+            {
+                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail($"Failed to send notification: {ex.Message}"));
+            }
         }
 
         [HttpGet("notifications")]
@@ -98,10 +112,10 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
-        [HttpPost("inbox/{pk}/{action}")]
-        public async Task<IActionResult> InboxActionAsync(long pk, string action, CancellationToken ct)
+        [HttpPost("inbox/{pk}/{actionType}")]
+        public async Task<IActionResult> InboxActionAsync(long pk, string actionType, CancellationToken ct)
         {
-            var result = await _adminNotificationService.MarkInboxActionAsync(pk, action, ct);
+            var result = await _adminNotificationService.MarkInboxActionAsync(pk, actionType, ct);
             if (result.IsNotFound) return NotFound(new { message = result.Message });
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { message = "Action completed" }));
         }

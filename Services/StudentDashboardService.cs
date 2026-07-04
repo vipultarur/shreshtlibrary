@@ -235,6 +235,11 @@ namespace WebApplication1.Services
                 }
             }
 
+            if (restrictedFeatures.Contains("attendance"))
+            {
+                allowQrScan = false;
+            }
+
             string razorpayKey = data.RazorpayKey ?? "";
 
             return ApiResponse<object>.Ok(new

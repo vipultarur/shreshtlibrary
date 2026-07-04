@@ -81,7 +81,15 @@ namespace WebApplication1.Services
                             { "link_url", notification.LinkUrl ?? "" }
                         };
                         
-                        successCount = await notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                        try
+                        {
+                            successCount = await notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Failed to send push notification for scheduled notification ID {notification.Id}");
+                            successCount = 0;
+                        }
                     }
 
                     notification.SentAt = DateTime.UtcNow;

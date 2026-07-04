@@ -106,10 +106,10 @@ namespace WebApplication1.Services
 
             if (isSchedule && dto.ScheduledAt.HasValue)
             {
-                notification.ScheduledAt = dto.ScheduledAt.Value;
+                notification.ScheduledAt = dto.ScheduledAt.Value.ToUniversalTime();
             }
 
-            if (dto.ExpiresAt.HasValue) notification.ExpiresAt = dto.ExpiresAt.Value;
+            if (dto.ExpiresAt.HasValue) notification.ExpiresAt = dto.ExpiresAt.Value.ToUniversalTime();
             if (dto.EventDate.HasValue) notification.EventDate = DateOnly.FromDateTime(dto.EventDate.Value);
             if (dto.RecurringTime.HasValue) notification.RecurringTime = dto.RecurringTime.Value;
 
@@ -167,18 +167,47 @@ namespace WebApplication1.Services
                     .ToListAsync(ct);
                 query = query.Where(p => p.Status == "LIVE" && activeStudentIds.Contains(p.UserId));
             }
+            else if (dto.Audience == "free")
+            {
+                var activeStudentIds = await _context.MembershipsMemberships
+                    .Where(m => m.EndDate >= DateOnly.FromDateTime(DateTime.UtcNow) && m.Status == "active")
+                    .Select(m => m.StudentId)
+                    .ToListAsync(ct);
+                query = query.Where(p => p.Status == "LIVE" && !activeStudentIds.Contains(p.UserId));
+            }
             else if (dto.Audience == "expired")
             {
                 var activeStudentIds = await _context.MembershipsMemberships
                     .Where(m => m.EndDate >= DateOnly.FromDateTime(DateTime.UtcNow) && m.Status == "active")
                     .Select(m => m.StudentId)
                     .ToListAsync(ct);
-                query = query.Where(p => !activeStudentIds.Contains(p.UserId));
+                var expiredStudentIds = await _context.MembershipsMemberships
+                    .Where(m => m.EndDate < DateOnly.FromDateTime(DateTime.UtcNow))
+                    .Select(m => m.StudentId)
+                    .ToListAsync(ct);
+                query = query.Where(p => p.Status == "LIVE" && !activeStudentIds.Contains(p.UserId) && expiredStudentIds.Contains(p.UserId));
+            }
+            else if (dto.Audience == "pending")
+            {
+                query = query.Where(p => p.Status == "PENDING");
+            }
+            else if (dto.Audience == "suspended")
+            {
+                query = query.Where(p => p.Status == "SUSPENDED");
+            }
+            else if (dto.Audience == "new")
+            {
+                var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+                query = query.Where(p => p.Status == "LIVE" && p.CreatedAt >= sevenDaysAgo);
             }
             else if (dto.Audience == "selected" && !string.IsNullOrEmpty(dto.SelectedStudents))
             {
                 var ids = dto.SelectedStudents.Split(',').Select(s => long.TryParse(s, out var id) ? id : 0).Where(i => i > 0).ToList();
                 query = query.Where(p => ids.Contains(p.UserId));
+            }
+            else // "all" or default
+            {
+                query = query.Where(p => p.Status == "LIVE");
             }
 
             var users = await query.Select(p => p.UserId).ToListAsync(ct);
