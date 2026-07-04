@@ -214,17 +214,19 @@ namespace WebApplication1.Services
             var nowUtc = _dateTimeProvider.UtcNow;
             bool changesMade = false;
             
+            // OPTIMIZATION: Fetch holiday status for all unique dates at once instead of inside the loop (N+1 fix)
+            var uniqueDates = pendingRecords.Select(r => r.Date).Distinct().ToList();
+            var holidayDates = await context.AttendanceHolidays
+                .Where(h => h.IsActive && uniqueDates.Contains(h.Date))
+                .Select(h => h.Date)
+                .ToListAsync(stoppingToken);
+            var holidayDatesSet = new HashSet<DateOnly>(holidayDates);
+
             foreach (var record in pendingRecords)
             {
                 // Is this record's date a holiday?
-                var isHoliday = await context.AttendanceHolidays
-                    .AnyAsync(h => h.Date == record.Date && h.IsActive, stoppingToken);
+                var isHoliday = holidayDatesSet.Contains(record.Date);
 
-                if (isHoliday)
-                {
-                    // Holidays shouldn't even have PENDING, but if they do, remove them or ignore.
-                    // We'll mark them as SYSTEM absent to clear them out.
-                }
 
                 // Calculate the exact cutoff DateTime for this record's date
                 DateTime cutoffDateTime;
