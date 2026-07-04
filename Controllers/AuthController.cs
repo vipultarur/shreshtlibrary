@@ -118,13 +118,19 @@ namespace WebApplication1.Controllers
 
     public class LoginEmailRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
         public string Email { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
         public string Password { get; set; }
     }
 
     public class LoginMobileRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("mobile")]
         public string Mobile { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
         public string Password { get; set; }
     }
 
