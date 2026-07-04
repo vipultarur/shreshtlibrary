@@ -18,8 +18,6 @@ namespace WebApplication1.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
         private DateOnly _lastResetDate = DateOnly.MinValue;
-        private DateOnly _lastAbsentMarkedDate = DateOnly.MinValue;
-        private DateOnly _lastAutoCheckoutDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -186,25 +184,12 @@ namespace WebApplication1.Services
 
         /// <summary>
         /// Step 4: Once the attendance window closes, convert all PENDING records to Absent
-        /// and send notifications. This runs once per day after cutoff.
+        /// and send notifications. This runs every minute and processes any missed past records.
         /// </summary>
         private async Task ProcessPendingToAbsentAsync(CancellationToken stoppingToken)
         {
-            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
-            if (_lastAbsentMarkedDate >= today) return; // Already processed today
-
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var holidayRecord = await context.AttendanceHolidays
-                .AsNoTracking()
-                .FirstOrDefaultAsync(h => h.Date == today && h.IsActive, stoppingToken);
-
-            if (holidayRecord != null)
-            {
-                _lastAbsentMarkedDate = today;
-                return;
-            }
 
             var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
             var paddingSetting = await context.CoreGlobalsettings
@@ -218,95 +203,106 @@ namespace WebApplication1.Services
                 paddingMinutes = parsedPadding;
             }
             
-            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
-
-            var startTime = openTime;
-            var endTime = closeTime.AddMinutes(paddingMinutes);
-            bool isPastCutoff = false;
-            if (startTime <= endTime)
-            {
-                isPastCutoff = currentTime > endTime;
-            }
-            else
-            {
-                isPastCutoff = currentTime > endTime && currentTime < startTime;
-            }
-
-            if (!isPastCutoff) return; // Window is still open
-
-            // Find all PENDING records for today and convert them to Absent
+            // Find ALL PENDING records
             var pendingRecords = await context.AttendanceAttendances
-                .Where(a => a.Date == today && a.Method == "PENDING" && !a.IsPresent)
+                .Where(a => a.Method == "PENDING" && !a.IsPresent)
                 .ToListAsync(stoppingToken);
 
-            if (!pendingRecords.Any())
-            {
-                _lastAbsentMarkedDate = today;
-                return;
-            }
+            if (!pendingRecords.Any()) return;
 
-            _logger.LogInformation("Auto-marking {Count} pending students as Absent for {Date}.", pendingRecords.Count, today);
-
-            var now = _dateTimeProvider.UtcNow;
+            var currentIst = _dateTimeProvider.IstNow;
+            var nowUtc = _dateTimeProvider.UtcNow;
+            bool changesMade = false;
             
             foreach (var record in pendingRecords)
             {
-                record.Method = "SYSTEM";
-                record.MarkedAt = now;
-                
-                context.CoreActivitylogs.Add(new CoreActivitylog
+                // Is this record's date a holiday?
+                var isHoliday = await context.AttendanceHolidays
+                    .AnyAsync(h => h.Date == record.Date && h.IsActive, stoppingToken);
+
+                if (isHoliday)
                 {
-                    Action = "ATTENDANCE_UPDATE",
-                    UserId = record.StudentId,
-                    Timestamp = now,
-                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    // Holidays shouldn't even have PENDING, but if they do, remove them or ignore.
+                    // We'll mark them as SYSTEM absent to clear them out.
+                }
+
+                // Calculate the exact cutoff DateTime for this record's date
+                DateTime cutoffDateTime;
+                if (closeTime < openTime) // Wraps around midnight (e.g. 10:00 to 01:00)
+                {
+                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes);
+                }
+                else
+                {
+                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+                }
+
+                if (currentIst > cutoffDateTime || isHoliday)
+                {
+                    record.Method = "SYSTEM";
+                    record.MarkedAt = nowUtc;
+                    changesMade = true;
+                    
+                    context.CoreActivitylogs.Add(new CoreActivitylog
                     {
-                        Student = record.StudentId,
-                        AttendanceDate = today.ToString("yyyy-MM-dd"),
-                        PreviousStatus = "Pending",
-                        NewStatus = "Absent",
-                        Method = "SYSTEM",
-                        AttendanceTime = (string)null,
-                        UpdatedBy = "SYSTEM",
-                        LateMark = false
-                    })
-                });
-                
-                // Add Notification
-                var notification = new NotificationsNotification
-                {
-                    Title = "Attendance Update",
-                    Body = "You have been marked Absent for today because you did not check in by the cutoff time.",
-                    Type = "ATTENDANCE",
-                    TargetGroup = "all",
-                    Target = "ALL",
-                    Audience = "selected",
-                    DisplayMode = "persistent",
-                    Layout = "text_only",
-                    Subtitle = "",
-                    Description = "",
-                    LinkButtonText = "",
-                    CreatedAt = now,
-                    ScheduledAt = now,
-                    SendPush = true,
-                    LinkUrl = "/attendance",
-                    FailureCount = 0,
-                    SuccessCount = 0,
-                    TotalRecipients = 1
-                };
-                context.NotificationsNotifications.Add(notification);
-                
-                var studentNotification = new NotificationsStudentnotification
-                {
-                    StudentId = record.StudentId,
-                    Notification = notification,
-                    IsRead = false
-                };
-                context.NotificationsStudentnotifications.Add(studentNotification);
+                        Action = "ATTENDANCE_UPDATE",
+                        UserId = record.StudentId,
+                        Timestamp = nowUtc,
+                        Details = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            Student = record.StudentId,
+                            AttendanceDate = record.Date.ToString("yyyy-MM-dd"),
+                            PreviousStatus = "Pending",
+                            NewStatus = "Absent",
+                            Method = "SYSTEM",
+                            AttendanceTime = (string)null,
+                            UpdatedBy = "SYSTEM",
+                            LateMark = false
+                        })
+                    });
+                    
+                    // Add Notification if it's not a holiday
+                    if (!isHoliday)
+                    {
+                        var notification = new NotificationsNotification
+                        {
+                            Title = "Attendance Update",
+                            Body = $"You have been marked Absent for {record.Date.ToString("dd MMM yyyy")} because you did not check in by the cutoff time.",
+                            Type = "ATTENDANCE",
+                            TargetGroup = "all",
+                            Target = "ALL",
+                            Audience = "selected",
+                            DisplayMode = "persistent",
+                            Layout = "text_only",
+                            Subtitle = "",
+                            Description = "",
+                            LinkButtonText = "",
+                            CreatedAt = nowUtc,
+                            ScheduledAt = nowUtc,
+                            SendPush = true,
+                            LinkUrl = "/attendance",
+                            FailureCount = 0,
+                            SuccessCount = 0,
+                            TotalRecipients = 1
+                        };
+                        context.NotificationsNotifications.Add(notification);
+                        
+                        var studentNotification = new NotificationsStudentnotification
+                        {
+                            StudentId = record.StudentId,
+                            Notification = notification,
+                            IsRead = false
+                        };
+                        context.NotificationsStudentnotifications.Add(studentNotification);
+                    }
+                }
             }
 
-            await context.SaveChangesAsync(stoppingToken);
-            _lastAbsentMarkedDate = today;
+            if (changesMade)
+            {
+                await context.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Auto-marked pending students as Absent.");
+            }
         }
 
         /// <summary>
@@ -314,107 +310,94 @@ namespace WebApplication1.Services
         /// </summary>
         private async Task ProcessAutoCheckoutAsync(CancellationToken stoppingToken)
         {
-            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
-            if (_lastAutoCheckoutDate >= today) return; // Already processed today
-
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var holidayRecord = await context.AttendanceHolidays
-                .AsNoTracking()
-                .FirstOrDefaultAsync(h => h.Date == today && h.IsActive, stoppingToken);
-
-            if (holidayRecord != null)
-            {
-                _lastAutoCheckoutDate = today;
-                return;
-            }
-
             var libraryInfo = await context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(stoppingToken);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
             
-            var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
-            
-            bool isPastCutoff = currentTime > closeTime;
-            // Handle midnight wrap-around
-            if (closeTime < new TimeOnly(12, 0))
-            {
-                isPastCutoff = currentTime > closeTime && currentTime < new TimeOnly(12,0);
-            }
+            var currentIst = _dateTimeProvider.IstNow;
 
-            if (!isPastCutoff) return; // Window is still open
-
-            // Find all checked-in records for today that haven't been checked out
+            // Find all checked-in records that haven't been checked out
             var activeRecords = await context.AttendanceAttendances
-                .Where(a => a.Date == today && a.IsPresent && a.TimeOut == null)
+                .Where(a => a.IsPresent && a.TimeOut == null)
                 .ToListAsync(stoppingToken);
 
-            if (!activeRecords.Any())
-            {
-                _lastAutoCheckoutDate = today;
-                return;
-            }
+            if (!activeRecords.Any()) return;
 
-            _logger.LogInformation("Auto-checking out {Count} students for {Date}.", activeRecords.Count, today);
-
-            var now = _dateTimeProvider.UtcNow;
+            var nowUtc = _dateTimeProvider.UtcNow;
+            bool changesMade = false;
             
             foreach (var record in activeRecords)
             {
-                record.TimeOut = closeTime;
-                
-                var duration = closeTime.ToTimeSpan() - record.TimeIn.ToTimeSpan();
-                // Handle negative duration if closeTime is before TimeIn (e.g., midnight crossover)
-                if (duration.TotalMinutes < 0) duration = duration.Add(TimeSpan.FromHours(24));
-                record.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
-                
-                context.CoreActivitylogs.Add(new CoreActivitylog
+                // Calculate cutoff for auto-checkout
+                DateTime cutoffDateTime;
+                if (closeTime < openTime) // Wraps around midnight
                 {
-                    Action = "ATTENDANCE_AUTO_CHECKOUT",
-                    UserId = record.StudentId,
-                    Timestamp = now,
-                    Details = System.Text.Json.JsonSerializer.Serialize(new
-                    {
-                        Student = record.StudentId,
-                        AttendanceDate = today.ToString("yyyy-MM-dd"),
-                        CheckoutTime = closeTime.ToString("HH:mm:ss"),
-                        TotalHours = record.TotalHours,
-                        UpdatedBy = "SYSTEM"
-                    })
-                });
-
-                // Close active study session if any
-                var activeSession = await context.StudyStudysessions
-                    .FirstOrDefaultAsync(s => s.StudentId == record.StudentId && (s.Status == "active" || s.Status == "paused"), stoppingToken);
-
-                if (activeSession != null)
+                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1);
+                }
+                else
                 {
-                    activeSession.Status = "completed";
-                    // End time is closeTime of the library
-                    var endDt = new DateTime(today.Year, today.Month, today.Day, closeTime.Hour, closeTime.Minute, closeTime.Second);
-                    // Handle wrap-around
-                    if (closeTime < new TimeOnly(12,0)) endDt = endDt.AddDays(1);
+                    cutoffDateTime = record.Date.ToDateTime(closeTime);
+                }
+
+                if (currentIst > cutoffDateTime)
+                {
+                    record.TimeOut = closeTime;
                     
-                    activeSession.EndTime = endDt;
-                    var sessionDuration = endDt - activeSession.StartTime;
-                    activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
-
+                    var duration = closeTime.ToTimeSpan() - record.TimeIn.ToTimeSpan();
+                    if (duration.TotalMinutes < 0) duration = duration.Add(TimeSpan.FromHours(24));
+                    record.TotalHours = $"{(int)duration.TotalHours:D2}:{duration.Minutes:D2}";
+                    
+                    changesMade = true;
+                    
                     context.CoreActivitylogs.Add(new CoreActivitylog
                     {
-                        Action = "STUDY_SESSION_AUTO_CLOSED",
+                        Action = "ATTENDANCE_AUTO_CHECKOUT",
                         UserId = record.StudentId,
-                        Timestamp = now,
+                        Timestamp = nowUtc,
                         Details = System.Text.Json.JsonSerializer.Serialize(new
                         {
-                            SessionId = activeSession.Id,
-                            Duration = activeSession.DurationMinutes
+                            Student = record.StudentId,
+                            AttendanceDate = record.Date.ToString("yyyy-MM-dd"),
+                            CheckoutTime = closeTime.ToString("HH:mm:ss"),
+                            TotalHours = record.TotalHours,
+                            UpdatedBy = "SYSTEM"
                         })
                     });
+
+                    // Close active study session if any
+                    var activeSession = await context.StudyStudysessions
+                        .FirstOrDefaultAsync(s => s.StudentId == record.StudentId && (s.Status == "active" || s.Status == "paused"), stoppingToken);
+
+                    if (activeSession != null)
+                    {
+                        activeSession.Status = "completed";
+                        activeSession.EndTime = cutoffDateTime;
+                        var sessionDuration = cutoffDateTime - activeSession.StartTime;
+                        activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+
+                        context.CoreActivitylogs.Add(new CoreActivitylog
+                        {
+                            Action = "STUDY_SESSION_AUTO_CLOSED",
+                            UserId = record.StudentId,
+                            Timestamp = nowUtc,
+                            Details = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                SessionId = activeSession.Id,
+                                Duration = activeSession.DurationMinutes
+                            })
+                        });
+                    }
                 }
             }
 
-            await context.SaveChangesAsync(stoppingToken);
-            _lastAutoCheckoutDate = today;
+            if (changesMade)
+            {
+                await context.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Auto-checked out students.");
+            }
         }
     }
 }
