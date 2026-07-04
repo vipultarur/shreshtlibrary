@@ -39,34 +39,19 @@ namespace WebApplication1.Services
 
             if (string.IsNullOrWhiteSpace(request.FirstName)) errors["first_name"] = new[] { "First name is required." };
             if (string.IsNullOrWhiteSpace(request.LastName)) errors["last_name"] = new[] { "Last name is required." };
-            
-            if (string.IsNullOrWhiteSpace(request.Email)) 
-            {
+            if (string.IsNullOrWhiteSpace(request.Email)) {
                 errors["email"] = new[] { "Email is required." };
-            }
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(request.Email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"))
-            {
+            } else if (!System.Text.RegularExpressions.Regex.IsMatch(request.Email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")) {
                 errors["email"] = new[] { "Please enter a valid email address." };
             }
 
-            if (string.IsNullOrWhiteSpace(request.Mobile)) 
-            {
+            if (string.IsNullOrWhiteSpace(request.Mobile)) {
                 errors["mobile"] = new[] { "Mobile number is required." };
-            }
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(request.Mobile, @"^[0-9]{10}$"))
-            {
-                errors["mobile"] = new[] { "Mobile number must be exactly 10 digits." };
+            } else if (!System.Text.RegularExpressions.Regex.IsMatch(request.Mobile, @"^[0-9]{10}$")) {
+                errors["mobile"] = new[] { "Mobile number must contain exactly 10 digits." };
             }
 
-            if (string.IsNullOrWhiteSpace(request.Password)) 
-            {
-                errors["password"] = new[] { "Password is required." };
-            }
-            else if (request.Password.Length < 6)
-            {
-                errors["password"] = new[] { "Password must be at least 6 characters long." };
-            }
-
+            if (string.IsNullOrWhiteSpace(request.Password)) errors["password"] = new[] { "Password is required." };
             if (request.Dob == default) errors["dob"] = new[] { "Date of birth is required." };
 
             if (errors.Any())
@@ -80,11 +65,11 @@ namespace WebApplication1.Services
             }
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
             {
-                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "This mobile number is already registered." } } });
+                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "mobile", new[] { "This mobile number is already registered." } } });
             }
             if (await _context.AccountsCustomusers.AnyAsync(u => u.Email == request.Email, ct))
             {
-                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "email", new[] { "This email is already registered." } } });
+                return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "email", new[] { "This email address is already registered." } } });
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
