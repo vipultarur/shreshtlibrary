@@ -8,6 +8,7 @@ namespace WebApplication1.Services
 {
     public interface IAuthService
     {
+        Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default);
         Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default);
         Task<ServiceResult<object>> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> VerifyOtpAsync(VerifyOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default);

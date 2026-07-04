@@ -23,6 +23,25 @@ namespace WebApplication1.Services
             _logger = logger;
         }
 
+        public async Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default)
+        {
+            var errors = new Dictionary<string, string[]>();
+            if (!string.IsNullOrWhiteSpace(request.Email) && await _context.AccountsCustomusers.AnyAsync(u => u.Email == request.Email, ct))
+            {
+                errors["email"] = new[] { "This email address is already registered." };
+            }
+            if (!string.IsNullOrWhiteSpace(request.Mobile) && await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
+            {
+                errors["mobile"] = new[] { "This mobile number is already registered." };
+            }
+            
+            if (errors.Any())
+            {
+                return ServiceResult<object>.Fail("Validation failed", errors);
+            }
+            return ServiceResult<object>.Success("Available");
+        }
+
         public async Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
         {
             // Trim inputs

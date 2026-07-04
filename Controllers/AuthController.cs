@@ -52,6 +52,15 @@ namespace WebApplication1.Controllers
             return StatusCode(201, new { success = true, status = "success", message = result.Message, data = result.Data });
         }
 
+        [HttpPost("check-availability")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> CheckAvailabilityAsync([FromBody] CheckAvailabilityRequest request, CancellationToken ct)
+        {
+            var result = await _authService.CheckAvailabilityAsync(request, ct);
+            return HandleResult(result);
+        }
+
         [HttpPost("send-otp")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
@@ -154,6 +163,15 @@ namespace WebApplication1.Controllers
             var result = await _authService.UpdateFcmTokenAsync(dto, userId, ct);
             return HandleResult(result);
         }
+    }
+
+    public class CheckAvailabilityRequest
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
+        public string Email { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("mobile")]
+        public string Mobile { get; set; }
     }
 
     public class AdminLoginRequest
