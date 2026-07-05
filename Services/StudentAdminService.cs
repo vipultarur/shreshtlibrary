@@ -509,16 +509,19 @@ namespace WebApplication1.Services
                 var email = student.Email!;
                 var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
 
-                try
+                _ = Task.Run(async () => 
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending suspend email: {ex}");
-                }
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending suspend email: {ex}");
+                    }
+                });
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Suspended });
@@ -538,16 +541,19 @@ namespace WebApplication1.Services
             {
                 var email = student.Email!;
 
-                try
+                _ = Task.Run(async () => 
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendActivatedEmailAsync(email);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending activate email: {ex}");
-                }
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendActivatedEmailAsync(email);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending activate email: {ex}");
+                    }
+                });
             }
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Live });

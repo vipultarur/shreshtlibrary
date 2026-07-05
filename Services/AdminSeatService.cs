@@ -335,16 +335,19 @@ namespace WebApplication1.Services
                 var email = studentUser.Email;
                 var seatNumber = seat.SeatNumber;
                 
-                try
+                _ = Task.Run(async () =>
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending assign seat email: {ex}");
-                }
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending assign seat email: {ex}");
+                    }
+                });
             }
 
             return ServiceResult<object>.Ok(new {
@@ -370,16 +373,19 @@ namespace WebApplication1.Services
 
             if (!string.IsNullOrWhiteSpace(email))
             {
-                try
+                _ = Task.Run(async () =>
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending unassign seat email: {ex}");
-                }
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending unassign seat email: {ex}");
+                    }
+                });
             }
 
             return ServiceResult<object>.Ok(new {
