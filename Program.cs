@@ -397,9 +397,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
-app.MapGet("/", () =>
+app.MapGet("/", (IWebHostEnvironment env) =>
 {
-    return Results.Ok(new { status = "online", message = "Shresht Library API is running successfully.", version = "1.0" });
+    var path = Path.Combine(env.ContentRootPath, "landing.html");
+    return Results.File(path, "text/html");
 });
 
 app.MapControllers();

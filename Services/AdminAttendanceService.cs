@@ -322,19 +322,14 @@ namespace WebApplication1.Services
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
+            var todayCutoffDateTime = closeTime < openTime 
+                ? todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes)
+                : todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+
             bool isPastCutoff = targetDate < todayDate;
             if (targetDate == todayDate)
             {
-                var startTime = openTime.AddMinutes(-paddingMinutes);
-                var endTime = closeTime.AddMinutes(paddingMinutes);
-                if (startTime <= endTime)
-                {
-                    isPastCutoff = currentTime > endTime;
-                }
-                else
-                {
-                    isPastCutoff = currentTime > endTime && currentTime < startTime;
-                }
+                isPastCutoff = _dateTimeProvider.IstNow > todayCutoffDateTime;
             }
 
             int absent, pending;
@@ -376,19 +371,14 @@ namespace WebApplication1.Services
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
+            var todayCutoffDateTime = closeTime < openTime 
+                ? todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes)
+                : todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+
             bool isPastCutoff = targetDate < todayDate;
             if (targetDate == todayDate)
             {
-                var startTime = openTime.AddMinutes(-paddingMinutes);
-                var endTime = closeTime.AddMinutes(paddingMinutes);
-                if (startTime <= endTime)
-                {
-                    isPastCutoff = currentTime > endTime;
-                }
-                else
-                {
-                    isPastCutoff = currentTime > endTime && currentTime < startTime;
-                }
+                isPastCutoff = _dateTimeProvider.IstNow > todayCutoffDateTime;
             }
 
             var records = await _context.AttendanceAttendances.Where(a => a.Date == targetDate).ToListAsync(ct);
@@ -573,7 +563,7 @@ namespace WebApplication1.Services
                      existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
                 }
                 // Mark as late arrival if admin marks present after cutoff
-                var targetDateCutoff = targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute);
+                var targetDateCutoff = targetDate.ToDateTime(closeTime).AddMinutes(manualPadding);
                 if (isPresent && _dateTimeProvider.IstNow > targetDateCutoff)
                 {
                     existingRecord.LateMark = true;
@@ -595,7 +585,7 @@ namespace WebApplication1.Services
                     Method = "MANUAL",
                     Note = dto.Note,
                     MarkedAt = DateTime.UtcNow,
-                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute)
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(closeTime).AddMinutes(manualPadding)
                 };
                 _context.AttendanceAttendances.Add(newRecord);
             }
@@ -614,7 +604,7 @@ namespace WebApplication1.Services
                     Method = "MANUAL",
                     AttendanceTime = isPresent ? _dateTimeProvider.IstNow.ToString("HH:mm:ss") : null,
                     UpdatedBy = "ADMIN",
-                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute)
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(closeTime).AddMinutes(manualPadding)
                 })
             });
 
@@ -690,7 +680,7 @@ namespace WebApplication1.Services
 
                 var existingRecord = existingRecords.FirstOrDefault(a => a.StudentId == targetStudentId && a.Date == targetDate);
 
-                var targetDateCutoff = targetDate.ToDateTime(TimeOnly.MinValue).AddHours(manualCutoff.Hour).AddMinutes(manualCutoff.Minute);
+                var targetDateCutoff = targetDate.ToDateTime(closeTime).AddMinutes(manualPadding);
                 var isLate = isPresent && _dateTimeProvider.IstNow > targetDateCutoff;
 
                 if (existingRecord != null)

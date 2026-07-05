@@ -230,7 +230,7 @@ namespace WebApplication1.Services
 
                 // Calculate the exact cutoff DateTime for this record's date
                 DateTime cutoffDateTime;
-                if (closeTime < openTime) // Wraps around midnight (e.g. 10:00 to 01:00)
+                if (closeTime < openTime) // Wraps around midnight
                 {
                     cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes);
                 }

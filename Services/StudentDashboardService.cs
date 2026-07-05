@@ -168,7 +168,6 @@ namespace WebApplication1.Services
 
             string attendanceStatus = "Pending";
             string? attendanceTime = null;
-            
             var openTime = data.LibraryInfo?.OpeningTime ?? new System.TimeOnly(10, 0);
             var closeTime = data.LibraryInfo?.ClosingTime ?? new System.TimeOnly(22, 0);
             int paddingMinutes = 60;
@@ -177,8 +176,21 @@ namespace WebApplication1.Services
                 paddingMinutes = parsedPadding;
             }
             
-            var cutoffTime = closeTime.AddMinutes(paddingMinutes);
-            var currentTime = System.TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+            DateTime todayCutoffDateTime;
+            if (closeTime < openTime)
+            {
+                todayCutoffDateTime = todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes);
+            }
+            else
+            {
+                todayCutoffDateTime = todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+            }
+            
+            DateTime todayOpenDateTime = todayDate.ToDateTime(openTime);
+            
+            bool isPastCutoff = _dateTimeProvider.IstNow > todayCutoffDateTime;
+            bool isOpen = _dateTimeProvider.IstNow >= todayOpenDateTime && _dateTimeProvider.IstNow <= todayCutoffDateTime;
+
             bool allowQrScan = false;
 
             if (isHoliday)
@@ -202,14 +214,14 @@ namespace WebApplication1.Services
                 }
                 else if (data.AttendanceToday.Method == "PENDING")
                 {
-                    if (currentTime > cutoffTime)
+                    if (isPastCutoff)
                     {
                         attendanceStatus = "Absent";
                     }
                     else
                     {
                         attendanceStatus = "Pending";
-                        allowQrScan = currentTime >= openTime && currentTime <= cutoffTime;
+                        allowQrScan = isOpen;
                     }
                 }
                 else
@@ -224,14 +236,14 @@ namespace WebApplication1.Services
             }
             else
             {
-                if (currentTime > cutoffTime)
+                if (isPastCutoff)
                 {
                     attendanceStatus = "Absent";
                 }
                 else
                 {
                     attendanceStatus = "Pending";
-                    allowQrScan = currentTime >= openTime && currentTime <= cutoffTime;
+                    allowQrScan = isOpen;
                 }
             }
 

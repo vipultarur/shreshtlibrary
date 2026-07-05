@@ -126,7 +126,7 @@ namespace WebApplication1.Services
                     existing.QrCodeId = qr.Id;
                     existing.MarkedAt = _dateTimeProvider.UtcNow;
                     existing.Method = "QR";
-                    existing.LateMark = currentTime > openTime.AddMinutes(paddingMinutes);
+                    existing.LateMark = false; // By definition, if QR scan is allowed, they are not late (cutoff is closeTime + padding)
                     existing.UnderTime = false;
 
                     _context.CoreActivitylogs.Add(new CoreActivitylog
@@ -143,7 +143,7 @@ namespace WebApplication1.Services
                             Method = "QR",
                             AttendanceTime = _dateTimeProvider.IstNow.ToString("HH:mm:ss"),
                             UpdatedBy = "SYSTEM",
-                            LateMark = currentTime > openTime.AddMinutes(paddingMinutes)
+                            LateMark = false
                         })
                     });
 
@@ -173,7 +173,7 @@ namespace WebApplication1.Services
                 IsPresent = true,
                 MarkedAt = _dateTimeProvider.UtcNow,
                 Method = "QR",
-                LateMark = currentTime > openTime.AddMinutes(paddingMinutes),
+                LateMark = false,
                 UnderTime = false
             };
 
@@ -192,7 +192,7 @@ namespace WebApplication1.Services
                     Method = "QR",
                     AttendanceTime = _dateTimeProvider.IstNow.ToString("HH:mm:ss"),
                     UpdatedBy = "SYSTEM",
-                    LateMark = currentTime > openTime.AddMinutes(paddingMinutes)
+                    LateMark = false
                 })
             });
 
