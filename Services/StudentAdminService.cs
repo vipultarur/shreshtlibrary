@@ -328,13 +328,13 @@ namespace WebApplication1.Services
                     var email = payload.Email!;
                     var fName = payload.FirstName ?? "";
                     var lName = payload.LastName ?? "";
-                    _ = Task.Run(async () => {
-                        try {
-                            using var scope = _scopeFactory.CreateScope();
-                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendWelcomeEmailAsync(email, fName, lName);
-                        } catch { }
-                    });
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendWelcomeEmailAsync(email, fName, lName);
+                    } catch (Exception ex) { 
+                        Console.WriteLine($"Error sending welcome email on admin create: {ex}");
+                    }
                 }
 
                 return ServiceResult<object>.Ok(new { id = newProfile.Id, user_id = newUser.Id, student_id = newProfile.StudentId });
