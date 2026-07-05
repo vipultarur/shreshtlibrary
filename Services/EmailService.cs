@@ -28,6 +28,7 @@ namespace WebApplication1.Services
         Task SendSeatAllocatedEmailAsync(string toEmail, string seatNumber, string zone, string timing);
         Task SendHolidayAnnouncementEmailAsync(string toEmail, string occasion, string date);
         Task SendHolidayCancelledEmailAsync(string toEmail, string occasion, string date);
+        Task SendSeatReleasedEmailAsync(string toEmail, string seatNumber, string reason);
     }
 
     public class EmailService : IEmailService
@@ -414,6 +415,26 @@ namespace WebApplication1.Services
                 colorEnd: "#3b82f6",   // blue-500
                 actionText: null,
                 footer: "We look forward to seeing you at the library!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendSeatReleasedEmailAsync(string toEmail, string seatNumber, string reason)
+        {
+            var subject = "Seat Reassignment Notice 🪑";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Seat Released", seatNumber },
+                { "Reason", reason }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Seat Released",
+                subtitle: "Your assigned seat has been released by the administrator. Please contact the front desk for reassignment or more details.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/seat.png",
+                colorStart: "#f59e0b", // amber-500
+                colorEnd: "#d97706",   // amber-600
+                actionText: null, 
+                footer: "For queries, please contact the library administration.",
                 stats: stats
             );
             await SendEmailAsync(toEmail, subject, html);

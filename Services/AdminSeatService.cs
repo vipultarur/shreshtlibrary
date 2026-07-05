@@ -249,14 +249,31 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateSeatStatusAsync(long pk, string status, string? reason, CancellationToken ct = default)
         {
-            var seat = await _context.SeatsSeats.FindAsync(new object[] { pk }, ct);
+            var seat = await _context.SeatsSeats.Include(s => s.Student).FirstOrDefaultAsync(s => s.Id == pk, ct);
             if (seat == null) return ServiceResult<object>.NotFound("Seat not found");
 
             seat.Status = status.ToUpper();
-            if (seat.Status == "AVAILABLE")
+            if (seat.Status == "AVAILABLE" && seat.StudentId != null)
             {
+                string? email = seat.Student?.Email;
+                var seatNumber = seat.SeatNumber;
+
                 seat.StudentId = null;
                 seat.AssignedAt = null;
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            using var scope = _serviceProvider.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Seat status updated to Available.");
+                        }
+                        catch { }
+                    });
+                }
             }
             await _context.SaveChangesAsync(ct);
             return ServiceResult<object>.Ok(new {
@@ -307,13 +324,31 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UnassignSeatAsync(long pk, string? reason, CancellationToken ct = default)
         {
-            var seat = await _context.SeatsSeats.FindAsync(new object[] { pk }, ct);
+            var seat = await _context.SeatsSeats.Include(s => s.Student).FirstOrDefaultAsync(s => s.Id == pk, ct);
             if (seat == null) return ServiceResult<object>.NotFound("Seat not found");
+
+            string? email = seat.Student?.Email;
+            var seatNumber = seat.SeatNumber;
 
             seat.StudentId = null;
             seat.Status = "AVAILABLE";
             seat.AssignedAt = null;
             await _context.SaveChangesAsync(ct);
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _serviceProvider.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
+                    }
+                    catch { }
+                });
+            }
+
             return ServiceResult<object>.Ok(new {
                 id = seat.Id,
                 status = seat.Status,
