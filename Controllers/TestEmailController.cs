@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using WebApplication1.Services;
+using WebApplication1.Data;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Models.DTOs.Admin;
 
 namespace WebApplication1.Controllers
 {
@@ -9,10 +12,14 @@ namespace WebApplication1.Controllers
     public class TestEmailController : ControllerBase
     {
         private readonly IEmailService _emailService;
+        private readonly IStudentAdminService _studentAdminService;
+        private readonly ApplicationDbContext _context;
 
-        public TestEmailController(IEmailService emailService)
+        public TestEmailController(IEmailService emailService, IStudentAdminService studentAdminService, ApplicationDbContext context)
         {
             _emailService = emailService;
+            _studentAdminService = studentAdminService;
+            _context = context;
         }
 
         [HttpGet("send-all")]
@@ -29,45 +36,32 @@ namespace WebApplication1.Controllers
                 // 3. Activated
                 await _emailService.SendActivatedEmailAsync(email);
 
-                // 4. Congratulations
-                await _emailService.SendCongratulationsEmailAsync(email, "1 Month Premium Plan");
-
-                // 5. Reminder
-                await _emailService.SendReminderEmailAsync(email, "15", "120", "500");
-
-                // 6. Notification
-                await _emailService.SendNotificationEmailAsync(email, "New Medical Journals", "Diwali Celebration");
-
-                // 7. Plan Details
-                await _emailService.SendPlanDetailsEmailAsync(email, "Premium Plus", "31 Dec 2026", "A12");
-
-                // 8. OTP
-                await _emailService.SendOtpEmailAsync(email, "Test Student", "123456");
-
-                // 9. Forgot Password
-                await _emailService.SendForgotPasswordEmailAsync(email, "Test Student", "https://shreshtlibrary.onrender.com/reset-password?token=test");
-
-                // 10. Receipt
-                await _emailService.SendReceiptEmailAsync(email, "₹500", "Premium Plan", "31 Dec 2026");
-
-                // 11. Seat Allocated
-                await _emailService.SendSeatAllocatedEmailAsync(email, "B15", "Quiet Zone", "Morning Shift");
-
-                // 12. Holiday Announcement
-                await _emailService.SendHolidayAnnouncementEmailAsync(email, "Diwali Festival", "12 Nov 2026");
-
-                // 13. Holiday Cancelled
-                await _emailService.SendHolidayCancelledEmailAsync(email, "Diwali Festival", "12 Nov 2026");
-
-                // 14. Seat Released
-                await _emailService.SendSeatReleasedEmailAsync(email, "B15", "Administrative reassignment");
-
-                return Ok(new { success = true, message = $"All 14 test emails sent successfully to {email}" });
+                return Ok(new { success = true, message = $"Test emails sent successfully to {email}" });
             }
             catch (System.Exception ex)
             {
                 return StatusCode(500, new { success = false, message = ex.Message, details = ex.StackTrace });
             }
+        }
+
+        [HttpGet("trigger-suspend")]
+        public async Task<IActionResult> TriggerSuspend([FromQuery] string email)
+        {
+            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return NotFound("User not found");
+
+            var result = await _studentAdminService.SuspendStudentAsync(user.Id.ToString(), "Test Suspension");
+            return Ok(result);
+        }
+
+        [HttpGet("trigger-activate")]
+        public async Task<IActionResult> TriggerActivate([FromQuery] string email)
+        {
+            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return NotFound("User not found");
+
+            var result = await _studentAdminService.ActivateStudentAsync(user.Id.ToString());
+            return Ok(result);
         }
     }
 }
