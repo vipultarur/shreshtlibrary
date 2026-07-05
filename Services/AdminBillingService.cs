@@ -656,16 +656,8 @@ namespace WebApplication1.Services
                     try 
                     {
                         using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                        var st = await db.AccountsCustomusers.FindAsync(payload.student_id);
-                        if (st != null && !string.IsNullOrWhiteSpace(st.Email))
-                        {
-                            var amtStr = "₹" + amount.ToString("0.00");
-                            var planName = plan != null ? plan.Name : "Custom Payment";
-                            var validUntil = payload.duration_days > 0 ? DateTime.UtcNow.AddDays(payload.duration_days).ToString("dd MMM yyyy") : "N/A";
-                            await emailSvc.SendReceiptEmailAsync(st.Email, amtStr, planName, validUntil);
-                        }
+                        var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
+                        await billingSvc.SendPaymentReceiptEmailAsync(payment.Id);
                     }
                     catch { }
                 });
@@ -762,21 +754,8 @@ namespace WebApplication1.Services
                     try 
                     {
                         using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                        
-                        var p = await db.PaymentsPayments
-                            .Include(x => x.Student)
-                            .Include(x => x.Membership).ThenInclude(m => m!.Plan)
-                            .FirstOrDefaultAsync(x => x.Id == id);
-                            
-                        if (p?.Student != null && !string.IsNullOrWhiteSpace(p.Student.Email))
-                        {
-                            var amtStr = "₹" + p.Amount.ToString("0.00");
-                            var planName = p.Membership?.Plan?.Name ?? "Custom Payment";
-                            var validUntil = p.Membership != null ? p.Membership.EndDate.ToString("dd MMM yyyy") : "N/A";
-                            await emailSvc.SendReceiptEmailAsync(p.Student.Email, amtStr, planName, validUntil);
-                        }
+                        var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
+                        await billingSvc.SendPaymentReceiptEmailAsync(id);
                     }
                     catch { }
                 });
@@ -986,6 +965,7 @@ namespace WebApplication1.Services
             var payment = await _context.PaymentsPayments
                 .AsNoTracking()
                 .Include(p => p.Student)
+                    .ThenInclude(s => s!.StudentsStudentprofile)
                 .Include(p => p.Membership)
                     .ThenInclude(m => m!.Plan)
                 .Where(p => p.Id == id)
@@ -997,17 +977,29 @@ namespace WebApplication1.Services
 
             byte[] pdfBytes = GenerateReceiptPdf(payment);
             
-            var subject = $"Payment Receipt - {payment.PaymentId ?? payment.TransactionRef ?? $"TXN{payment.Id}"}";
+            var subject = $"Plan Activated & Payment Receipt - {payment.PaymentId ?? $"TXN{payment.Id}"}";
             var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
+            var goal = payment.Student.StudentsStudentprofile?.Goal ?? "Excellence";
+            
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Goal", goal },
+                { "Plan Details", payment.Membership?.Plan?.Name ?? payment.Membership?.PlanNameSnapshot ?? "Standalone Payment" },
+                { "Starts", payment.Membership != null ? payment.Membership.StartDate.ToString("dd MMM yyyy") : "N/A" },
+                { "Expires", payment.Membership != null ? payment.Membership.EndDate.ToString("dd MMM yyyy") : "N/A" },
+                { "Amount Paid", $"₹{payment.Amount:0.00}" },
+                { "Payment Mode", payment.PaymentMode ?? "N/A" }
+            };
+
             var htmlMessage = EmailTemplateBuilder.BuildTemplate(
-                title: "Payment Successful!",
-                subtitle: $"Hi {studentName},<br/><br/>We have successfully received your payment of <b>₹{payment.Amount:0.00}</b>. Your payment receipt is attached to this email as a PDF document.",
+                title: $"Congratulations {studentName}!",
+                subtitle: "Your plan has been activated successfully. Your payment receipt is attached as a PDF.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/congratulations.png",
-                colorStart: "#10b981", // emerald-500
-                colorEnd: "#059669",   // emerald-600
-                highlight: $"₹{payment.Amount:0.00}",
-                actionText: "Go to Dashboard",
-                footer: "Thank you for choosing Shresht Library!"
+                colorStart: "#6366f1", // indigo-500
+                colorEnd: "#9333ea",   // purple-600
+                highlight: null,
+                actionText: "View Dashboard",
+                footer: "Thank you for choosing Shresht Library!",
+                stats: stats
             );
 
             await _emailService.SendEmailWithAttachmentAsync(

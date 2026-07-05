@@ -885,6 +885,35 @@ namespace WebApplication1.Services
             _context.AttendanceHolidays.Remove(holiday);
             await _context.SaveChangesAsync(ct);
 
+            // Fire and forget email notification to all active students
+            _ = Task.Run(async () =>
+            {
+                using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                var activeStudents = await dbContext.AccountsCustomusers
+                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
+                    .Select(u => new { u.Email })
+                    .ToListAsync();
+
+                foreach (var student in activeStudents)
+                {
+                    try
+                    {
+                        await emailService.SendHolidayCancelledEmailAsync(
+                            student.Email ?? "",
+                            holiday.Title,
+                            holiday.Date.ToString("yyyy-MM-dd")
+                        );
+                    }
+                    catch
+                    {
+                        // Ignore individual email failures to continue processing
+                    }
+                }
+            });
+
             return ServiceResult<bool>.Ok(true);
         }
     }

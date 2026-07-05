@@ -27,6 +27,7 @@ namespace WebApplication1.Services
         Task SendReceiptEmailAsync(string toEmail, string amountPaid, string planName, string validUntil);
         Task SendSeatAllocatedEmailAsync(string toEmail, string seatNumber, string zone, string timing);
         Task SendHolidayAnnouncementEmailAsync(string toEmail, string occasion, string date);
+        Task SendHolidayCancelledEmailAsync(string toEmail, string occasion, string date);
     }
 
     public class EmailService : IEmailService
@@ -191,9 +192,11 @@ namespace WebApplication1.Services
         public async Task SendSuspendedEmailAsync(string toEmail, string reason)
         {
             var subject = "Action Required: Account Suspended ⚠️";
-            var subtitleText = string.IsNullOrEmpty(reason) 
-                ? "Your library account has been suspended due to a policy violation or unpaid dues." 
-                : $"Your library account has been suspended. Reason: {reason}";
+            var subtitleText = "Your library account has been suspended.";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Reason", string.IsNullOrEmpty(reason) ? "Policy violation or unpaid dues" : reason },
+                { "Date", DateTime.UtcNow.ToString("dd MMM yyyy") }
+            };
                 
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: "Account Suspended",
@@ -202,8 +205,9 @@ namespace WebApplication1.Services
                 colorStart: "#ef4444", // red-500
                 colorEnd: "#e11d48",   // rose-600
                 highlight: null,
-                actionText: "Contact Support",
-                footer: "Please reach out to resolve this issue."
+                actionText: "Contact Admin",
+                footer: "Please reach out to resolve this issue.",
+                stats: stats
             );
             await SendEmailAsync(toEmail, subject, html);
         }
@@ -368,7 +372,7 @@ namespace WebApplication1.Services
                 colorStart: "#fbbf24", // amber-400
                 colorEnd: "#f97316",   // orange-500
                 highlight: seatNumber,
-                actionText: "Check Guidelines",
+                actionText: null, // Removed button as per request
                 footer: "Please ensure you follow the seating rules.",
                 stats: stats
             );
@@ -388,8 +392,28 @@ namespace WebApplication1.Services
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/holiday.png",
                 colorStart: "#38bdf8", // sky-400
                 colorEnd: "#3b82f6",   // blue-500
-                actionText: "View Calendar",
+                actionText: null, // Removed button
                 footer: "Plan your study schedule accordingly!",
+                stats: stats
+            );
+            await SendEmailAsync(toEmail, subject, html);
+        }
+
+        public async Task SendHolidayCancelledEmailAsync(string toEmail, string occasion, string date)
+        {
+            var subject = "Update: Holiday Cancelled 📅";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Occasion", occasion },
+                { "Date", date }
+            };
+            var html = EmailTemplateBuilder.BuildTemplate(
+                title: "Holiday Cancelled",
+                subtitle: "The previously announced holiday has been cancelled. The library will remain OPEN on this day.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/holiday.png",
+                colorStart: "#38bdf8", // sky-400
+                colorEnd: "#3b82f6",   // blue-500
+                actionText: null,
+                footer: "We look forward to seeing you at the library!",
                 stats: stats
             );
             await SendEmailAsync(toEmail, subject, html);
@@ -450,6 +474,15 @@ namespace WebApplication1.Services
                 statsHtml += "</div>";
             }
 
+            string actionHtml = "";
+            if (!string.IsNullOrEmpty(actionText))
+            {
+                actionHtml = $@"
+                <a href='{actionUrl}' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
+                    {actionText}
+                </a>";
+            }
+
             return $@"
 <!DOCTYPE html>
 <html>
@@ -481,10 +514,7 @@ namespace WebApplication1.Services
                 {highlightHtml}
                 {rewardHtml}
                 {statsHtml}
-
-                <a href='{actionUrl}' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
-                    {actionText}
-                </a>
+                {actionHtml}
             </div>
 
             <!-- Footer -->
