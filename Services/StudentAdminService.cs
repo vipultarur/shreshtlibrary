@@ -19,15 +19,15 @@ namespace WebApplication1.Services
         private readonly IEmailService _emailService;
         private readonly IMemoryCache _cache;
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceProvider serviceProvider)
+        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _emailService = emailService;
             _cache = cache;
             _dateTimeProvider = dateTimeProvider;
-            _serviceProvider = serviceProvider;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<ServiceResult<object>> GetStudentCountsAsync(CancellationToken ct = default)
@@ -328,7 +328,13 @@ namespace WebApplication1.Services
                     var email = payload.Email!;
                     var fName = payload.FirstName ?? "";
                     var lName = payload.LastName ?? "";
-                    _ = Task.Run(() => _emailService.SendWelcomeEmailAsync(email, fName, lName));
+                    _ = Task.Run(async () => {
+                        try {
+                            using var scope = _scopeFactory.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendWelcomeEmailAsync(email, fName, lName);
+                        } catch { }
+                    });
                 }
 
                 return ServiceResult<object>.Ok(new { id = newProfile.Id, user_id = newUser.Id, student_id = newProfile.StudentId });
@@ -506,7 +512,7 @@ namespace WebApplication1.Services
                 {
                     try
                     {
-                        using var scope = _serviceProvider.CreateScope();
+                        using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
                     }
@@ -534,7 +540,7 @@ namespace WebApplication1.Services
                 {
                     try
                     {
-                        using var scope = _serviceProvider.CreateScope();
+                        using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendActivatedEmailAsync(email);
                     }

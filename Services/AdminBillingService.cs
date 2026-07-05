@@ -18,13 +18,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceProvider serviceProvider)
+        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _emailService = emailService;
-            _serviceProvider = serviceProvider;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<ServiceResult<object>> GetPlanStatsAsync(CancellationToken ct = default)
@@ -657,7 +657,7 @@ namespace WebApplication1.Services
                 {
                     try 
                     {
-                        using var scope = _serviceProvider.CreateScope();
+                        using var scope = _scopeFactory.CreateScope();
                         var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
                         await billingSvc.SendPaymentReceiptEmailAsync(payment.Id);
                     }
@@ -755,7 +755,7 @@ namespace WebApplication1.Services
                 {
                     try 
                     {
-                        using var scope = _serviceProvider.CreateScope();
+                        using var scope = _scopeFactory.CreateScope();
                         var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
                         await billingSvc.SendPaymentReceiptEmailAsync(id);
                     }

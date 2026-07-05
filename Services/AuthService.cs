@@ -16,13 +16,15 @@ namespace WebApplication1.Services
         private readonly IConfiguration _config;
         private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
+        private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;
 
-        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger, IEmailService emailService)
+        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger, IEmailService emailService, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _config = config;
             _logger = logger;
             _emailService = emailService;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default)
@@ -153,7 +155,13 @@ namespace WebApplication1.Services
                     await _context.SaveChangesAsync(ct);
                     if (transaction != null) await transaction.CommitAsync(ct);
                     
-                    _ = _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
+                    _ = Task.Run(async () => {
+                        try {
+                            using var scope = _scopeFactory.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
+                        } catch { }
+                    });
 
                     return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
                 }
@@ -200,7 +208,13 @@ namespace WebApplication1.Services
             
             if (!string.IsNullOrEmpty(user.Email))
             {
-                _ = _emailService.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
+                _ = Task.Run(async () => {
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
+                    } catch { }
+                });
             }
 
             return ServiceResult<object>.Ok(null, "OTP sent successfully.");
@@ -516,7 +530,13 @@ namespace WebApplication1.Services
                 string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
                 
                 // Do not wait for email sending to prevent slow responses if SMTP is slow
-                _ = _emailService.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                _ = Task.Run(async () => {
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                    } catch { }
+                });
 
                 return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }
