@@ -202,10 +202,17 @@ namespace WebApplication1.Services
                 var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
                 query = query.Where(p => p.Status == "LIVE" && p.CreatedAt >= sevenDaysAgo);
             }
-            else if (dto.Audience == "selected" && !string.IsNullOrEmpty(dto.SelectedStudents))
+            else if (dto.Audience == "selected")
             {
-                var ids = dto.SelectedStudents.Split(',').Select(s => long.TryParse(s, out var id) ? id : 0).Where(i => i > 0).ToList();
-                query = query.Where(p => ids.Contains(p.UserId));
+                if (!string.IsNullOrEmpty(dto.SelectedStudents))
+                {
+                    var ids = dto.SelectedStudents.Split(',').Select(s => long.TryParse(s, out var id) ? id : 0).Where(i => i > 0).ToList();
+                    query = query.Where(p => ids.Contains(p.UserId));
+                }
+                else
+                {
+                    query = query.Where(p => false);
+                }
             }
             else // "all" or default
             {
