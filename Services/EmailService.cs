@@ -324,14 +324,17 @@ namespace WebApplication1.Services
 
         public async Task SendForgotPasswordEmailAsync(string toEmail, string studentName, string resetLink)
         {
+            // Extract the OTP from the end of the resetLink
+            string otp = resetLink.Split('=').LastOrDefault() ?? "unknown";
+            
             var subject = "Reset Your Password 🔑";
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: $"Hello {studentName}, Reset Password",
-                subtitle: "We received a request to reset your password. Click the button below to choose a new one.",
+                subtitle: $"We received a request to reset your password. Your 6-digit Reset OTP is: <strong>{otp}</strong>. You can enter this OTP in the app, or click the button below.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/forgot_password.png",
                 colorStart: "#fb7185", // rose-400
                 colorEnd: "#ec4899",   // pink-500
-                actionText: "Reset Password",
+                actionText: "Reset via Web",
                 actionUrl: resetLink,
                 footer: "If you didn't request a reset, you can safely ignore this email."
             );

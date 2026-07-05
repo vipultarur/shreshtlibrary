@@ -19,12 +19,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly WhatsAppNotificationService _whatsappService;
 
-        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory)
+        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, WhatsAppNotificationService whatsappService)
         {
             _context = context;
             _emailService = emailService;
             _scopeFactory = scopeFactory;
+            _whatsappService = whatsappService;
         }
 
         public async Task<ServiceResult<object>> GetPlanStatsAsync(CancellationToken ct = default)
@@ -685,6 +687,7 @@ namespace WebApplication1.Services
                     {
                         Console.WriteLine($"Error sending receipt email: {ex}");
                     }
+                    
                 });
 
                 return ServiceResult<object>.Ok(new { id = payment.Id });
@@ -785,6 +788,7 @@ namespace WebApplication1.Services
                     {
                         Console.WriteLine($"Error sending receipt email: {ex}");
                     }
+
                 });
 
                 return ServiceResult<object>.Ok(new {
@@ -1051,6 +1055,14 @@ namespace WebApplication1.Services
                 $"Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf"
             );
 
+            if (!string.IsNullOrWhiteSpace(payment.Student.Mobile))
+            {
+                var planName = payment.Membership?.Plan?.Name ?? payment.Membership?.PlanNameSnapshot ?? "Standalone Payment";
+                var msg = $"✅ *Payment Successful*\n\nHi {studentName},\nWe've received your payment of ₹{payment.Amount:0.00} for {planName}.\nYour receipt has been sent to your email. Thanks for choosing Shresht Library!";
+                var fileName = $"Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf";
+                await _whatsappService.SendDocumentAsync(payment.Student.Mobile, pdfBytes, fileName, msg);
+            }
+
             return ServiceResult<object>.Ok(new { success = true });
         }
 
@@ -1103,6 +1115,14 @@ namespace WebApplication1.Services
                 pdfBytes,
                 $"Refund_Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf"
             );
+
+            if (!string.IsNullOrWhiteSpace(payment.Student.Mobile))
+            {
+                var planName = payment.Membership?.Plan?.Name ?? payment.Membership?.PlanNameSnapshot ?? "Standalone Payment";
+                var msg = $"🔄 *Payment Refunded*\n\nHi {studentName},\nYour payment of ₹{payment.Amount:0.00} for {planName} has been refunded.\nAmount Refunded: ₹{(payment.RefundAmount ?? payment.Amount):0.00}.\nYour refund receipt has been sent to your email.";
+                var fileName = $"Refund_Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf";
+                await _whatsappService.SendDocumentAsync(payment.Student.Mobile, pdfBytes, fileName, msg);
+            }
 
             return ServiceResult<object>.Ok(new { success = true });
         }

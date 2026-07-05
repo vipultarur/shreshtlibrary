@@ -207,6 +207,7 @@ namespace WebApplication1.Services
             
             // Find ALL PENDING records
             var pendingRecords = await context.AttendanceAttendances
+                .Include(a => a.Student)
                 .Where(a => a.Method == "PENDING" && !a.IsPresent)
                 .ToListAsync(stoppingToken);
 
@@ -298,6 +299,19 @@ namespace WebApplication1.Services
                             IsRead = false
                         };
                         context.NotificationsStudentnotifications.Add(studentNotification);
+
+                        var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
+                        var mobile = record.Student?.Mobile;
+                        if (whatsapp != null && !string.IsNullOrWhiteSpace(mobile))
+                        {
+                            try
+                            {
+                                string stName = record.Student?.FirstName ?? "Student";
+                                string msg = $"❌ *Attendance Update*\n\nHi {stName},\nYou have been marked Absent for {record.Date:dd MMM yyyy} because you did not check in by the cutoff time.";
+                                await whatsapp.SendTextMessageAsync(mobile, msg);
+                            }
+                            catch { }
+                        }
                     }
                 }
             }
@@ -421,6 +435,7 @@ namespace WebApplication1.Services
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
 
                 // Find plans expiring EXACTLY tomorrow
                 var tomorrow = today.AddDays(1);
@@ -433,22 +448,41 @@ namespace WebApplication1.Services
                 int sentCount = 0;
                 foreach (var m in expiringMemberships)
                 {
-                    if (m.Student != null && !string.IsNullOrWhiteSpace(m.Student.Email))
+                    if (m.Student != null)
                     {
-                        try
+                        if (!string.IsNullOrWhiteSpace(m.Student.Email))
                         {
-                            // Passing valid string parameters matching the template variables
-                            await emailService.SendReminderEmailAsync(
-                                m.Student.Email, 
-                                daysActive: "1 Day Remaining", 
-                                studyHours: m.Plan?.Name ?? "Library Plan", 
-                                points: m.EndDate.ToString("dd MMM yyyy")
-                            );
-                            sentCount++;
+                            try
+                            {
+                                // Passing valid string parameters matching the template variables
+                                await emailService.SendReminderEmailAsync(
+                                    m.Student.Email, 
+                                    daysActive: "1 Day Remaining", 
+                                    studyHours: m.Plan?.Name ?? "Library Plan", 
+                                    points: m.EndDate.ToString("dd MMM yyyy")
+                                );
+                                sentCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to send plan expiry reminder to {Email}", m.Student.Email);
+                            }
                         }
-                        catch (Exception ex)
+
+                        if (whatsapp != null && !string.IsNullOrWhiteSpace(m.Student.Mobile))
                         {
-                            _logger.LogError(ex, "Failed to send plan expiry reminder to {Email}", m.Student.Email);
+                            try
+                            {
+                                string stName = m.Student.FirstName ?? "Student";
+                                string planName = m.Plan?.Name ?? "Library Plan";
+                                string endDate = m.EndDate.ToString("dd MMM yyyy");
+                                string msg = $"⏰ *Plan Expiry Reminder*\n\nHi {stName},\nYour {planName} plan expires tomorrow ({endDate}). Please renew to continue your studies without interruption!";
+                                await whatsapp.SendTextMessageAsync(m.Student.Mobile, msg);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to send plan expiry WhatsApp to {Mobile}", m.Student.Mobile);
+                            }
                         }
                     }
                 }

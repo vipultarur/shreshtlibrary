@@ -14,12 +14,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;
 
-        public AttendanceService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        public AttendanceService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _cache = cache;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<object?> GetTodayQrAsync(CancellationToken ct)
@@ -149,6 +151,21 @@ namespace WebApplication1.Services
 
                     await _context.SaveChangesAsync(ct);
 
+                    var st = await _context.AccountsCustomusers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+                    if (st != null && !string.IsNullOrWhiteSpace(st.Mobile))
+                    {
+                        var stMobile = st.Mobile;
+                        var stName = st.FirstName;
+                        var stTime = existing.TimeIn.ToString("hh:mm tt");
+                        _ = Task.Run(async () => {
+                            try {
+                                using var scope = _scopeFactory.CreateScope();
+                                var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                                await whatsapp.SendTextMessageAsync(stMobile, $"👋 *Check-in Successful*\n\nHi {stName},\nYou have successfully checked in to Shresht Library at {stTime}. Have a productive study session!");
+                            } catch { }
+                        });
+                    }
+
                     return new
                     {
                         id = existing.Id,
@@ -197,6 +214,21 @@ namespace WebApplication1.Services
             });
 
             await _context.SaveChangesAsync(ct);
+
+            var newUser = await _context.AccountsCustomusers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (newUser != null && !string.IsNullOrWhiteSpace(newUser.Mobile))
+            {
+                var newUserMobile = newUser.Mobile;
+                var newUserName = newUser.FirstName;
+                var newTime = attendance.TimeIn.ToString("hh:mm tt");
+                _ = Task.Run(async () => {
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        await whatsapp.SendTextMessageAsync(newUserMobile, $"👋 *Check-in Successful*\n\nHi {newUserName},\nYou have successfully checked in to Shresht Library at {newTime}. Have a productive study session!");
+                    } catch { }
+                });
+            }
 
             return new
             {
@@ -271,6 +303,23 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+
+            var checkoutUser = await _context.AccountsCustomusers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (checkoutUser != null && !string.IsNullOrWhiteSpace(checkoutUser.Mobile))
+            {
+                var mobile = checkoutUser.Mobile;
+                var name = checkoutUser.FirstName;
+                var timeInStr = existing.TimeIn.ToString("hh:mm tt");
+                var timeOutStr = currentTime.ToString("hh:mm tt");
+                var totHours = existing.TotalHours;
+                _ = Task.Run(async () => {
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        await whatsapp.SendTextMessageAsync(mobile, $"🏃 *Check-out Successful*\n\nHi {name},\nYou have checked out of Shresht Library.\n\nTime In: {timeInStr}\nTime Out: {timeOutStr}\nTotal Time: {totHours}\n\nSee you tomorrow!");
+                    } catch { }
+                });
+            }
 
             return new
             {

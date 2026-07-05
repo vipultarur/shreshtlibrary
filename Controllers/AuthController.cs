@@ -61,6 +61,15 @@ namespace WebApplication1.Controllers
             return HandleResult(result);
         }
 
+        [HttpPost("send-register-otp")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> SendRegisterOtpAsync([FromBody] SendOtpRequest request, CancellationToken ct)
+        {
+            var result = await _authService.SendRegisterOtpAsync(request, ct);
+            return HandleResult(result);
+        }
+
         [HttpPost("send-otp")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
@@ -230,6 +239,9 @@ namespace WebApplication1.Controllers
         [System.Text.Json.Serialization.JsonPropertyName("parent_mobile")]
         public string ParentMobile { get; set; }
 
+        [System.Text.Json.Serialization.JsonPropertyName("otp")]
+        public string Otp { get; set; }
+
         [System.Text.Json.Serialization.JsonPropertyName("gender")]
         public string Gender { get; set; }
     }
@@ -247,12 +259,15 @@ namespace WebApplication1.Controllers
 
     public class ForgotPasswordRequest
     {
-        [System.Text.Json.Serialization.JsonPropertyName("email")]
-        public string Email { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
     }
 
     public class ResetPasswordRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+
         [System.Text.Json.Serialization.JsonPropertyName("token")]
         public string Token { get; set; }
         

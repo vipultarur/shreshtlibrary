@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Security.Claims;
 using WebApplication1.Models.DTOs.Auth;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace WebApplication1.Services
 {
@@ -16,15 +17,17 @@ namespace WebApplication1.Services
         private readonly IConfiguration _config;
         private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
-        private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IMemoryCache _cache;
 
-        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger, IEmailService emailService, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory)
+        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger, IEmailService emailService, IServiceScopeFactory scopeFactory, IMemoryCache cache)
         {
             _context = context;
             _config = config;
             _logger = logger;
             _emailService = emailService;
             _scopeFactory = scopeFactory;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default)
@@ -68,10 +71,21 @@ namespace WebApplication1.Services
                 errors["email"] = new[] { "Please enter a valid email address." };
             }
 
-            if (string.IsNullOrWhiteSpace(request.Mobile)) {
-                errors["mobile"] = new[] { "Mobile number is required." };
-            } else if (!System.Text.RegularExpressions.Regex.IsMatch(request.Mobile, @"^[0-9]{10}$")) {
-                errors["mobile"] = new[] { "Mobile number must contain exactly 10 digits." };
+            if (string.IsNullOrWhiteSpace(request.Mobile) || !System.Text.RegularExpressions.Regex.IsMatch(request.Mobile, @"^[0-9]{10}$"))
+            {
+                errors["mobile"] = new[] { "Enter a valid 10-digit mobile number." };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Otp))
+            {
+                errors["otp"] = new[] { "OTP is required for verification." };
+            }
+            else
+            {
+                if (!_cache.TryGetValue($"reg_otp_{request.Mobile}", out string expectedOtp) || expectedOtp != request.Otp)
+                {
+                    errors["otp"] = new[] { "Invalid or expired OTP." };
+                }
             }
 
             if (string.IsNullOrWhiteSpace(request.Password)) errors["password"] = new[] { "Password is required." };
@@ -163,6 +177,26 @@ namespace WebApplication1.Services
                         Console.WriteLine($"Error sending welcome email: {ex}");
                     }
 
+                    _ = Task.Run(async () =>
+                    {
+                        try 
+                        {
+                            if (!string.IsNullOrEmpty(user.Mobile))
+                            {
+                                string msg = $"Congratulations {user.FirstName}! You have successfully registered with Shresht Library. Your Student ID is {nextStudentId}. Welcome aboard!";
+                                using var scope = _scopeFactory.CreateScope();
+                                var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                                await whatsapp.SendTextMessageAsync(user.Mobile, msg);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending WhatsApp welcome message: {ex}");
+                        }
+                    });
+
+                    _cache.Remove($"reg_otp_{request.Mobile}"); // clear otp after success
+
                     return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
                 }
                 catch (System.Exception)
@@ -171,6 +205,39 @@ namespace WebApplication1.Services
                     return ServiceResult<object>.Fail("Internal server error during registration.", new Dictionary<string, string[]> { { "non_field_errors", new[] { "Internal server error during registration." } } });
                 }
             });
+        }
+
+        public async Task<ServiceResult<object>> SendRegisterOtpAsync(SendOtpRequest request, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(request.Mobile) || !System.Text.RegularExpressions.Regex.IsMatch(request.Mobile, @"^[0-9]{10}$"))
+            {
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "Enter a valid 10-digit mobile number." } } });
+            }
+
+            if (await _context.AccountsCustomusers.AnyAsync(u => u.Mobile == request.Mobile, ct))
+            {
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "Mobile number already exists." } } });
+            }
+
+            string rawOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
+            _cache.Set($"reg_otp_{request.Mobile}", rawOtp, TimeSpan.FromMinutes(10));
+
+            _ = Task.Run(async () =>
+            {
+                try 
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                    string msg = $"Your Shresht Library registration code is {rawOtp}. It will expire in 10 minutes.";
+                    await whatsapp.SendTextMessageAsync(request.Mobile, msg);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending registration OTP WhatsApp: {ex}");
+                }
+            });
+
+            return ServiceResult<object>.Ok(null, "Registration OTP sent successfully to your WhatsApp.");
         }
 
         public async Task<ServiceResult<object>> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
@@ -214,6 +281,18 @@ namespace WebApplication1.Services
                     await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
                 } catch (Exception ex) { 
                     Console.WriteLine($"Error sending OTP email: {ex}");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(user.Mobile))
+            {
+                try {
+                    using var scope = _scopeFactory.CreateScope();
+                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                    string msg = $"Your Shresht Library verification code is {rawOtp}. It will expire in 5 minutes.";
+                    await whatsapp.SendTextMessageAsync(user.Mobile, msg);
+                } catch (Exception ex) { 
+                    Console.WriteLine($"Error sending OTP WhatsApp: {ex}");
                 }
             }
 
@@ -500,44 +579,66 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> ForgotPasswordAsync(ForgotPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(request.Email))
+            if (string.IsNullOrWhiteSpace(request.Identifier))
             {
-                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "email", new[] { "This field is required." } } });
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "identifier", new[] { "This field is required." } } });
             }
 
-            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Email == request.Email, ct);
+            bool isEmail = request.Identifier.Contains("@");
+            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => 
+                (isEmail && u.Email == request.Identifier) || (!isEmail && u.Mobile == request.Identifier), ct);
+
             if (user != null)
             {
-                string rawToken = $"reset-{System.Guid.NewGuid()}";
+                string rawToken = new System.Random().Next(100000, 999999).ToString();
+                
                 using var sha256 = System.Security.Cryptography.SHA256.Create();
                 string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken))).ToLower();
                 user.Otp = hashedToken;
-                user.OtpExpiry = System.DateTime.UtcNow.AddHours(1);
+                user.OtpExpiry = System.DateTime.UtcNow.AddMinutes(15);
                 await _context.SaveChangesAsync(ct);
 
                 var ip = ipAddress;
                 _context.CoreActivitylogs.Add(new CoreActivitylog
                 {
-                    Action = "Requested password reset link",
+                    Action = "Requested password reset link/OTP",
                     Timestamp = System.DateTime.UtcNow,
                     IpAddress = System.Net.IPAddress.TryParse(ip, out var parsedIp) ? parsedIp : null,
-                    Details = $"{{\"path\": \"{path}\", \"method\": \"{method}\"}}",
+                    Details = $"{{\"path\": \"{path}\", \"method\": \"{method}\", \"type\": \"{(isEmail ? "email" : "mobile")}\"}}",
                     UserId = user.Id
                 });
                 await _context.SaveChangesAsync(ct);
 
-                // Send the actual email
-                string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
-                
-                try {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
-                } catch (Exception ex) { 
-                    Console.WriteLine($"Error sending forgot password email: {ex}");
+                if (isEmail)
+                {
+                    string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                    } catch (Exception ex) { 
+                        Console.WriteLine($"Error sending forgot password email: {ex}");
+                    }
+                    return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
                 }
-
-                return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
+                else
+                {
+                    string msg = $"Your Shresht Library password reset OTP is {rawToken}. It is valid for 15 minutes. Do not share this with anyone.";
+                    _ = Task.Run(async () =>
+                    {
+                        try 
+                        {
+                            using var scope = _scopeFactory.CreateScope();
+                            var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                            await whatsapp.SendTextMessageAsync(user.Mobile, msg);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending password reset OTP via WhatsApp: {ex}");
+                        }
+                    });
+                    return ServiceResult<object>.Ok(null, "Password reset OTP sent to your WhatsApp number.");
+                }
             }
 
             return ServiceResult<object>.NotFound("User not found.");
@@ -552,7 +653,21 @@ namespace WebApplication1.Services
 
             using var sha256 = System.Security.Cryptography.SHA256.Create();
             string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.Token))).ToLower();
-            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Otp == hashedToken && u.OtpExpiry > System.DateTime.UtcNow, ct);
+            
+            Models.AccountsCustomuser user = null;
+            if (!string.IsNullOrWhiteSpace(request.Identifier))
+            {
+                bool isEmail = request.Identifier.Contains("@");
+                user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => 
+                    (isEmail ? u.Email == request.Identifier : u.Mobile == request.Identifier) 
+                    && u.Otp == hashedToken && u.OtpExpiry > System.DateTime.UtcNow, ct);
+            }
+            else
+            {
+                // Fallback for older apps that only send token
+                user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => u.Otp == hashedToken && u.OtpExpiry > System.DateTime.UtcNow, ct);
+            }
+
             if (user != null)
             {
                 user.Password = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(request.NewPassword);

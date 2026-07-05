@@ -516,10 +516,17 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
+                        
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        if (!string.IsNullOrWhiteSpace(student.Mobile))
+                        {
+                            string msg = $"⚠️ Your library account has been suspended.\nReason: {(string.IsNullOrEmpty(suspensionReason) ? "Policy violation or unpaid dues" : suspensionReason)}\nContact Admin for details.";
+                            await whatsapp.SendTextMessageAsync(student.Mobile, msg);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending suspend email: {ex}");
+                        Console.WriteLine($"Error sending suspend notification: {ex}");
                     }
                 });
             }
@@ -548,10 +555,17 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendActivatedEmailAsync(email);
+                        
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        if (!string.IsNullOrWhiteSpace(student.Mobile))
+                        {
+                            string msg = "✅ Good news! Your Shresht Library account has been successfully reactivated. You can now access library facilities again.";
+                            await whatsapp.SendTextMessageAsync(student.Mobile, msg);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending activate email: {ex}");
+                        Console.WriteLine($"Error sending activate notification: {ex}");
                     }
                 });
             }

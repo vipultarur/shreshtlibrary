@@ -85,6 +85,9 @@ builder.Services.AddHostedService<WebApplication1.Services.AttendanceBackgroundS
 // Add Email Service
 builder.Services.AddScoped<WebApplication1.Services.IEmailService, WebApplication1.Services.EmailService>();
 
+// Add WhatsApp Service
+builder.Services.AddHttpClient<WebApplication1.Services.WhatsAppNotificationService>();
+
 // Add Repositories
 builder.Services.AddScoped<WebApplication1.Repositories.IStudentRepository, WebApplication1.Repositories.StudentRepository>();
 builder.Services.AddScoped<WebApplication1.Repositories.IAttendanceRepository, WebApplication1.Repositories.AttendanceRepository>();

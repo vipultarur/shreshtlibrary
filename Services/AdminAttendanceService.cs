@@ -809,25 +809,36 @@ namespace WebApplication1.Services
                 using var scope = _scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var whatsappService = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
 
                 var activeStudents = await dbContext.AccountsCustomusers
-                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
-                    .Select(u => new { u.Email, Name = u.FirstName + " " + u.LastName })
+                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && (!string.IsNullOrWhiteSpace(u.Email) || !string.IsNullOrWhiteSpace(u.Mobile)))
+                    .Select(u => new { u.Email, u.Mobile, Name = u.FirstName + " " + u.LastName })
                     .ToListAsync();
 
                 foreach (var student in activeStudents)
                 {
-                    try
+                    if (!string.IsNullOrWhiteSpace(student.Email))
                     {
-                        await emailService.SendHolidayAnnouncementEmailAsync(
-                            student.Email ?? "",
-                            holiday.Title,
-                            holiday.Date.ToString("yyyy-MM-dd")
-                        );
+                        try
+                        {
+                            await emailService.SendHolidayAnnouncementEmailAsync(
+                                student.Email,
+                                holiday.Title,
+                                holiday.Date.ToString("yyyy-MM-dd")
+                            );
+                        }
+                        catch { }
                     }
-                    catch
+
+                    if (!string.IsNullOrWhiteSpace(student.Mobile))
                     {
-                        // Ignore individual email failures to continue processing
+                        try
+                        {
+                            var msg = $"📢 *Holiday Announcement*\n\nHi {student.Name},\nThe library will be closed on {holiday.Date:yyyy-MM-dd} due to: {holiday.Title}.\nHave a great day!";
+                            await whatsappService.SendTextMessageAsync(student.Mobile, msg);
+                        }
+                        catch { }
                     }
                 }
             });
@@ -893,25 +904,36 @@ namespace WebApplication1.Services
                 using var scope = _scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var whatsappService = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
 
                 var activeStudents = await dbContext.AccountsCustomusers
-                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
-                    .Select(u => new { u.Email })
+                    .Where(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && u.IsActive && (!string.IsNullOrWhiteSpace(u.Email) || !string.IsNullOrWhiteSpace(u.Mobile)))
+                    .Select(u => new { u.Email, u.Mobile, Name = u.FirstName + " " + u.LastName })
                     .ToListAsync();
 
                 foreach (var student in activeStudents)
                 {
-                    try
+                    if (!string.IsNullOrWhiteSpace(student.Email))
                     {
-                        await emailService.SendHolidayCancelledEmailAsync(
-                            student.Email ?? "",
-                            holiday.Title,
-                            holiday.Date.ToString("yyyy-MM-dd")
-                        );
+                        try
+                        {
+                            await emailService.SendHolidayCancelledEmailAsync(
+                                student.Email,
+                                holiday.Title,
+                                holiday.Date.ToString("yyyy-MM-dd")
+                            );
+                        }
+                        catch { }
                     }
-                    catch
+
+                    if (!string.IsNullOrWhiteSpace(student.Mobile))
                     {
-                        // Ignore individual email failures to continue processing
+                        try
+                        {
+                            var msg = $"📢 *Holiday Cancelled*\n\nHi {student.Name},\nThe holiday '{holiday.Title}' scheduled for {holiday.Date:yyyy-MM-dd} has been cancelled. The library will remain open.\nSee you there!";
+                            await whatsappService.SendTextMessageAsync(student.Mobile, msg);
+                        }
+                        catch { }
                     }
                 }
             });

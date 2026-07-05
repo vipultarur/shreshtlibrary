@@ -96,10 +96,18 @@ namespace WebApplication1.Services
                             using var scope = _scopeFactory.CreateScope();
                             var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                             await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, "All seats have been administratively released.");
+                            
+                            var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                            var mobile = seat.Student?.Mobile;
+                            if (!string.IsNullOrWhiteSpace(mobile))
+                            {
+                                string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been administratively released.\nReason: All seats have been administratively released.";
+                                await whatsapp.SendTextMessageAsync(mobile, msg);
+                            }
                         } 
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Error sending release email: {ex}");
+                            Console.WriteLine($"Error sending release notification: {ex}");
                         }
                     });
                     emailTasks.Add(task);
@@ -303,6 +311,14 @@ namespace WebApplication1.Services
                             using var scope = _scopeFactory.CreateScope();
                             var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                             await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Seat status updated to Available.");
+                            
+                            var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                            var mobile = seat.Student?.Mobile;
+                            if (!string.IsNullOrWhiteSpace(mobile))
+                            {
+                                string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been released.\nReason: {reason ?? "Seat status updated to Available."}";
+                                await whatsapp.SendTextMessageAsync(mobile, msg);
+                            }
                         }
                         catch { }
                     });
@@ -342,10 +358,18 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
+                        
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        var mobile = studentUser.Mobile;
+                        if (!string.IsNullOrWhiteSpace(mobile))
+                        {
+                            string msg = $"🎉 *Seat Allocated*\n\nYour seat has been assigned!\nSeat: {seatNumber}\nZone: {zone}\nTiming: {timing}\n\nHappy studying!";
+                            await whatsapp.SendTextMessageAsync(mobile, msg);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending assign seat email: {ex}");
+                        Console.WriteLine($"Error sending assign seat notification: {ex}");
                     }
                 });
             }
@@ -380,10 +404,18 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
+                        
+                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                        var mobile = seat.Student?.Mobile;
+                        if (!string.IsNullOrWhiteSpace(mobile))
+                        {
+                            string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been released.\nReason: {reason ?? "Administrative reassignment."}";
+                            await whatsapp.SendTextMessageAsync(mobile, msg);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending unassign seat email: {ex}");
+                        Console.WriteLine($"Error sending unassign seat notification: {ex}");
                     }
                 });
             }
