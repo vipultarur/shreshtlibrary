@@ -19,6 +19,7 @@ namespace WebApplication1.Services
         private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
         private DateOnly _lastResetDate = DateOnly.MinValue;
         private DateOnly _lastExpiryReminderDate = DateOnly.MinValue;
+        private DateOnly _lastLeaderboardRewardDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -39,6 +40,7 @@ namespace WebApplication1.Services
                     await ProcessPendingToAbsentAsync(stoppingToken);
                     await ProcessAutoCheckoutAsync(stoppingToken);
                     await ProcessPlanExpiryRemindersAsync(stoppingToken);
+                    await ProcessLeaderboardRewardsAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -437,12 +439,13 @@ namespace WebApplication1.Services
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                 var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
 
-                // Find plans expiring EXACTLY tomorrow
                 var tomorrow = today.AddDays(1);
+                var threeDays = today.AddDays(3);
+                
                 var expiringMemberships = await context.MembershipsMemberships
                     .Include(m => m.Student)
                     .Include(m => m.Plan)
-                    .Where(m => m.Status == "active" && m.EndDate == tomorrow)
+                    .Where(m => m.Status == "active" && (m.EndDate == tomorrow || m.EndDate == threeDays || m.EndDate == today))
                     .ToListAsync(stoppingToken);
 
                 int sentCount = 0;
@@ -450,16 +453,38 @@ namespace WebApplication1.Services
                 {
                     if (m.Student != null)
                     {
-                        if (!string.IsNullOrWhiteSpace(m.Student.Email))
+                        string stName = m.Student.FirstName ?? "Student";
+                        string planName = m.Plan?.Name ?? "Library Plan";
+                        string endDate = m.EndDate.ToString("dd MMM yyyy");
+                        
+                        string daysActiveText = "";
+                        string whatsappMsg = "";
+                        
+                        if (m.EndDate == threeDays)
+                        {
+                            daysActiveText = "3 Days Remaining";
+                            whatsappMsg = $"⏰ *Plan Expiry Reminder*\n\nHi {stName},\nYour {planName} plan will expire in 3 days on {endDate}. Please renew soon to continue your studies without interruption!";
+                        }
+                        else if (m.EndDate == tomorrow)
+                        {
+                            daysActiveText = "1 Day Remaining";
+                            whatsappMsg = $"⏰ *Plan Expiry Reminder*\n\nHi {stName},\nYour {planName} plan expires tomorrow ({endDate}). Please renew to continue your studies without interruption!";
+                        }
+                        else if (m.EndDate == today)
+                        {
+                            daysActiveText = "Expired Today";
+                            whatsappMsg = $"⚠️ *Plan Expired*\n\nHi {stName},\nYour {planName} plan has expired today ({endDate}). Please renew immediately to regain access to the library!";
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(m.Student.Email) && !string.IsNullOrEmpty(daysActiveText))
                         {
                             try
                             {
-                                // Passing valid string parameters matching the template variables
                                 await emailService.SendReminderEmailAsync(
                                     m.Student.Email, 
-                                    daysActive: "1 Day Remaining", 
-                                    studyHours: m.Plan?.Name ?? "Library Plan", 
-                                    points: m.EndDate.ToString("dd MMM yyyy")
+                                    daysActive: daysActiveText, 
+                                    studyHours: planName, 
+                                    points: endDate
                                 );
                                 sentCount++;
                             }
@@ -469,15 +494,11 @@ namespace WebApplication1.Services
                             }
                         }
 
-                        if (whatsapp != null && !string.IsNullOrWhiteSpace(m.Student.Mobile))
+                        if (whatsapp != null && !string.IsNullOrWhiteSpace(m.Student.Mobile) && !string.IsNullOrEmpty(whatsappMsg))
                         {
                             try
                             {
-                                string stName = m.Student.FirstName ?? "Student";
-                                string planName = m.Plan?.Name ?? "Library Plan";
-                                string endDate = m.EndDate.ToString("dd MMM yyyy");
-                                string msg = $"⏰ *Plan Expiry Reminder*\n\nHi {stName},\nYour {planName} plan expires tomorrow ({endDate}). Please renew to continue your studies without interruption!";
-                                await whatsapp.SendTextMessageAsync(m.Student.Mobile, msg);
+                                await whatsapp.SendTextMessageAsync(m.Student.Mobile, whatsappMsg);
                             }
                             catch (Exception ex)
                             {
@@ -496,6 +517,76 @@ namespace WebApplication1.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing plan expiry reminders.");
+            }
+        }
+
+        private async Task ProcessLeaderboardRewardsAsync(CancellationToken stoppingToken)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastLeaderboardRewardDate >= today) return;
+
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
+
+                if (whatsapp == null) return;
+
+                var yesterday = today.AddDays(-1);
+                
+                // Get completed sessions for yesterday
+                var query = context.StudyStudysessions
+                    .Include(s => s.Student)
+                    .ThenInclude(s => s.StudentsStudentprofile)
+                    .Where(s => s.Status == "completed" && s.EndTime != null && 
+                                DateOnly.FromDateTime(s.StartTime) == yesterday);
+
+                var sessions = await query.ToListAsync(stoppingToken);
+
+                var leaderboardData = sessions
+                    .GroupBy(s => s.StudentId)
+                    .Select(g => new
+                    {
+                        Student = g.Select(s => s.Student).FirstOrDefault(),
+                        TotalHours = g.Sum(s => (s.EndTime!.Value - s.StartTime).TotalHours)
+                    })
+                    .OrderByDescending(x => x.TotalHours)
+                    .Take(3)
+                    .ToList();
+
+                if (leaderboardData.Any())
+                {
+                    int rank = 1;
+                    foreach (var item in leaderboardData)
+                    {
+                        if (item.Student != null && !string.IsNullOrWhiteSpace(item.Student.Mobile))
+                        {
+                            try
+                            {
+                                string stName = item.Student.FirstName ?? "Student";
+                                string hoursStr = item.TotalHours.ToString("0.0");
+                                string emoji = rank == 1 ? "🥇" : rank == 2 ? "🥈" : "🥉";
+                                
+                                string msg = $"{emoji} *Congratulations!* {emoji}\n\nHi {stName},\nYou achieved Rank {rank} on yesterday's leaderboard with {hoursStr} hours of study time! Keep up the great work and stay dedicated! 📚💪";
+                                
+                                await whatsapp.SendTextMessageAsync(item.Student.Mobile, msg);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to send leaderboard reward WhatsApp to {Mobile}", item.Student.Mobile);
+                            }
+                        }
+                        rank++;
+                    }
+                }
+
+                _lastLeaderboardRewardDate = today;
+                _logger.LogInformation("Processed leaderboard rewards for {Date}.", yesterday);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing leaderboard rewards.");
             }
         }
     }

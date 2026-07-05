@@ -504,32 +504,32 @@ namespace WebApplication1.Services
             }
             await _context.SaveChangesAsync(ct);
 
-            if (!string.IsNullOrWhiteSpace(student.Email))
-            {
-                var email = student.Email!;
-                var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
+            var email = student.Email;
+            var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
 
-                _ = Task.Run(async () => 
+            _ = Task.Run(async () => 
+            {
+                try
                 {
-                    try
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    if (!string.IsNullOrWhiteSpace(email))
                     {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
-                        
-                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                        if (!string.IsNullOrWhiteSpace(student.Mobile))
-                        {
-                            string msg = $"⚠️ Your library account has been suspended.\nReason: {(string.IsNullOrEmpty(suspensionReason) ? "Policy violation or unpaid dues" : suspensionReason)}\nContact Admin for details.";
-                            await whatsapp.SendTextMessageAsync(student.Mobile, msg);
-                        }
                     }
-                    catch (Exception ex)
+                    
+                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                    if (!string.IsNullOrWhiteSpace(student.Mobile))
                     {
-                        Console.WriteLine($"Error sending suspend notification: {ex}");
+                        string msg = $"⚠️ Your library account has been suspended.\nReason: {(string.IsNullOrEmpty(suspensionReason) ? "Policy violation or unpaid dues" : suspensionReason)}\nContact Admin for details.";
+                        await whatsapp.SendTextMessageAsync(student.Mobile, msg);
                     }
-                });
-            }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending suspend notification: {ex}");
+                }
+            });
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Suspended });
         }

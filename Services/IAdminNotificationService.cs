@@ -39,6 +39,9 @@ namespace WebApplication1.Services
         [FromForm(Name = "send_sms")]
         public bool? SendSms { get; set; }
 
+        [FromForm(Name = "send_whatsapp")]
+        public bool? SendWhatsapp { get; set; }
+
         [FromForm(Name = "scheduled_at")]
         public DateTime? ScheduledAt { get; set; }
 

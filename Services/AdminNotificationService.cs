@@ -13,11 +13,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly WhatsAppNotificationService _whatsAppService;
 
-        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService)
+        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService)
         {
             _context = context;
             _notificationService = notificationService;
+            _whatsAppService = whatsAppService;
         }
 
         public async Task<ServiceResult<object>> GetNotificationTemplatesAsync(CancellationToken ct = default)
@@ -252,6 +254,23 @@ namespace WebApplication1.Services
                     catch (Exception)
                     {
                         successCount = 0;
+                    }
+                }
+
+                if (dto.SendWhatsapp == true)
+                {
+                    var userMobiles = await _context.AccountsCustomusers
+                        .Where(u => users.Contains(u.Id) && !string.IsNullOrEmpty(u.Mobile))
+                        .Select(u => u.Mobile)
+                        .ToListAsync(ct);
+                        
+                    foreach (var mobile in userMobiles)
+                    {
+                        if (mobile != null)
+                        {
+                            string msg = $"📢 *{notification.Title}*\n\n{notification.Body}";
+                            await _whatsAppService.SendTextMessageAsync(mobile, msg);
+                        }
                     }
                 }
 
