@@ -4,6 +4,10 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using System;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Data;
+using WebApplication1.Models;
 
 namespace WebApplication1.Services
 {
@@ -29,14 +33,16 @@ namespace WebApplication1.Services
     {
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
-        public EmailService(IConfiguration config, ILogger<EmailService> logger)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger, IServiceProvider serviceProvider)
         {
             _config = config;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail)> GetSmtpConfigAsync()
         {
             var host = _config["EmailSettings:SmtpHost"];
             var portString = _config["EmailSettings:SmtpPort"];
@@ -44,29 +50,65 @@ namespace WebApplication1.Services
             var pass = _config["EmailSettings:SmtpPass"];
             var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
             var fromEmail = _config["EmailSettings:FromEmail"];
+
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                
+                var dbHost = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_host");
+                if (dbHost != null && !string.IsNullOrEmpty(dbHost.Value)) host = dbHost.Value;
+                
+                var dbPort = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_port");
+                if (dbPort != null && !string.IsNullOrEmpty(dbPort.Value)) portString = dbPort.Value;
+                
+                var dbUser = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_user");
+                if (dbUser != null && !string.IsNullOrEmpty(dbUser.Value)) user = dbUser.Value;
+                
+                var dbPass = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_pass");
+                if (dbPass != null && !string.IsNullOrEmpty(dbPass.Value)) pass = dbPass.Value;
+                
+                var dbFromName = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_name");
+                if (dbFromName != null && !string.IsNullOrEmpty(dbFromName.Value)) fromName = dbFromName.Value;
+                
+                var dbFromEmail = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_email");
+                if (dbFromEmail != null && !string.IsNullOrEmpty(dbFromEmail.Value)) fromEmail = dbFromEmail.Value;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve SMTP settings from database. Falling back to appsettings.");
+            }
+
             if (string.IsNullOrEmpty(fromEmail))
             {
                 fromEmail = user;
             }
+            
+            int port = 587;
+            if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
+            
+            return (host, port, user, pass, fromName, fromEmail);
+        }
 
-            if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
+        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        {
+            var config = await GetSmtpConfigAsync();
+
+            if (string.IsNullOrEmpty(config.host) || string.IsNullOrEmpty(config.user) || string.IsNullOrEmpty(config.pass) || config.user == "your-email@gmail.com")
             {
                 _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
                 return;
             }
 
-            int port = 587;
-            if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
-
-            using var client = new SmtpClient(host, port)
+            using var client = new SmtpClient(config.host, config.port)
             {
-                Credentials = new NetworkCredential(user, pass),
+                Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true
             };
 
             using var mailMessage = new MailMessage
             {
-                From = new MailAddress(fromEmail, fromName),
+                From = new MailAddress(config.fromEmail, config.fromName),
                 Subject = subject,
                 Body = htmlMessage,
                 IsBodyHtml = true
@@ -86,35 +128,23 @@ namespace WebApplication1.Services
 
         public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string htmlMessage, byte[] attachmentData, string attachmentName)
         {
-            var host = _config["EmailSettings:SmtpHost"];
-            var portString = _config["EmailSettings:SmtpPort"];
-            var user = _config["EmailSettings:SmtpUser"];
-            var pass = _config["EmailSettings:SmtpPass"];
-            var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
-            var fromEmail = _config["EmailSettings:FromEmail"];
-            if (string.IsNullOrEmpty(fromEmail))
-            {
-                fromEmail = user;
-            }
+            var config = await GetSmtpConfigAsync();
 
-            if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || user == "your-email@gmail.com")
+            if (string.IsNullOrEmpty(config.host) || string.IsNullOrEmpty(config.user) || string.IsNullOrEmpty(config.pass) || config.user == "your-email@gmail.com")
             {
                 _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
                 return;
             }
 
-            int port = 587;
-            if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
-
-            using var client = new SmtpClient(host, port)
+            using var client = new SmtpClient(config.host, config.port)
             {
-                Credentials = new NetworkCredential(user, pass),
+                Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true
             };
 
             using var mailMessage = new MailMessage
             {
-                From = new MailAddress(fromEmail, fromName),
+                From = new MailAddress(config.fromEmail, config.fromName),
                 Subject = subject,
                 Body = htmlMessage,
                 IsBodyHtml = true

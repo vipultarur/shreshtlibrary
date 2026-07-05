@@ -247,12 +247,16 @@ namespace WebApplication1.Controllers
 
     public class ForgotPasswordRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
         public string Email { get; set; }
     }
 
     public class ResetPasswordRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("token")]
         public string Token { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("new_password")]
         public string NewPassword { get; set; }
     }
 

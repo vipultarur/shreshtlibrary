@@ -15,12 +15,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _config;
         private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
+        private readonly IEmailService _emailService;
 
-        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger)
+        public AuthService(ApplicationDbContext context, IConfiguration config, Microsoft.Extensions.Logging.ILogger<AuthService> logger, IEmailService emailService)
         {
             _context = context;
             _config = config;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<ServiceResult<object>> CheckAvailabilityAsync(CheckAvailabilityRequest request, CancellationToken ct = default)
@@ -150,6 +152,8 @@ namespace WebApplication1.Services
 
                     await _context.SaveChangesAsync(ct);
                     if (transaction != null) await transaction.CommitAsync(ct);
+                    
+                    _ = _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
 
                     return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
                 }
@@ -503,9 +507,11 @@ namespace WebApplication1.Services
                 });
                 await _context.SaveChangesAsync(ct);
 
-                // In production, integrate email sending here
-                // Reset link: https://shreshtlibrary.onrender.com/reset-password?token={rawToken}
-                // Reset token must never be logged.
+                // Send the actual email
+                string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
+                
+                // Do not wait for email sending to prevent slow responses if SMTP is slow
+                _ = _emailService.SendForgotPasswordEmailAsync(user.Email, resetLink);
 
                 return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }

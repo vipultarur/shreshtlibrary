@@ -23,7 +23,8 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSettings(CancellationToken ct)
         {
-            var result = await _settingsService.GetSettingsAsync(ct);
+            var role = User.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+            var result = await _settingsService.GetSettingsAsync(role, ct);
             if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message ?? "Error"));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
@@ -31,7 +32,8 @@ namespace WebApplication1.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdateSettings([FromBody] SettingsPayload payload, CancellationToken ct)
         {
-            var result = await _settingsService.UpdateSettingsAsync(payload, ct);
+            var role = User.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+            var result = await _settingsService.UpdateSettingsAsync(payload, role, ct);
             if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message ?? "Error"));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }

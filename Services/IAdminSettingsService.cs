@@ -7,7 +7,7 @@ namespace WebApplication1.Services
 {
     public interface IAdminSettingsService
     {
-        Task<ServiceResult<object>> GetSettingsAsync(CancellationToken ct = default);
-        Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetSettingsAsync(string role, CancellationToken ct = default);
+        Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, string role, CancellationToken ct = default);
     }
 }

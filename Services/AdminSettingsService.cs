@@ -19,7 +19,7 @@ namespace WebApplication1.Services
             _context = context;
         }
 
-        public async Task<ServiceResult<object>> GetSettingsAsync(CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetSettingsAsync(string role, CancellationToken ct = default)
         {
             var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
             if (appConfig == null)
@@ -58,22 +58,40 @@ namespace WebApplication1.Services
                 safePermissions = JsonSerializer.Deserialize<JsonElement>("{}");
             }
 
-            return ServiceResult<object>.Ok(new
+            var result = new System.Collections.Generic.Dictionary<string, object>
             {
-                library_open_time = openTime.ToString(@"HH\:mm"),
-                attendance_padding_time = paddingTime,
-                is_premium_gating_enabled = appConfig.IsPremiumGatingEnabled,
-                expiry_dialog_title = appConfig.ExpiryDialogTitle,
-                expiry_dialog_message = appConfig.ExpiryDialogMessage,
-                allow_non_premium_notifications = appConfig.AllowNonPremiumNotifications,
-                allow_non_premium_sliders = appConfig.AllowNonPremiumSliders,
-                allow_non_premium_library_info = appConfig.AllowNonPremiumLibraryInfo,
-                expired_student_permissions = safePermissions
-            });
+                { "library_open_time", openTime.ToString(@"HH\:mm") },
+                { "attendance_padding_time", paddingTime },
+                { "is_premium_gating_enabled", appConfig.IsPremiumGatingEnabled },
+                { "expiry_dialog_title", appConfig.ExpiryDialogTitle },
+                { "expiry_dialog_message", appConfig.ExpiryDialogMessage },
+                { "allow_non_premium_notifications", appConfig.AllowNonPremiumNotifications },
+                { "allow_non_premium_sliders", appConfig.AllowNonPremiumSliders },
+                { "allow_non_premium_library_info", appConfig.AllowNonPremiumLibraryInfo },
+                { "expired_student_permissions", safePermissions }
+            };
 
+            if (role == "super_admin")
+            {
+                var smtpHost = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_host", ct);
+                var smtpPort = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_port", ct);
+                var smtpUser = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_user", ct);
+                var smtpPass = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_pass", ct);
+                var smtpFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_name", ct);
+                var smtpFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_email", ct);
+
+                result.Add("smtp_host", smtpHost?.Value ?? "");
+                result.Add("smtp_port", smtpPort?.Value ?? "");
+                result.Add("smtp_user", smtpUser?.Value ?? "");
+                result.Add("smtp_pass", smtpPass?.Value ?? "");
+                result.Add("smtp_from_name", smtpFromName?.Value ?? "");
+                result.Add("smtp_from_email", smtpFromEmail?.Value ?? "");
+            }
+
+            return ServiceResult<object>.Ok(result);
         }
 
-        public async Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> UpdateSettingsAsync(SettingsPayload payload, string role, CancellationToken ct = default)
         {
             var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
             if (appConfig == null)
@@ -126,9 +144,36 @@ namespace WebApplication1.Services
                 }
             }
 
+            if (role == "super_admin")
+            {
+                async Task UpdateGlobalSetting(string key, string value, string desc)
+                {
+                    if (value == null) return;
+                    var setting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == key, ct);
+                    if (setting == null)
+                    {
+                        _context.CoreGlobalsettings.Add(new CoreGlobalsetting { Key = key, Value = value, Description = desc });
+                    }
+                    else
+                    {
+                        setting.Value = value;
+                    }
+                }
+
+                await UpdateGlobalSetting("smtp_host", payload.SmtpHost, "SMTP Host Server");
+                await UpdateGlobalSetting("smtp_port", payload.SmtpPort, "SMTP Port");
+                await UpdateGlobalSetting("smtp_user", payload.SmtpUser, "SMTP Username");
+                if (!string.IsNullOrEmpty(payload.SmtpPass) && payload.SmtpPass != "******")
+                {
+                    await UpdateGlobalSetting("smtp_pass", payload.SmtpPass, "SMTP App Password");
+                }
+                await UpdateGlobalSetting("smtp_from_name", payload.SmtpFromName, "SMTP From Name");
+                await UpdateGlobalSetting("smtp_from_email", payload.SmtpFromEmail, "SMTP From Email Address");
+            }
+
             await _context.SaveChangesAsync(ct);
 
-            return await GetSettingsAsync(ct);
+            return await GetSettingsAsync(role, ct);
         }
     }
 }
