@@ -312,16 +312,16 @@ namespace WebApplication1.Services
                     var planName = plan.Name;
                     var validUntil = endDate.ToString("dd MMM yyyy");
                     
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            using var scope = _scopeFactory.CreateScope();
-                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendPlanDetailsEmailAsync(email, planName, validUntil, "Unassigned");
-                        }
-                        catch { }
-                    });
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendPlanDetailsEmailAsync(email, planName, validUntil, "Unassigned");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending plan details email: {ex}");
+                    }
                 }
 
                 return ServiceResult<object>.Ok(membership);
@@ -670,17 +670,16 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
-                // Fire and forget receipt email
-                _ = Task.Run(async () => 
+                try 
                 {
-                    try 
-                    {
-                        using var scope = _scopeFactory.CreateScope();
-                        var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
-                        await billingSvc.SendPaymentReceiptEmailAsync(payment.Id);
-                    }
-                    catch { }
-                });
+                    using var scope = _scopeFactory.CreateScope();
+                    var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
+                    await billingSvc.SendPaymentReceiptEmailAsync(payment.Id);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending receipt email: {ex}");
+                }
 
                 return ServiceResult<object>.Ok(new { id = payment.Id });
             }
@@ -768,17 +767,16 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
-                // Fire and forget receipt email
-                _ = Task.Run(async () => 
+                try 
                 {
-                    try 
-                    {
-                        using var scope = _scopeFactory.CreateScope();
-                        var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
-                        await billingSvc.SendPaymentReceiptEmailAsync(id);
-                    }
-                    catch { }
-                });
+                    using var scope = _scopeFactory.CreateScope();
+                    var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
+                    await billingSvc.SendPaymentReceiptEmailAsync(id);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending receipt email: {ex}");
+                }
 
                 return ServiceResult<object>.Ok(new {
                     id = payment.Id,
