@@ -264,12 +264,48 @@ namespace WebApplication1.Services
                         .Select(u => u.Mobile)
                         .ToListAsync(ct);
                         
+                    // Construct rich message
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine($"📢 *{notification.Title}*");
+                    if (!string.IsNullOrWhiteSpace(notification.Subtitle)) sb.AppendLine($"_{notification.Subtitle}_\n");
+                    sb.AppendLine($"{notification.Body}");
+                    
+                    if (!string.IsNullOrWhiteSpace(notification.Description)) sb.AppendLine($"\n📝 *Details:* {notification.Description}");
+                    if (notification.EventDate.HasValue) sb.AppendLine($"\n📅 *Date:* {notification.EventDate.Value.ToString("dd MMM yyyy")}");
+                    if (notification.RecurringTime.HasValue) sb.AppendLine($"\n⏰ *Time:* {notification.RecurringTime.Value.ToString("hh:mm tt")}");
+                    if (!string.IsNullOrWhiteSpace(notification.LinkUrl)) sb.AppendLine($"\n🔗 *{(string.IsNullOrWhiteSpace(notification.LinkButtonText) ? "Link" : notification.LinkButtonText)}:* {notification.LinkUrl}");
+
+                    string msg = sb.ToString();
+
+                    // Check for image
+                    byte[]? imageBytes = null;
+                    string? imageFileName = null;
+                    if (!string.IsNullOrEmpty(notification.BackgroundImage))
+                    {
+                        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                        var mediaPath = isDev 
+                            ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
+                            : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
+                        var filePath = System.IO.Path.Combine(mediaPath, notification.BackgroundImage);
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            imageBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                            imageFileName = System.IO.Path.GetFileName(filePath);
+                        }
+                    }
+
                     foreach (var mobile in userMobiles)
                     {
                         if (mobile != null)
                         {
-                            string msg = $"📢 *{notification.Title}*\n\n{notification.Body}";
-                            await _whatsAppService.SendTextMessageAsync(mobile, msg);
+                            if (imageBytes != null && imageFileName != null)
+                            {
+                                await _whatsAppService.SendImageAsync(mobile, imageBytes, imageFileName, msg);
+                            }
+                            else
+                            {
+                                await _whatsAppService.SendTextMessageAsync(mobile, msg);
+                            }
                         }
                     }
                 }
