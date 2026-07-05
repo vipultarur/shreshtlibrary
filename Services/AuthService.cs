@@ -155,13 +155,13 @@ namespace WebApplication1.Services
                     await _context.SaveChangesAsync(ct);
                     if (transaction != null) await transaction.CommitAsync(ct);
                     
-                    _ = Task.Run(async () => {
-                        try {
-                            using var scope = _scopeFactory.CreateScope();
-                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
-                        } catch { }
-                    });
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
+                    } catch (Exception ex) { 
+                        Console.WriteLine($"Error sending welcome email: {ex}");
+                    }
 
                     return await GenerateStudentTokensAndLogAsync(user, "Registered new account", ipAddress, "", "", ct);
                 }
@@ -208,13 +208,13 @@ namespace WebApplication1.Services
             
             if (!string.IsNullOrEmpty(user.Email))
             {
-                _ = Task.Run(async () => {
-                    try {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
-                    } catch { }
-                });
+                try {
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
+                } catch (Exception ex) { 
+                    Console.WriteLine($"Error sending OTP email: {ex}");
+                }
             }
 
             return ServiceResult<object>.Ok(null, "OTP sent successfully.");
@@ -529,14 +529,13 @@ namespace WebApplication1.Services
                 // Send the actual email
                 string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
                 
-                // Do not wait for email sending to prevent slow responses if SMTP is slow
-                _ = Task.Run(async () => {
-                    try {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
-                    } catch { }
-                });
+                try {
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                } catch (Exception ex) { 
+                    Console.WriteLine($"Error sending forgot password email: {ex}");
+                }
 
                 return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }
