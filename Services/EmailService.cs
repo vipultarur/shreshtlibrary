@@ -171,6 +171,9 @@ namespace WebApplication1.Services
         public async Task SendWelcomeEmailAsync(string toEmail, string firstName, string lastName)
         {
             var subject = "Welcome to Shresht Library! 🎉";
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Registration Date", DateTime.UtcNow.ToString("dd MMM yyyy") }
+            };
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: $"Welcome {firstName} {lastName}!",
                 subtitle: "We are thrilled to have you join Shresht Library. Your journey to excellence starts here.",
@@ -179,7 +182,8 @@ namespace WebApplication1.Services
                 colorEnd: "#4f46e5",   // indigo-600
                 highlight: "WELCOME",
                 actionText: "Explore Your Dashboard",
-                footer: "Let's make studying great!"
+                footer: "Let's make studying great!",
+                stats: stats
             );
             await SendEmailAsync(toEmail, subject, html);
         }
