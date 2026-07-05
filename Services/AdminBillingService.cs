@@ -306,6 +306,24 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
 
+                if (!string.IsNullOrWhiteSpace(student.Email))
+                {
+                    var email = student.Email;
+                    var planName = plan.Name;
+                    var validUntil = endDate.ToString("dd MMM yyyy");
+                    
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            using var scope = _scopeFactory.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendPlanDetailsEmailAsync(email, planName, validUntil, "Unassigned");
+                        }
+                        catch { }
+                    });
+                }
+
                 return ServiceResult<object>.Ok(membership);
             }
             catch

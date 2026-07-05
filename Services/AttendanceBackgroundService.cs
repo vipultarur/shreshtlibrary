@@ -18,6 +18,7 @@ namespace WebApplication1.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private DateOnly _lastQrGeneratedDate = DateOnly.MinValue;
         private DateOnly _lastResetDate = DateOnly.MinValue;
+        private DateOnly _lastExpiryReminderDate = DateOnly.MinValue;
 
         public AttendanceBackgroundService(IServiceProvider serviceProvider, ILogger<AttendanceBackgroundService> logger, IDateTimeProvider dateTimeProvider)
         {
@@ -37,6 +38,7 @@ namespace WebApplication1.Services
                     await AutoGenerateQrAsync(stoppingToken);
                     await ProcessPendingToAbsentAsync(stoppingToken);
                     await ProcessAutoCheckoutAsync(stoppingToken);
+                    await ProcessPlanExpiryRemindersAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -408,6 +410,59 @@ namespace WebApplication1.Services
                 _logger.LogInformation("Auto-checked out students.");
             }
         }
+
+        private async Task ProcessPlanExpiryRemindersAsync(CancellationToken stoppingToken)
+        {
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            if (_lastExpiryReminderDate >= today) return; // Only run once a day
+
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                // Find plans expiring EXACTLY tomorrow
+                var tomorrow = today.AddDays(1);
+                var expiringMemberships = await context.MembershipsMemberships
+                    .Include(m => m.Student)
+                    .Include(m => m.Plan)
+                    .Where(m => m.Status == "active" && m.EndDate == tomorrow)
+                    .ToListAsync(stoppingToken);
+
+                int sentCount = 0;
+                foreach (var m in expiringMemberships)
+                {
+                    if (m.Student != null && !string.IsNullOrWhiteSpace(m.Student.Email))
+                    {
+                        try
+                        {
+                            // Passing valid string parameters matching the template variables
+                            await emailService.SendReminderEmailAsync(
+                                m.Student.Email, 
+                                daysActive: "1 Day Remaining", 
+                                studyHours: m.Plan?.Name ?? "Library Plan", 
+                                points: m.EndDate.ToString("dd MMM yyyy")
+                            );
+                            sentCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to send plan expiry reminder to {Email}", m.Student.Email);
+                        }
+                    }
+                }
+
+                _lastExpiryReminderDate = today;
+                if (sentCount > 0)
+                {
+                    _logger.LogInformation("Sent {Count} plan expiry reminders for {Date}.", sentCount, tomorrow);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing plan expiry reminders.");
+            }
+        }
     }
 }
-
