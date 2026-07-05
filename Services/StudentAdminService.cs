@@ -19,13 +19,15 @@ namespace WebApplication1.Services
         private readonly IEmailService _emailService;
         private readonly IMemoryCache _cache;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider)
+        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceProvider serviceProvider)
         {
             _context = context;
             _emailService = emailService;
             _cache = cache;
             _dateTimeProvider = dateTimeProvider;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<ServiceResult<object>> GetStudentCountsAsync(CancellationToken ct = default)
@@ -504,7 +506,7 @@ namespace WebApplication1.Services
                 {
                     try
                     {
-                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        using var scope = _serviceProvider.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
                     }
@@ -532,7 +534,7 @@ namespace WebApplication1.Services
                 {
                     try
                     {
-                        using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                        using var scope = _serviceProvider.CreateScope();
                         var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
                         await emailSvc.SendActivatedEmailAsync(email);
                     }

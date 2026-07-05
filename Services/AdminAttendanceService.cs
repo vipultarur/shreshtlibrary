@@ -17,12 +17,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService, IDateTimeProvider dateTimeProvider)
+        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService, IDateTimeProvider dateTimeProvider, IServiceProvider serviceProvider)
         {
             _context = context;
             _emailService = emailService;
             _dateTimeProvider = dateTimeProvider;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<ServiceResult<object>> GetCurrentQrAsync(CancellationToken ct = default)
@@ -804,7 +806,7 @@ namespace WebApplication1.Services
             // Fire and forget email notification to all active students
             _ = Task.Run(async () =>
             {
-                using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                using var scope = _serviceProvider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
@@ -888,7 +890,7 @@ namespace WebApplication1.Services
             // Fire and forget email notification to all active students
             _ = Task.Run(async () =>
             {
-                using var scope = _context.Database.GetService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>().CreateScope();
+                using var scope = _serviceProvider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
