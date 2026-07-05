@@ -169,30 +169,41 @@ namespace WebApplication1.Services
                     await _context.SaveChangesAsync(ct);
                     if (transaction != null) await transaction.CommitAsync(ct);
                     
-                    try {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
-                    } catch (Exception ex) { 
-                        Console.WriteLine($"Error sending welcome email: {ex}");
-                    }
-
                     _ = Task.Run(async () =>
                     {
-                        try 
+                        using var scope = _scopeFactory.CreateScope();
+                        
+                        var emailTask = Task.Run(async () => 
+                        {
+                            try 
+                            {
+                                var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                                await emailSvc.SendWelcomeEmailAsync(user.Email, user.FirstName, user.LastName);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error sending welcome email: {ex}");
+                            }
+                        });
+
+                        var waTask = Task.Run(async () => 
                         {
                             if (!string.IsNullOrEmpty(user.Mobile))
                             {
-                                string msg = $"Congratulations {user.FirstName}! You have successfully registered with Shresht Library. Your Student ID is {nextStudentId}. Welcome aboard!";
-                                using var scope = _scopeFactory.CreateScope();
-                                var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                                await whatsapp.SendTextMessageAsync(user.Mobile, msg);
+                                try
+                                {
+                                    string msg = $"Congratulations {user.FirstName}! You have successfully registered with Shresht Library. Your Student ID is {nextStudentId}. Welcome aboard!";
+                                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                                    await whatsapp.SendTextMessageAsync(user.Mobile, msg);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error sending WhatsApp welcome message: {ex}");
+                                }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error sending WhatsApp welcome message: {ex}");
-                        }
+                        });
+                        
+                        await Task.WhenAll(emailTask, waTask);
                     });
 
                     _cache.Remove($"reg_otp_{request.Mobile}"); // clear otp after success
