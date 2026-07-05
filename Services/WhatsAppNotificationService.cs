@@ -11,18 +11,44 @@ namespace WebApplication1.Services
     public class WhatsAppNotificationService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
-        private readonly string _sessionId;
-        private readonly string _apiKey;
+        private readonly IConfiguration _configuration;
+        private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;
         private readonly ILogger<WhatsAppNotificationService> _logger;
 
-        public WhatsAppNotificationService(HttpClient httpClient, IConfiguration configuration, ILogger<WhatsAppNotificationService> logger)
+        public WhatsAppNotificationService(
+            HttpClient httpClient, 
+            IConfiguration configuration, 
+            Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory,
+            ILogger<WhatsAppNotificationService> logger)
         {
             _httpClient = httpClient;
-            _baseUrl = configuration["WhatsAppApi:BaseUrl"] ?? "http://localhost:2785";
-            _sessionId = configuration["WhatsAppApi:SessionId"] ?? "default";
-            _apiKey = configuration["WhatsAppApi:ApiKey"] ?? "";
+            _configuration = configuration;
+            _scopeFactory = scopeFactory;
             _logger = logger;
+        }
+
+        private async Task<(string baseUrl, string sessionId, string apiKey)> GetSettingsAsync()
+        {
+            string baseUrl = _configuration["WhatsAppApi:BaseUrl"] ?? "http://localhost:2785";
+            string sessionId = _configuration["WhatsAppApi:SessionId"] ?? "default";
+            string apiKey = _configuration["WhatsAppApi:ApiKey"] ?? "";
+
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+            
+            var dbBaseUrl = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                context.CoreGlobalsettings, s => s.Key == "wa_base_url");
+            if (dbBaseUrl != null && !string.IsNullOrEmpty(dbBaseUrl.Value)) baseUrl = dbBaseUrl.Value;
+
+            var dbSessionId = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                context.CoreGlobalsettings, s => s.Key == "wa_session_id");
+            if (dbSessionId != null && !string.IsNullOrEmpty(dbSessionId.Value)) sessionId = dbSessionId.Value;
+
+            var dbApiKey = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                context.CoreGlobalsettings, s => s.Key == "wa_api_key");
+            if (dbApiKey != null && !string.IsNullOrEmpty(dbApiKey.Value)) apiKey = dbApiKey.Value;
+
+            return (baseUrl, sessionId, apiKey);
         }
 
         public async Task<bool> SendTextMessageAsync(string phoneNumber, string message)
@@ -35,8 +61,9 @@ namespace WebApplication1.Services
                     phoneNumber = "91" + phoneNumber;
                 }
                 
+                var settings = await GetSettingsAsync();
                 string chatId = $"{phoneNumber}@c.us"; 
-                var endpoint = $"{_baseUrl}/api/sessions/{_sessionId}/messages/send-text";
+                var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-text";
 
                 var payload = new
                 {
@@ -48,9 +75,9 @@ namespace WebApplication1.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 _httpClient.DefaultRequestHeaders.Clear();
-                if (!string.IsNullOrEmpty(_apiKey))
+                if (!string.IsNullOrEmpty(settings.apiKey))
                 {
-                    _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+                    _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
                 }
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -82,8 +109,9 @@ namespace WebApplication1.Services
                     phoneNumber = "91" + phoneNumber;
                 }
                 
+                var settings = await GetSettingsAsync();
                 string chatId = $"{phoneNumber}@c.us"; 
-                var endpoint = $"{_baseUrl}/api/sessions/{_sessionId}/messages/send-document";
+                var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-document";
 
                 string base64File = Convert.ToBase64String(fileBytes);
                 var payload = new
@@ -99,9 +127,9 @@ namespace WebApplication1.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 _httpClient.DefaultRequestHeaders.Clear();
-                if (!string.IsNullOrEmpty(_apiKey))
+                if (!string.IsNullOrEmpty(settings.apiKey))
                 {
-                    _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+                    _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
                 }
 
                 var response = await _httpClient.PostAsync(endpoint, content);

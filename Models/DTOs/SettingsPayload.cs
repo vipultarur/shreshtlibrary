@@ -46,5 +46,14 @@ namespace WebApplication1.Models.DTOs
 
         [JsonPropertyName("smtp_from_email")]
         public string? SmtpFromEmail { get; set; }
+
+        [JsonPropertyName("wa_base_url")]
+        public string? WaBaseUrl { get; set; }
+
+        [JsonPropertyName("wa_session_id")]
+        public string? WaSessionId { get; set; }
+
+        [JsonPropertyName("wa_api_key")]
+        public string? WaApiKey { get; set; }
     }
 }

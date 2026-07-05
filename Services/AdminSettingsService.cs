@@ -79,6 +79,9 @@ namespace WebApplication1.Services
                 var smtpPass = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_pass", ct);
                 var smtpFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_name", ct);
                 var smtpFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_email", ct);
+                var waBaseUrl = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_base_url", ct);
+                var waSessionId = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_session_id", ct);
+                var waApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_api_key", ct);
 
                 result.Add("smtp_host", smtpHost?.Value ?? "");
                 result.Add("smtp_port", smtpPort?.Value ?? "");
@@ -86,6 +89,10 @@ namespace WebApplication1.Services
                 result.Add("smtp_pass", smtpPass?.Value ?? "");
                 result.Add("smtp_from_name", smtpFromName?.Value ?? "");
                 result.Add("smtp_from_email", smtpFromEmail?.Value ?? "");
+                
+                result.Add("wa_base_url", waBaseUrl?.Value ?? "");
+                result.Add("wa_session_id", waSessionId?.Value ?? "");
+                result.Add("wa_api_key", waApiKey?.Value ?? "");
             }
 
             return ServiceResult<object>.Ok(result);
@@ -169,6 +176,13 @@ namespace WebApplication1.Services
                 }
                 await UpdateGlobalSetting("smtp_from_name", payload.SmtpFromName, "SMTP From Name");
                 await UpdateGlobalSetting("smtp_from_email", payload.SmtpFromEmail, "SMTP From Email Address");
+                
+                await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL");
+                await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID");
+                if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
+                {
+                    await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key");
+                }
             }
 
             await _context.SaveChangesAsync(ct);

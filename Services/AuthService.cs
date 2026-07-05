@@ -222,20 +222,17 @@ namespace WebApplication1.Services
             string rawOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
             _cache.Set($"reg_otp_{request.Mobile}", rawOtp, TimeSpan.FromMinutes(10));
 
-            _ = Task.Run(async () =>
+            try 
             {
-                try 
-                {
-                    using var scope = _scopeFactory.CreateScope();
-                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                    string msg = $"Your Shresht Library registration code is {rawOtp}. It will expire in 10 minutes.";
-                    await whatsapp.SendTextMessageAsync(request.Mobile, msg);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending registration OTP WhatsApp: {ex}");
-                }
-            });
+                using var scope = _scopeFactory.CreateScope();
+                var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
+                string msg = $"Your Shresht Library registration code is {rawOtp}. It will expire in 10 minutes.";
+                await whatsapp.SendTextMessageAsync(request.Mobile, msg);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending registration OTP WhatsApp: {ex}");
+            }
 
             return ServiceResult<object>.Ok(null, "Registration OTP sent successfully to your WhatsApp.");
         }
