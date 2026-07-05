@@ -197,6 +197,11 @@ namespace WebApplication1.Services
 
             // In production, integrate SMS gateway here
             // OTP must never be logged.
+            
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                _ = _emailService.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
+            }
 
             return ServiceResult<object>.Ok(null, "OTP sent successfully.");
         }
@@ -511,7 +516,7 @@ namespace WebApplication1.Services
                 string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
                 
                 // Do not wait for email sending to prevent slow responses if SMTP is slow
-                _ = _emailService.SendForgotPasswordEmailAsync(user.Email ?? "", resetLink);
+                _ = _emailService.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
 
                 return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }

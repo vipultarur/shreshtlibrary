@@ -22,8 +22,8 @@ namespace WebApplication1.Services
         Task SendReminderEmailAsync(string toEmail, string daysActive, string studyHours, string points);
         Task SendNotificationEmailAsync(string toEmail, string newBooks, string upcomingEvents);
         Task SendPlanDetailsEmailAsync(string toEmail, string planType, string validUntil, string seat);
-        Task SendOtpEmailAsync(string toEmail, string otp);
-        Task SendForgotPasswordEmailAsync(string toEmail, string resetLink);
+        Task SendOtpEmailAsync(string toEmail, string studentName, string otp);
+        Task SendForgotPasswordEmailAsync(string toEmail, string studentName, string resetLink);
         Task SendReceiptEmailAsync(string toEmail, string amountPaid, string planName, string validUntil);
         Task SendSeatAllocatedEmailAsync(string toEmail, string seatNumber, string zone, string timing);
         Task SendHolidayAnnouncementEmailAsync(string toEmail, string occasion, string date);
@@ -297,11 +297,11 @@ namespace WebApplication1.Services
             await SendEmailAsync(toEmail, subject, html);
         }
 
-        public async Task SendOtpEmailAsync(string toEmail, string otp)
+        public async Task SendOtpEmailAsync(string toEmail, string studentName, string otp)
         {
             var subject = "Your OTP Code 🔐";
             var html = EmailTemplateBuilder.BuildTemplate(
-                title: "Verify Your Login",
+                title: $"Hello {studentName}, Verify Your Login",
                 subtitle: "Use the following OTP to complete your sign in. Valid for 10 mins.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/otp.png",
                 colorStart: "#fb923c", // orange-400
@@ -313,16 +313,17 @@ namespace WebApplication1.Services
             await SendEmailAsync(toEmail, subject, html);
         }
 
-        public async Task SendForgotPasswordEmailAsync(string toEmail, string resetLink)
+        public async Task SendForgotPasswordEmailAsync(string toEmail, string studentName, string resetLink)
         {
             var subject = "Reset Your Password 🔑";
             var html = EmailTemplateBuilder.BuildTemplate(
-                title: "Reset Password",
+                title: $"Hello {studentName}, Reset Password",
                 subtitle: "We received a request to reset your password. Click the button below to choose a new one.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/forgot_password.png",
                 colorStart: "#fb7185", // rose-400
                 colorEnd: "#ec4899",   // pink-500
                 actionText: "Reset Password",
+                actionUrl: resetLink,
                 footer: "If you didn't request a reset, you can safely ignore this email."
             );
             await SendEmailAsync(toEmail, subject, html);
@@ -401,6 +402,7 @@ namespace WebApplication1.Services
             string colorEnd, 
             string highlight = null, 
             string actionText = "View Dashboard", 
+            string actionUrl = "https://shreshtlibrary.onrender.com",
             string footer = "Thanks for being awesome!",
             string reward = null,
             System.Collections.Generic.Dictionary<string, string> stats = null)
@@ -476,7 +478,7 @@ namespace WebApplication1.Services
                 {rewardHtml}
                 {statsHtml}
 
-                <a href='https://shreshtlibrary.onrender.com' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
+                <a href='{actionUrl}' style='display: inline-block; padding: 14px 32px; background-color: {colorStart}; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 14px; text-align: center;'>
                     {actionText}
                 </a>
             </div>
