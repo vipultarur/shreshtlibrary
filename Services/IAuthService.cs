@@ -12,6 +12,7 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default);
         Task<ServiceResult<object>> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> SendRegisterOtpAsync(SendOtpRequest request, CancellationToken ct = default);
+        Task<ServiceResult<object>> VerifyRegisterOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
         Task<ServiceResult<object>> VerifyOtpAsync(VerifyOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> LoginEmailAsync(LoginEmailRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> LoginMobileAsync(LoginMobileRequest request, string ipAddress, string path, string method, CancellationToken ct = default);

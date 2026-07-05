@@ -70,6 +70,15 @@ namespace WebApplication1.Controllers
             return HandleResult(result);
         }
 
+        [HttpPost("verify-register-otp")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        public async Task<IActionResult> VerifyRegisterOtpAsync([FromBody] VerifyOtpRequest request, CancellationToken ct)
+        {
+            var result = await _authService.VerifyRegisterOtpAsync(request, ct);
+            return HandleResult(result);
+        }
+
         [HttpPost("send-otp")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]

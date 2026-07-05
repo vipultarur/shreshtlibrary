@@ -240,6 +240,22 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(null, "Registration OTP sent successfully to your WhatsApp.");
         }
 
+        public Task<ServiceResult<object>> VerifyRegisterOtpAsync(VerifyOtpRequest request, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(request.Mobile) || string.IsNullOrWhiteSpace(request.Otp))
+            {
+                return Task.FromResult(ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "mobile", new[] { "Mobile and OTP are required." } } }));
+            }
+
+            if (!_cache.TryGetValue($"reg_otp_{request.Mobile}", out string? cachedOtp) || cachedOtp != request.Otp)
+            {
+                return Task.FromResult(ServiceResult<object>.Fail("Invalid OTP.", new Dictionary<string, string[]> { { "otp", new[] { "Invalid OTP or OTP has expired." } } }));
+            }
+
+            // We do not remove the OTP here, because it needs to be verified again on final registration submit
+            return Task.FromResult(ServiceResult<object>.Ok(new { verified = true }, "OTP verified successfully."));
+        }
+
         public async Task<ServiceResult<object>> SendOtpAsync(SendOtpRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Mobile))
