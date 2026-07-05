@@ -337,7 +337,7 @@ namespace WebApplication1.Services
                     });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Ignore DB error for this specific alert
             }
@@ -354,7 +354,7 @@ namespace WebApplication1.Services
                     });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Ignore DB error for this specific alert
             }

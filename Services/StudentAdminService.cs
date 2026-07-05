@@ -80,11 +80,11 @@ namespace WebApplication1.Services
             if (!string.IsNullOrEmpty(search))
             {
                 var likeSearch = $"%{search}%";
-                query = query.Where(s => EF.Functions.ILike(s.User.FirstName, likeSearch) || 
-                                         EF.Functions.ILike(s.User.LastName, likeSearch) || 
-                                         (s.User.Email != null && EF.Functions.ILike(s.User.Email, likeSearch)) ||
-                                         (s.User.Mobile != null && EF.Functions.ILike(s.User.Mobile, likeSearch)) ||
-                                         EF.Functions.ILike(s.StudentId, likeSearch));
+                query = query.Where(s => EF.Functions.ILike(s.User.FirstName ?? "", likeSearch) || 
+                                         EF.Functions.ILike(s.User.LastName ?? "", likeSearch) || 
+                                         (s.User.Email != null && EF.Functions.ILike(s.User.Email ?? "", likeSearch)) ||
+                                         (s.User.Mobile != null && EF.Functions.ILike(s.User.Mobile ?? "", likeSearch)) ||
+                                         EF.Functions.ILike(s.StudentId ?? "", likeSearch));
             }
 
             var totalCount = await query.CountAsync(ct);

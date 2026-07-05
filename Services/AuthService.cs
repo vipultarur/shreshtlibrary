@@ -511,7 +511,7 @@ namespace WebApplication1.Services
                 string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
                 
                 // Do not wait for email sending to prevent slow responses if SMTP is slow
-                _ = _emailService.SendForgotPasswordEmailAsync(user.Email, resetLink);
+                _ = _emailService.SendForgotPasswordEmailAsync(user.Email ?? "", resetLink);
 
                 return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
             }

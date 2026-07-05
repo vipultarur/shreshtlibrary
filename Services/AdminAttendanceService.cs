@@ -577,7 +577,7 @@ namespace WebApplication1.Services
             {
                 var newRecord = new AttendanceAttendance
                 {
-                    StudentId = targetStudentId.Value,
+                    StudentId = targetStudentId ?? 0,
                     Date = targetDate,
                     TimeIn = isPresent ? TimeOnly.FromDateTime(_dateTimeProvider.IstNow) : new TimeOnly(0, 0),
                     IsManual = true,
@@ -593,7 +593,7 @@ namespace WebApplication1.Services
             _context.CoreActivitylogs.Add(new CoreActivitylog
             {
                 Action = "ATTENDANCE_UPDATE",
-                UserId = targetStudentId.Value,
+                UserId = targetStudentId ?? 0,
                 Timestamp = _dateTimeProvider.UtcNow,
                 Details = System.Text.Json.JsonSerializer.Serialize(new
                 {
@@ -616,7 +616,7 @@ namespace WebApplication1.Services
         {
             if (dtos == null || dtos.Count == 0) return ServiceResult<object>.Fail("No attendance data provided");
 
-            var studentIds = dtos.Where(d => d.StudentId.HasValue).Select(d => d.StudentId.Value).ToList();
+            var studentIds = dtos.Where(d => d.StudentId.HasValue).Select(d => d.StudentId ?? 0).ToList();
             var mobiles = dtos.Where(d => d.StudentId == null && !string.IsNullOrEmpty(d.StudentMobile)).Select(d => d.StudentMobile).ToList();
 
             var studentsById = await _context.AccountsCustomusers.Where(u => studentIds.Contains(u.Id) && u.Role.ToLower() == "student").ToListAsync(ct);
@@ -818,7 +818,7 @@ namespace WebApplication1.Services
                     try
                     {
                         await emailService.SendHolidayAnnouncementEmailAsync(
-                            student.Email,
+                            student.Email ?? "",
                             holiday.Title,
                             holiday.Date.ToString("yyyy-MM-dd")
                         );
