@@ -71,14 +71,47 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> ReleaseAllSeatsAsync(CancellationToken ct = default)
         {
-            var seats = await _context.SeatsSeats.Where(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED").ToListAsync(ct);
+            var seats = await _context.SeatsSeats
+                .Include(s => s.Student)
+                .Where(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED")
+                .ToListAsync(ct);
+                
+            var emailTasks = new List<Task>();
+            
             foreach (var seat in seats)
             {
+                string? email = seat.Student?.Email;
+                var seatNumber = seat.SeatNumber;
+
                 seat.Status = "AVAILABLE";
                 seat.StudentId = null;
                 seat.AssignedAt = null;
+                
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    var task = Task.Run(async () => 
+                    {
+                        try 
+                        {
+                            using var scope = _scopeFactory.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, "All seats have been administratively released.");
+                        } 
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending release email: {ex}");
+                        }
+                    });
+                    emailTasks.Add(task);
+                }
             }
             await _context.SaveChangesAsync(ct);
+            
+            if (emailTasks.Any())
+            {
+                await Task.WhenAll(emailTasks);
+            }
+            
             return ServiceResult<object>.Ok(new { message = $"{seats.Count} seats released." });
         }
 
@@ -302,16 +335,16 @@ namespace WebApplication1.Services
                 var email = studentUser.Email;
                 var seatNumber = seat.SeatNumber;
                 
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
-                    }
-                    catch { }
-                });
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending assign seat email: {ex}");
+                }
             }
 
             return ServiceResult<object>.Ok(new {
@@ -337,16 +370,16 @@ namespace WebApplication1.Services
 
             if (!string.IsNullOrWhiteSpace(email))
             {
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
-                    }
-                    catch { }
-                });
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending unassign seat email: {ex}");
+                }
             }
 
             return ServiceResult<object>.Ok(new {
