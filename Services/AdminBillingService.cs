@@ -834,6 +834,17 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
+                try 
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
+                    await billingSvc.SendPaymentRefundEmailAsync(payment.Id);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending refund email: {ex}");
+                }
+
                 return ServiceResult<object>.Ok(new {
                     id = payment.Id,
                     status = payment.Status,
@@ -1026,6 +1037,59 @@ namespace WebApplication1.Services
                 htmlMessage,
                 pdfBytes,
                 $"Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf"
+            );
+
+            return ServiceResult<object>.Ok(new { success = true });
+        }
+
+        public async Task<ServiceResult<object>> SendPaymentRefundEmailAsync(long id, CancellationToken ct = default)
+        {
+            var payment = await _context.PaymentsPayments
+                .AsNoTracking()
+                .Include(p => p.Student)
+                    .ThenInclude(s => s!.StudentsStudentprofile)
+                .Include(p => p.Membership)
+                    .ThenInclude(m => m!.Plan)
+                .Where(p => p.Id == id)
+                .FirstOrDefaultAsync(ct);
+
+            if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
+            if (payment.Student == null || string.IsNullOrEmpty(payment.Student.Email))
+                return ServiceResult<object>.Fail("Student email not found.");
+
+            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            
+            var subject = $"Payment Refunded - {payment.PaymentId ?? $"TXN{payment.Id}"}";
+            var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
+            var goal = payment.Student.StudentsStudentprofile?.Goal ?? "Excellence";
+            
+            var stats = new System.Collections.Generic.Dictionary<string, string> {
+                { "Goal", goal },
+                { "Plan Details", payment.Membership?.Plan?.Name ?? payment.Membership?.PlanNameSnapshot ?? "Standalone Payment" },
+                { "Original Amount", $"₹{payment.Amount:0.00}" },
+                { "Refunded Amount", $"₹{(payment.RefundAmount ?? payment.Amount):0.00}" },
+                { "Refund Date", payment.RefundedAt?.ToString("dd MMM yyyy") ?? DateTime.UtcNow.ToString("dd MMM yyyy") },
+                { "Reason", string.IsNullOrEmpty(payment.RefundReason) ? "Admin Refund" : payment.RefundReason }
+            };
+
+            var htmlMessage = EmailTemplateBuilder.BuildTemplate(
+                title: $"Payment Refunded",
+                subtitle: $"Dear {studentName}, your payment has been successfully refunded. Your refund receipt is attached as a PDF.",
+                imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/refund.png",
+                colorStart: "#eab308", // yellow-500
+                colorEnd: "#d97706",   // amber-600
+                highlight: null,
+                actionText: "View Dashboard",
+                footer: "If you have any questions, please contact us.",
+                stats: stats
+            );
+
+            await _emailService.SendEmailWithAttachmentAsync(
+                payment.Student.Email,
+                subject,
+                htmlMessage,
+                pdfBytes,
+                $"Refund_Receipt_{payment.PaymentId ?? $"TXN{payment.Id}"}.pdf"
             );
 
             return ServiceResult<object>.Ok(new { success = true });
