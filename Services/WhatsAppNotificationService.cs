@@ -51,106 +51,111 @@ namespace WebApplication1.Services
             return (baseUrl, sessionId, apiKey);
         }
 
-        public async Task<bool> SendTextMessageAsync(string phoneNumber, string message)
+        public Task<bool> SendTextMessageAsync(string phoneNumber, string message)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                // Format the phone number (assuming India +91 as default if length is 10)
-                if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
+                try
                 {
-                    phoneNumber = "91" + phoneNumber;
-                }
-                
-                var settings = await GetSettingsAsync();
-                string chatId = $"{phoneNumber}@c.us"; 
-                var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-text";
+                    // Format the phone number (assuming India +91 as default if length is 10)
+                    if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
+                    {
+                        phoneNumber = "91" + phoneNumber;
+                    }
+                    
+                    var settings = await GetSettingsAsync();
+                    string chatId = $"{phoneNumber}@c.us"; 
+                    var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-text";
 
-                var payload = new
-                {
-                    chatId = chatId,
-                    text = message
-                };
+                    var payload = new
+                    {
+                        chatId = chatId,
+                        text = message
+                    };
 
-                var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var json = JsonSerializer.Serialize(payload);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _httpClient.DefaultRequestHeaders.Clear();
-                if (!string.IsNullOrEmpty(settings.apiKey))
-                {
-                    _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
-                }
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    if (!string.IsNullOrEmpty(settings.apiKey))
+                    {
+                        _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
+                    }
 
-                var response = await _httpClient.PostAsync(endpoint, content);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"Successfully sent WhatsApp message to {phoneNumber}");
-                    return true;
+                    var response = await _httpClient.PostAsync(endpoint, content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation($"Successfully sent WhatsApp message to {phoneNumber}");
+                    }
+                    else
+                    {
+                        var error = await response.Content.ReadAsStringAsync();
+                        _logger.LogWarning($"Failed to send WhatsApp message to {phoneNumber}. Status: {response.StatusCode}, Error: {error}");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning($"Failed to send WhatsApp message to {phoneNumber}. Status: {response.StatusCode}, Error: {error}");
-                    return false;
+                    _logger.LogError(ex, $"Exception occurred while sending WhatsApp message to {phoneNumber}");
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Exception occurred while sending WhatsApp message to {phoneNumber}");
-                return false;
-            }
+            });
+
+            return Task.FromResult(true);
         }
-        public async Task<bool> SendDocumentAsync(string phoneNumber, byte[] fileBytes, string fileName, string caption = "")
+
+        public Task<bool> SendDocumentAsync(string phoneNumber, byte[] fileBytes, string fileName, string caption = "")
         {
-            try
+            _ = Task.Run(async () =>
             {
-                if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
+                try
                 {
-                    phoneNumber = "91" + phoneNumber;
-                }
-                
-                var settings = await GetSettingsAsync();
-                string chatId = $"{phoneNumber}@c.us"; 
-                var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-document";
+                    if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
+                    {
+                        phoneNumber = "91" + phoneNumber;
+                    }
+                    
+                    var settings = await GetSettingsAsync();
+                    string chatId = $"{phoneNumber}@c.us"; 
+                    var endpoint = $"{settings.baseUrl}/api/sessions/{settings.sessionId}/messages/send-document";
 
-                string base64File = Convert.ToBase64String(fileBytes);
-                var payload = new
-                {
-                    chatId = chatId,
-                    base64 = base64File,
-                    mimetype = "application/pdf",
-                    filename = fileName,
-                    caption = caption
-                };
+                    string base64File = Convert.ToBase64String(fileBytes);
+                    var payload = new
+                    {
+                        chatId = chatId,
+                        base64 = base64File,
+                        mimetype = "application/pdf",
+                        filename = fileName,
+                        caption = caption
+                    };
 
-                var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var json = JsonSerializer.Serialize(payload);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _httpClient.DefaultRequestHeaders.Clear();
-                if (!string.IsNullOrEmpty(settings.apiKey))
-                {
-                    _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
-                }
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    if (!string.IsNullOrEmpty(settings.apiKey))
+                    {
+                        _httpClient.DefaultRequestHeaders.Add("x-api-key", settings.apiKey);
+                    }
 
-                var response = await _httpClient.PostAsync(endpoint, content);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"Successfully sent WhatsApp document to {phoneNumber}");
-                    return true;
+                    var response = await _httpClient.PostAsync(endpoint, content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation($"Successfully sent WhatsApp document to {phoneNumber}");
+                    }
+                    else
+                    {
+                        var error = await response.Content.ReadAsStringAsync();
+                        _logger.LogWarning($"Failed to send WhatsApp document to {phoneNumber}. Status: {response.StatusCode}, Error: {error}");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning($"Failed to send WhatsApp document to {phoneNumber}. Status: {response.StatusCode}, Error: {error}");
-                    return false;
+                    _logger.LogError(ex, $"Exception occurred while sending WhatsApp document to {phoneNumber}");
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Exception occurred while sending WhatsApp document to {phoneNumber}");
-                return false;
-            }
+            });
+
+            return Task.FromResult(true);
         }
     }
 }
