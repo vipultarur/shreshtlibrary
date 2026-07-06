@@ -176,15 +176,7 @@ namespace WebApplication1.Services
                 paddingMinutes = parsedPadding;
             }
             
-            DateTime todayCutoffDateTime;
-            if (closeTime < openTime)
-            {
-                todayCutoffDateTime = todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes);
-            }
-            else
-            {
-                todayCutoffDateTime = todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
-            }
+            DateTime todayCutoffDateTime = todayDate.ToDateTime(openTime).AddMinutes(paddingMinutes);
             
             DateTime todayOpenDateTime = todayDate.ToDateTime(openTime);
             

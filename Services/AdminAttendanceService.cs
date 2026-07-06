@@ -324,9 +324,7 @@ namespace WebApplication1.Services
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            var todayCutoffDateTime = closeTime < openTime 
-                ? todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes)
-                : todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+            var todayCutoffDateTime = todayDate.ToDateTime(openTime).AddMinutes(paddingMinutes);
 
             bool isPastCutoff = targetDate < todayDate;
             if (targetDate == todayDate)
@@ -373,9 +371,7 @@ namespace WebApplication1.Services
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
             var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
 
-            var todayCutoffDateTime = closeTime < openTime 
-                ? todayDate.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes)
-                : todayDate.ToDateTime(closeTime).AddMinutes(paddingMinutes);
+            var todayCutoffDateTime = todayDate.ToDateTime(openTime).AddMinutes(paddingMinutes);
 
             bool isPastCutoff = targetDate < todayDate;
             if (targetDate == todayDate)
@@ -545,12 +541,12 @@ namespace WebApplication1.Services
                 .FirstOrDefaultAsync(a => a.StudentId == targetStudentId && a.Date == targetDate, ct);
 
             // Determine cutoff for LateMark
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.ClosingTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
-            var manualCutoff = closeTime.AddMinutes(manualPadding);
+            var manualCutoff = openTime.AddMinutes(manualPadding);
             var manualCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
 
             if (existingRecord != null)
@@ -565,7 +561,7 @@ namespace WebApplication1.Services
                      existingRecord.TimeIn = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
                 }
                 // Mark as late arrival if admin marks present after cutoff
-                var targetDateCutoff = targetDate.ToDateTime(closeTime).AddMinutes(manualPadding);
+                var targetDateCutoff = targetDate.ToDateTime(openTime).AddMinutes(manualPadding);
                 if (isPresent && _dateTimeProvider.IstNow > targetDateCutoff)
                 {
                     existingRecord.LateMark = true;
@@ -587,7 +583,7 @@ namespace WebApplication1.Services
                     Method = "MANUAL",
                     Note = dto.Note,
                     MarkedAt = DateTime.UtcNow,
-                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(closeTime).AddMinutes(manualPadding)
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(openTime).AddMinutes(manualPadding)
                 };
                 _context.AttendanceAttendances.Add(newRecord);
             }
@@ -606,7 +602,7 @@ namespace WebApplication1.Services
                     Method = "MANUAL",
                     AttendanceTime = isPresent ? _dateTimeProvider.IstNow.ToString("HH:mm:ss") : null,
                     UpdatedBy = "ADMIN",
-                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(closeTime).AddMinutes(manualPadding)
+                    LateMark = isPresent && _dateTimeProvider.IstNow > targetDate.ToDateTime(openTime).AddMinutes(manualPadding)
                 })
             });
 
@@ -660,12 +656,12 @@ namespace WebApplication1.Services
                 .Where(a => allValidStudentIds.Contains(a.StudentId) && parsedDates.Contains(a.Date))
                 .ToListAsync(ct);
 
-            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.ClosingTime }).FirstOrDefaultAsync(ct);
+            var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
             var paddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
-            var closeTime = libraryInfo?.ClosingTime ?? new TimeOnly(22, 0);
+            var openTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
             int manualPadding = 60;
             if (paddingSetting != null && int.TryParse(paddingSetting.Value, out int mp)) manualPadding = mp;
-            var manualCutoff = closeTime.AddMinutes(manualPadding);
+            var manualCutoff = openTime.AddMinutes(manualPadding);
 
             foreach (var dto in dtos)
             {
@@ -682,7 +678,7 @@ namespace WebApplication1.Services
 
                 var existingRecord = existingRecords.FirstOrDefault(a => a.StudentId == targetStudentId && a.Date == targetDate);
 
-                var targetDateCutoff = targetDate.ToDateTime(closeTime).AddMinutes(manualPadding);
+                var targetDateCutoff = targetDate.ToDateTime(openTime).AddMinutes(manualPadding);
                 var isLate = isPresent && _dateTimeProvider.IstNow > targetDateCutoff;
 
                 if (existingRecord != null)

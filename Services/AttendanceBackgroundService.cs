@@ -234,15 +234,7 @@ namespace WebApplication1.Services
 
 
                 // Calculate the exact cutoff DateTime for this record's date
-                DateTime cutoffDateTime;
-                if (closeTime < openTime) // Wraps around midnight
-                {
-                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddDays(1).AddMinutes(paddingMinutes);
-                }
-                else
-                {
-                    cutoffDateTime = record.Date.ToDateTime(closeTime).AddMinutes(paddingMinutes);
-                }
+                DateTime cutoffDateTime = record.Date.ToDateTime(openTime).AddMinutes(paddingMinutes);
 
                 if (currentIst > cutoffDateTime || isHoliday)
                 {

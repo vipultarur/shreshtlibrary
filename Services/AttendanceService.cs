@@ -91,7 +91,7 @@ namespace WebApplication1.Services
             }
             
             var startTime = openTime;
-            var endTime = closeTime.AddMinutes(paddingMinutes);
+            var endTime = openTime.AddMinutes(paddingMinutes);
             var currentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow); // IST Time
 
             if (startTime <= endTime)
@@ -128,7 +128,7 @@ namespace WebApplication1.Services
                     existing.QrCodeId = qr.Id;
                     existing.MarkedAt = _dateTimeProvider.UtcNow;
                     existing.Method = "QR";
-                    existing.LateMark = false; // By definition, if QR scan is allowed, they are not late (cutoff is closeTime + padding)
+                    existing.LateMark = false; // If they check in within the allowed window, they are not late
                     existing.UnderTime = false;
 
                     _context.CoreActivitylogs.Add(new CoreActivitylog

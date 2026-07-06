@@ -146,16 +146,17 @@ namespace WebApplication1.Services
                 var todayUnaccounted = studentsTotal - attendanceGroups.Count;
                 if (todayUnaccounted < 0) todayUnaccounted = 0;
 
-                var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime }).FirstOrDefaultAsync(ct);
+                var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().Select(l => new { l.OpeningTime, l.ClosingTime }).FirstOrDefaultAsync(ct);
                 var attPaddingSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "ATTENDANCE_PADDING_MINUTES", ct);
                 var libOpenTime = libraryInfo?.OpeningTime ?? new TimeOnly(10, 0);
                 int attPaddingMins = 60;
                 if (attPaddingSetting != null && int.TryParse(attPaddingSetting.Value, out int attParsed)) attPaddingMins = attParsed;
-                var attCutoff = libOpenTime.AddMinutes(attPaddingMins);
-                var attCurrentTime = TimeOnly.FromDateTime(_dateTimeProvider.IstNow);
+                
+                var todayDateOnlyForCutoff = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+                var attCutoffDateTime = todayDateOnlyForCutoff.ToDateTime(libOpenTime).AddMinutes(attPaddingMins);
 
                 int todayAbsent, finalPending;
-                if (attCurrentTime > attCutoff)
+                if (_dateTimeProvider.IstNow > attCutoffDateTime)
                 {
                     todayAbsent = todaySystemAbsent + todayPending + todayUnaccounted;
                     finalPending = 0;
