@@ -17,6 +17,9 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> GetNotificationsAsync(long userId, int page = 1, int page_size = 20, CancellationToken ct = default);
         Task<ServiceResult<object>> MarkNotificationReadAsync(long userId, int id, CancellationToken ct = default);
         Task<ServiceResult<object>> RegisterDeviceAsync(long userId, DeviceTokenPayload payload, CancellationToken ct = default);
+        Task<ServiceResult<object>> MarkAllReadAsync(long userId, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeleteNotificationAsync(long userId, int id, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeleteAllNotificationsAsync(long userId, CancellationToken ct = default);
     }
 
     public class StudentNotificationService : IStudentNotificationService
@@ -36,7 +39,7 @@ namespace WebApplication1.Services
                 .AsNoTracking()
                 .Include(sn => sn.Notification)
                     .ThenInclude(n => n.NotificationsNotificationimages)
-                .Where(sn => sn.StudentId == userId && sn.Notification.SentAt != null)
+                .Where(sn => sn.StudentId == userId && sn.Notification.SentAt != null && !sn.IsDeleted)
                 .OrderByDescending(sn => sn.Notification.CreatedAt);
 
             var totalCount = await query.CountAsync(ct);
@@ -88,6 +91,60 @@ namespace WebApplication1.Services
             }
 
             return ServiceResult<object>.Ok(null, "Notification marked as read");
+        }
+
+        public async Task<ServiceResult<object>> MarkAllReadAsync(long userId, CancellationToken ct = default)
+        {
+            var unread = await _context.NotificationsStudentnotifications
+                .Where(s => s.StudentId == userId && !s.IsRead && !s.IsDeleted)
+                .ToListAsync(ct);
+
+            if (unread.Any())
+            {
+                var now = DateTime.UtcNow;
+                foreach (var sn in unread)
+                {
+                    sn.IsRead = true;
+                    sn.ReadAt = now;
+                }
+                await _context.SaveChangesAsync(ct);
+            }
+
+            return ServiceResult<object>.Ok(null, "All notifications marked as read");
+        }
+
+        public async Task<ServiceResult<object>> DeleteNotificationAsync(long userId, int id, CancellationToken ct = default)
+        {
+            var sn = await _context.NotificationsStudentnotifications
+                .FirstOrDefaultAsync(s => s.StudentId == userId && s.NotificationId == id, ct);
+
+            if (sn == null || sn.IsDeleted)
+            {
+                return ServiceResult<object>.NotFound("Notification not found.");
+            }
+
+            sn.IsDeleted = true;
+            await _context.SaveChangesAsync(ct);
+
+            return ServiceResult<object>.Ok(null, "Notification deleted");
+        }
+
+        public async Task<ServiceResult<object>> DeleteAllNotificationsAsync(long userId, CancellationToken ct = default)
+        {
+            var notifications = await _context.NotificationsStudentnotifications
+                .Where(s => s.StudentId == userId && !s.IsDeleted)
+                .ToListAsync(ct);
+
+            if (notifications.Any())
+            {
+                foreach (var sn in notifications)
+                {
+                    sn.IsDeleted = true;
+                }
+                await _context.SaveChangesAsync(ct);
+            }
+
+            return ServiceResult<object>.Ok(null, "All notifications deleted");
         }
 
         public async Task<ServiceResult<object>> RegisterDeviceAsync(long userId, DeviceTokenPayload payload, CancellationToken ct = default)

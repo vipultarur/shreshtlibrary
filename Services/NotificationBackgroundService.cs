@@ -80,6 +80,22 @@ namespace WebApplication1.Services
                             { "type", notification.Type },
                             { "link_url", notification.LinkUrl ?? "" }
                         };
+
+                        if (!string.IsNullOrEmpty(notification.BackgroundImage))
+                        {
+                            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                            data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
+                        }
+                        else 
+                        {
+                            var firstImage = await context.NotificationsNotificationimages
+                                .FirstOrDefaultAsync(i => i.NotificationId == notification.Id, stoppingToken);
+                            if (firstImage != null)
+                            {
+                                var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                                data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
+                            }
+                        }
                         
                         try
                         {

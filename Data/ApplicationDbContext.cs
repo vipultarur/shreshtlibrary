@@ -1090,6 +1090,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.DeliveredAt).HasColumnName("delivered_at");
             entity.Property(e => e.EmailDelivered).HasColumnName("email_delivered");
             entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
             entity.Property(e => e.NotificationId).HasColumnName("notification_id");
             entity.Property(e => e.PushDelivered).HasColumnName("push_delivered");
             entity.Property(e => e.ReadAt).HasColumnName("read_at");

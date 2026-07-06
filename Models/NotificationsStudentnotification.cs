@@ -9,6 +9,8 @@ public partial class NotificationsStudentnotification
 
     public bool IsRead { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public DateTime? ReadAt { get; set; }
 
     public long NotificationId { get; set; }

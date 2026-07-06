@@ -254,6 +254,21 @@ namespace WebApplication1.Services
                         { "type", notification.Type },
                         { "link_url", notification.LinkUrl ?? "" }
                     };
+
+                    if (!string.IsNullOrEmpty(notification.BackgroundImage))
+                    {
+                        var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                        data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
+                    }
+                    else 
+                    {
+                        var firstImage = _context.NotificationsNotificationimages.FirstOrDefault(i => i.NotificationId == notification.Id);
+                        if (firstImage != null)
+                        {
+                            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                            data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
+                        }
+                    }
                     try
                     {
                         successCount = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
@@ -395,7 +410,10 @@ namespace WebApplication1.Services
                     student_name = sn.Student != null ? $"{sn.Student.FirstName} {sn.Student.LastName}" : "Unknown",
                     is_read = sn.IsRead,
                     read_at = sn.ReadAt,
-                    delivered_at = sn.DeliveredAt
+                    delivered_at = sn.DeliveredAt,
+                    push_delivered = sn.PushDelivered,
+                    email_delivered = sn.EmailDelivered,
+                    sms_delivered = sn.SmsDelivered
                 }).ToListAsync(ct);
 
             return ServiceResult<object>.Ok(recipients);

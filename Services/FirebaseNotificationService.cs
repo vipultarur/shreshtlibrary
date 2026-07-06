@@ -92,14 +92,21 @@ namespace WebApplication1.Services
                 return tokens.Count;
             }
 
+            var notificationObj = new Notification()
+            {
+                Title = title,
+                Body = body
+            };
+
+            if (data != null && data.ContainsKey("image_url") && !string.IsNullOrEmpty(data["image_url"]))
+            {
+                notificationObj.ImageUrl = data["image_url"];
+            }
+            
             var message = new MulticastMessage()
             {
                 Tokens = tokens,
-                Notification = new Notification()
-                {
-                    Title = title,
-                    Body = body
-                },
+                Notification = notificationObj,
                 Data = data ?? new Dictionary<string, string>()
             };
 
