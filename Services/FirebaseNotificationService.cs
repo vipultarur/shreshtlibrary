@@ -47,7 +47,7 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Firebase initialization failed (Check FIREBASE_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS). Using Mock Push Service.");
+                _logger.LogError(ex, "🔴 CRITICAL: Firebase initialization FAILED. Push notifications will NOT be delivered. Verify FIREBASE_CREDENTIALS_JSON environment variable on Render.");
             }
         }
 
