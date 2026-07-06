@@ -246,6 +246,9 @@ namespace WebApplication1.Services
                         .ToListAsync(ct);
                 
                 int successCount = 0;
+                _logger.LogInformation("[FCM DEBUG] SendPush={SendPush}, TokenCount={TokenCount}, ServiceNull={ServiceNull}",
+                    notification.SendPush, tokens.Count, _notificationService == null);
+
                 if (notification.SendPush && tokens.Count > 0 && _notificationService != null)
                 {
                     var data = new Dictionary<string, string>
@@ -273,10 +276,13 @@ namespace WebApplication1.Services
                     }
                     try
                     {
+                        _logger.LogInformation("[FCM DEBUG] Sending multicast to {Count} tokens. Title={Title}", tokens.Count, notification.Title);
                         successCount = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                        _logger.LogInformation("[FCM DEBUG] Multicast result: {SuccessCount}/{Total} delivered", successCount, tokens.Count);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        _logger.LogError(ex, "[FCM DEBUG] Multicast send FAILED with exception");
                         successCount = 0;
                     }
                 }
