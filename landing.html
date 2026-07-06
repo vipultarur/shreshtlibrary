@@ -1191,8 +1191,8 @@
 
                         // Update Map
                         const mapContainer = document.getElementById('map-container');
-                        if (mapContainer && info.google_map_url) {
-                            if (info.google_map_url.includes('<iframe')) {
+                        if (mapContainer) {
+                            if (info.google_map_url && info.google_map_url.includes('<iframe')) {
                                 mapContainer.innerHTML = info.google_map_url;
                                 const iframe = mapContainer.querySelector('iframe');
                                 if (iframe) {
@@ -1200,8 +1200,29 @@
                                     iframe.style.height = '100%';
                                     iframe.style.border = '0';
                                 }
-                            } else {
-                                mapContainer.innerHTML = `<div style="display: flex; height: 100%; align-items: center; justify-content: center; background: #e2e8f0;"><a href="${info.google_map_url}" target="_blank" class="btn btn-primary">Open in Google Maps</a></div>`;
+                            } else if (addressText || info.google_map_url) {
+                                let embedUrl = '';
+                                if (info.google_map_url && info.google_map_url.includes('/embed?')) {
+                                    embedUrl = info.google_map_url;
+                                } else {
+                                    const mapQuery = `${info.library_name || 'Library'}, ${addressText}`;
+                                    embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+                                }
+                                
+                                mapContainer.innerHTML = `
+                                    <iframe 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameborder="0" 
+                                        scrolling="no" 
+                                        marginheight="0" 
+                                        marginwidth="0" 
+                                        src="${embedUrl}" 
+                                        style="border:0;" 
+                                        allowfullscreen="" 
+                                        loading="lazy">
+                                    </iframe>
+                                `;
                             }
                         }
                         
