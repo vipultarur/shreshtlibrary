@@ -1206,7 +1206,7 @@
                                     embedUrl = info.google_map_url;
                                 } else {
                                     const mapQuery = `${info.library_name || 'Library'}, ${addressText}`;
-                                    embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+                                    embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&t=&z=14&ie=UTF8&output=embed`;
                                 }
                                 
                                 mapContainer.innerHTML = `
