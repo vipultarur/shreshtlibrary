@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using WebApplication1.Data;
 using WebApplication1.Models;
 
@@ -14,12 +15,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly WhatsAppNotificationService _whatsAppService;
+        private readonly ILogger<AdminNotificationService> _logger;
 
-        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService)
+        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService, ILogger<AdminNotificationService> logger)
         {
             _context = context;
             _notificationService = notificationService;
             _whatsAppService = whatsAppService;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<object>> GetNotificationTemplatesAsync(CancellationToken ct = default)
