@@ -59,6 +59,14 @@ namespace WebApplication1.Services
                 return true;
             }
 
+            // Merge title/body into Data so the Flutter background handler
+            // can display a local notification even if FCM strips the payload.
+            var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
+            {
+                ["title"] = title,
+                ["body"] = body
+            };
+
             var message = new Message()
             {
                 Token = token,
@@ -69,6 +77,7 @@ namespace WebApplication1.Services
                 },
                 Android = new AndroidConfig()
                 {
+                    Priority = Priority.High,
                     Notification = new AndroidNotification()
                     {
                         ChannelId = "admin_notifications",
@@ -77,7 +86,7 @@ namespace WebApplication1.Services
                         Visibility = NotificationVisibility.PUBLIC
                     }
                 },
-                Data = data ?? new Dictionary<string, string>()
+                Data = mergedData
             };
 
             try
@@ -113,6 +122,13 @@ namespace WebApplication1.Services
                 notificationObj.ImageUrl = data["image_url"];
             }
             
+            // Merge title/body into Data as fallback for Flutter background handler
+            var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
+            {
+                ["title"] = title,
+                ["body"] = body
+            };
+
             var message = new MulticastMessage()
             {
                 Tokens = tokens,
@@ -128,7 +144,7 @@ namespace WebApplication1.Services
                         Visibility = NotificationVisibility.PUBLIC
                     }
                 },
-                Data = data ?? new Dictionary<string, string>()
+                Data = mergedData
             };
 
             try
