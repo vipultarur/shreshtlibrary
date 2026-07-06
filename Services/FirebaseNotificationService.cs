@@ -116,9 +116,12 @@ namespace WebApplication1.Services
                 Notification = notificationObj,
                 Android = new AndroidConfig()
                 {
+                    Priority = Priority.High,
                     Notification = new AndroidNotification()
                     {
-                        ChannelId = "admin_notifications"
+                        ChannelId = "admin_notifications",
+                        DefaultSound = true,
+                        Priority = NotificationPriority.HIGH
                     }
                 },
                 Data = data ?? new Dictionary<string, string>()
