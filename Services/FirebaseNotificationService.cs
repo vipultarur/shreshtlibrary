@@ -71,7 +71,10 @@ namespace WebApplication1.Services
                 {
                     Notification = new AndroidNotification()
                     {
-                        ChannelId = "admin_notifications"
+                        ChannelId = "admin_notifications",
+                        DefaultSound = true,
+                        Priority = NotificationPriority.HIGH,
+                        Visibility = NotificationVisibility.PUBLIC
                     }
                 },
                 Data = data ?? new Dictionary<string, string>()
@@ -121,7 +124,8 @@ namespace WebApplication1.Services
                     {
                         ChannelId = "admin_notifications",
                         DefaultSound = true,
-                        Priority = NotificationPriority.HIGH
+                        Priority = NotificationPriority.HIGH,
+                        Visibility = NotificationVisibility.PUBLIC
                     }
                 },
                 Data = data ?? new Dictionary<string, string>()
