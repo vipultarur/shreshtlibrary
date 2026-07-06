@@ -55,7 +55,7 @@ namespace WebApplication1.Services
                     { "is_read", sn.IsRead },
                     { "read_at", sn.ReadAt },
                     { "created_at", sn.Notification.CreatedAt },
-                    { "sent_at", sn.Notification.SentAt?.ToString("MMM dd, yyyy h:mm tt") },
+                    { "sent_at", sn.Notification.SentAt },
                     { "subtitle", string.IsNullOrEmpty(sn.Notification.Subtitle) ? null : sn.Notification.Subtitle },
                     { "description", string.IsNullOrEmpty(sn.Notification.Description) ? null : sn.Notification.Description },
                     { "link_url", string.IsNullOrEmpty(sn.Notification.LinkUrl) ? null : sn.Notification.LinkUrl },
