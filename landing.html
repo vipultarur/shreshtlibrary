@@ -479,6 +479,47 @@
             display: inline-block;
         }
 
+        /* Gallery Masonry */
+        .gallery-grid {
+            column-count: 1;
+            column-gap: 16px;
+        }
+        @media (min-width: 600px) {
+            .gallery-grid { column-count: 2; }
+        }
+        @media (min-width: 900px) {
+            .gallery-grid { column-count: 3; }
+        }
+        .gallery-item {
+            break-inside: avoid;
+            margin-bottom: 16px;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .gallery-item img {
+            width: 100%;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+        .gallery-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 40px 16px 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: 'Outfit', sans-serif;
+            pointer-events: none;
+        }
+
         /* Reviews Section */
         .reviews-section {
             padding: 100px 0;
@@ -894,7 +935,7 @@
                 <p>Take a look at our state-of-the-art facilities.</p>
             </div>
             
-            <div class="features-grid" id="dynamic-gallery" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+            <div class="gallery-grid" id="dynamic-gallery">
                 <p style="text-align:center; color: var(--gray);">Loading gallery...</p>
             </div>
         </div>
@@ -1258,8 +1299,9 @@
                             return;
                         }
                         container.innerHTML = result.data.map(g => `
-                            <div style="border-radius: 12px; overflow: hidden; height: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <div style="background: url('${g.image_url}') center/cover; width: 100%; height: 100%;"></div>
+                            <div class="gallery-item">
+                                <img src="${g.image_url}" alt="${g.title || 'Gallery Image'}" loading="lazy" />
+                                ${g.title ? `<div class="gallery-caption">${g.title}</div>` : ''}
                             </div>
                         `).join('');
                     }
