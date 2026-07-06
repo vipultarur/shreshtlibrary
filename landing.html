@@ -647,6 +647,32 @@
             font-size: 14px;
         }
 
+        .social-link-dark {
+            transition: all 0.3s ease;
+        }
+        .social-link-dark:hover {
+            background: var(--dark);
+            color: white !important;
+            border-color: var(--dark) !important;
+        }
+
+        .social-link-light {
+            transition: all 0.3s ease;
+        }
+        .social-link-light:hover {
+            background: white;
+            color: var(--dark) !important;
+        }
+
+        .social-link-solid {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            color: white !important;
+        }
+        .social-link-solid:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
         /* Responsive Breakpoints */
         @media (max-width: 600px) {
             .feat-card {
@@ -954,6 +980,8 @@
                     <p><strong>Phone:</strong> +91 99999 99999</p>
                     <p><strong>Email:</strong> contact@shreshtlibrary.com</p>
                 </div>
+                <div id="footer-social" style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                </div>
             </div>
         </div>
         <div class="footer-bottom">
@@ -1004,36 +1032,55 @@
                             if (descP) descP.textContent = info.description;
                         }
                         // Update contact info if available
-                        // Update contact info if available
                         const contactDiv = document.querySelector('.footer-contact');
                         const addressText = info.address_line1 ? `${info.address_line1} ${info.area ? ', ' + info.area : ''} ${info.city ? ', ' + info.city : ''} ${info.pin_code ? ' - ' + info.pin_code : ''}` : '';
+                        
+                        const addressIcon = `<svg style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+                        const phoneIcon = `<svg style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+                        const emailIcon = `<svg style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`;
+
                         if (contactDiv && (addressText || info.contact_number || info.email)) {
                             contactDiv.innerHTML = `
-                                ${addressText ? `<p><strong>Address:</strong> ${addressText}</p>` : ''}
-                                ${info.contact_number ? `<p><strong>Phone:</strong> ${info.contact_number}</p>` : ''}
-                                ${info.email ? `<p><strong>Email:</strong> ${info.email}</p>` : ''}
+                                ${addressText ? `<div style="display:flex;align-items:flex-start;margin-bottom:12px;">${addressIcon} <span style="flex:1">${addressText}</span></div>` : ''}
+                                ${info.contact_number ? `<div style="display:flex;align-items:center;margin-bottom:12px;">${phoneIcon} <span>${info.contact_number}</span></div>` : ''}
+                                ${info.email ? `<div style="display:flex;align-items:center;margin-bottom:12px;">${emailIcon} <span>${info.email}</span></div>` : ''}
                             `;
                         }
                         
                         const contactMain = document.getElementById('contact-info-main');
                         if (contactMain) {
                             contactMain.innerHTML = `
-                                ${addressText ? `<p><strong>Address:</strong> ${addressText}</p>` : ''}
-                                ${info.contact_number ? `<p style="margin-top: 8px;"><strong>Phone:</strong> ${info.contact_number}</p>` : ''}
-                                ${info.email ? `<p style="margin-top: 8px;"><strong>Email:</strong> ${info.email}</p>` : ''}
+                                ${addressText ? `<div style="display:flex;align-items:flex-start;margin-bottom:16px;color:var(--dark)">${addressIcon} <span style="flex:1">${addressText}</span></div>` : ''}
+                                ${info.contact_number ? `<div style="display:flex;align-items:center;margin-bottom:16px;color:var(--dark)">${phoneIcon} <span>${info.contact_number}</span></div>` : ''}
+                                ${info.email ? `<div style="display:flex;align-items:center;margin-bottom:16px;color:var(--dark)">${emailIcon} <span>${info.email}</span></div>` : ''}
                             `;
                         }
 
                         // Update Socials
+                        const fbIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`;
+                        const igIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+                        const waIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+                        const tgIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+                        const ytIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`;
+
+                        const renderSocials = (isSolid) => {
+                            let html = '';
+                            if (info.facebook_url) html += `<a href="${info.facebook_url}" target="_blank" class="${isSolid ? 'social-link-solid' : 'social-link-dark'}" style="padding: 10px; ${isSolid ? 'background: #1877F2; border-radius: 8px;' : 'color: var(--dark); border: 1px solid var(--border); border-radius: 50%;'} display:flex; align-items:center; justify-content:center; text-decoration:none;" title="Facebook">${fbIcon}</a>`;
+                            if (info.instagram_url) html += `<a href="${info.instagram_url}" target="_blank" class="${isSolid ? 'social-link-solid' : 'social-link-dark'}" style="padding: 10px; ${isSolid ? 'background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-radius: 8px;' : 'color: var(--dark); border: 1px solid var(--border); border-radius: 50%;'} display:flex; align-items:center; justify-content:center; text-decoration:none;" title="Instagram">${igIcon}</a>`;
+                            if (info.whatsapp_number) html += `<a href="https://wa.me/${info.whatsapp_number.replace(/[^0-9]/g, '')}" target="_blank" class="${isSolid ? 'social-link-solid' : 'social-link-dark'}" style="padding: 10px; ${isSolid ? 'background: #25D366; border-radius: 8px;' : 'color: var(--dark); border: 1px solid var(--border); border-radius: 50%;'} display:flex; align-items:center; justify-content:center; text-decoration:none;" title="WhatsApp">${waIcon}</a>`;
+                            if (info.telegram_url) html += `<a href="${info.telegram_url}" target="_blank" class="${isSolid ? 'social-link-solid' : 'social-link-dark'}" style="padding: 10px; ${isSolid ? 'background: #1DA1F2; border-radius: 8px;' : 'color: var(--dark); border: 1px solid var(--border); border-radius: 50%;'} display:flex; align-items:center; justify-content:center; text-decoration:none;" title="Telegram">${tgIcon}</a>`;
+                            if (info.youtube_url) html += `<a href="${info.youtube_url}" target="_blank" class="${isSolid ? 'social-link-solid' : 'social-link-dark'}" style="padding: 10px; ${isSolid ? 'background: #FF0000; border-radius: 8px;' : 'color: var(--dark); border: 1px solid var(--border); border-radius: 50%;'} display:flex; align-items:center; justify-content:center; text-decoration:none;" title="YouTube">${ytIcon}</a>`;
+                            return html || `<p style="color: ${isSolid ? 'white' : 'var(--dark)'}; font-size: 14px;">No social links provided.</p>`;
+                        };
+
                         const socialBlock = document.getElementById('contact-social');
                         if (socialBlock) {
-                            let socialsHtml = '';
-                            if (info.facebook_url) socialsHtml += `<a href="${info.facebook_url}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 14px;">Facebook</a>`;
-                            if (info.instagram_url) socialsHtml += `<a href="${info.instagram_url}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 14px;">Instagram</a>`;
-                            if (info.whatsapp_number) socialsHtml += `<a href="https://wa.me/${info.whatsapp_number.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 14px; color: #10b981; border-color: #10b981;">WhatsApp</a>`;
-                            if (info.telegram_url) socialsHtml += `<a href="${info.telegram_url}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 14px; color: #0ea5e9; border-color: #0ea5e9;">Telegram</a>`;
-                            if (info.youtube_url) socialsHtml += `<a href="${info.youtube_url}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 14px; color: #ef4444; border-color: #ef4444;">YouTube</a>`;
-                            socialBlock.innerHTML = socialsHtml || '<p style="color: var(--gray); font-size: 14px;">No social links provided.</p>';
+                            socialBlock.innerHTML = renderSocials(false);
+                        }
+
+                        const footerSocialBlock = document.getElementById('footer-social');
+                        if (footerSocialBlock) {
+                            footerSocialBlock.innerHTML = renderSocials(true);
                         }
 
                         // Update Map
