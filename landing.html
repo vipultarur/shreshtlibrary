@@ -899,57 +899,7 @@
         </div>
     </section>
 
-    <!-- Membership Details -->
-    <section class="features" id="membership" style="background: white;">
-        <div class="container">
-            <div class="sec-header">
-                <span class="sec-tag">Join Us</span>
-                <h2>Membership Information</h2>
-            </div>
-            <div class="features-grid">
-                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
-                    <h3>Registration Process</h3>
-                    <p id="mem-registration" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
-                </div>
-                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
-                    <h3>Required Documents</h3>
-                    <p id="mem-documents" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
-                </div>
-                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
-                    <h3>Membership Benefits</h3>
-                    <p id="mem-benefits" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
-                </div>
-                <div class="feat-card" style="flex-direction: column; text-align: left; align-items: start;">
-                    <h3>Details</h3>
-                    <p id="mem-details" style="color: var(--gray); margin-top: 8px; white-space: pre-wrap;"></p>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Capacity & Timing Info -->
-    <section class="features" style="background: #f8fafc;">
-        <div class="container">
-            <div class="sec-header">
-                <span class="sec-tag">At a Glance</span>
-                <h2>Library Stats & Hours</h2>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; text-align: center;">
-                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
-                    <h3 style="font-size: 32px; color: var(--primary);" id="stat-total-seats">-</h3>
-                    <p style="color: var(--gray);">Total Capacity</p>
-                </div>
-                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
-                    <h3 style="font-size: 32px; color: #10b981;" id="stat-available-seats">-</h3>
-                    <p style="color: var(--gray);">Available Seats</p>
-                </div>
-                <div style="background: white; padding: 32px; border-radius: 16px; box-shadow: var(--shadow-sm);">
-                    <h3 style="font-size: 24px; color: var(--dark);" id="stat-hours">-</h3>
-                    <p style="color: var(--gray);">Working Hours <span id="stat-off" style="display: block; font-size: 12px; margin-top: 4px;"></span></p>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- FAQ & Rules -->
     <section class="features" id="rules">
@@ -1127,13 +1077,23 @@
                             const fallback = document.getElementById('feature-fallback');
                             if (fallback) fallback.style.display = 'none';
                         }
-                        if (info.library_name) {
+                        if (info.tagline) {
+                            const h1 = document.querySelector('.hero h1');
+                            if (h1) h1.innerHTML = info.tagline.includes(info.library_name || '') ? info.tagline.replace(info.library_name, `<span>${info.library_name}</span>`) : info.tagline;
+                        } else if (info.library_name) {
                             const nameSpan = document.querySelector('.hero h1 span');
                             if (nameSpan) nameSpan.textContent = info.library_name;
+                        }
+                        
+                        if (info.library_name) {
                             const title = document.querySelector('title');
                             if (title) title.textContent = `${info.library_name} | Premium Quiet Study Spaces`;
                         }
-                        if (info.description) {
+
+                        if (info.welcome_message) {
+                            const descP = document.querySelector('.hero-desc');
+                            if (descP) descP.textContent = info.welcome_message;
+                        } else if (info.description) {
                             const descP = document.querySelector('.hero-desc');
                             if (descP) descP.textContent = info.description;
                         }
