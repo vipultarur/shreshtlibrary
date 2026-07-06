@@ -33,14 +33,15 @@ namespace WebApplication1.Services
                         {
                             Credential = GoogleCredential.FromJson(jsonCredentials)
                         });
+                        _logger.LogInformation("✅ Firebase initialized successfully from FIREBASE_CREDENTIALS_JSON.");
                     }
                     else
                     {
-                        // Fallback to GOOGLE_APPLICATION_CREDENTIALS (file path)
                         FirebaseApp.Create(new AppOptions()
                         {
                             Credential = GoogleCredential.GetApplicationDefault()
                         });
+                        _logger.LogInformation("✅ Firebase initialized from GOOGLE_APPLICATION_CREDENTIALS.");
                     }
                 }
                 _isFirebaseInitialized = true;
@@ -55,12 +56,11 @@ namespace WebApplication1.Services
         {
             if (!_isFirebaseInitialized)
             {
-                _logger.LogDebug("[Mock] Sending Push Notification to {Token}: {Title}", token, title);
-                return true;
+                _logger.LogWarning("[Mock] Firebase not initialized. Skipping push to single token.");
+                return false;
             }
 
-            // Merge title/body into Data so the Flutter background handler
-            // can display a local notification even if FCM strips the payload.
+            // DATA-ONLY message: Flutter handles display in ALL app states
             var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
             {
                 ["title"] = title,
@@ -70,21 +70,11 @@ namespace WebApplication1.Services
             var message = new Message()
             {
                 Token = token,
-                Notification = new Notification()
-                {
-                    Title = title,
-                    Body = body
-                },
+                // NO Notification object — data-only so Flutter controls display in all states
                 Android = new AndroidConfig()
                 {
                     Priority = Priority.High,
-                    Notification = new AndroidNotification()
-                    {
-                        ChannelId = "admin_notifications",
-                        DefaultSound = true,
-                        Priority = NotificationPriority.HIGH,
-                        Visibility = NotificationVisibility.PUBLIC
-                    }
+                    // No AndroidNotification here — Flutter handles it via flutter_local_notifications
                 },
                 Data = mergedData
             };
@@ -92,11 +82,12 @@ namespace WebApplication1.Services
             try
             {
                 string response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
+                _logger.LogInformation("[FCM] Single push delivered. MessageId={MessageId}", response);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending push notification to {Token}", token);
+                _logger.LogError(ex, "[FCM] Error sending single push to token {Token}", token);
                 return false;
             }
         }
@@ -107,22 +98,14 @@ namespace WebApplication1.Services
 
             if (!_isFirebaseInitialized)
             {
-                _logger.LogDebug("[Mock] Sending Multicast Push Notification to {Count} devices: {Title}", tokens.Count, title);
-                return tokens.Count;
+                _logger.LogWarning("[Mock] Firebase not initialized. Skipping multicast push to {Count} devices.", tokens.Count);
+                return 0;
             }
 
-            var notificationObj = new Notification()
-            {
-                Title = title,
-                Body = body
-            };
-
-            if (data != null && data.ContainsKey("image_url") && !string.IsNullOrEmpty(data["image_url"]))
-            {
-                notificationObj.ImageUrl = data["image_url"];
-            }
-            
-            // Merge title/body into Data as fallback for Flutter background handler
+            // DATA-ONLY message: Flutter handles display in ALL app states
+            // - App FOREGROUND  → FirebaseMessaging.onMessage fires → flutter_local_notifications shows it
+            // - App BACKGROUND  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
+            // - App TERMINATED  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
             var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
             {
                 ["title"] = title,
@@ -132,29 +115,36 @@ namespace WebApplication1.Services
             var message = new MulticastMessage()
             {
                 Tokens = tokens,
-                Notification = notificationObj,
+                // NO Notification object — data-only so Flutter controls display in all states
                 Android = new AndroidConfig()
                 {
                     Priority = Priority.High,
-                    Notification = new AndroidNotification()
-                    {
-                        ChannelId = "admin_notifications",
-                        DefaultSound = true,
-                        Priority = NotificationPriority.HIGH,
-                        Visibility = NotificationVisibility.PUBLIC
-                    }
+                    // No AndroidNotification — Flutter handles via flutter_local_notifications
                 },
                 Data = mergedData
             };
 
             try
             {
-                var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
+                _logger.LogInformation("[FCM] Sending data-only multicast to {Count} devices. Title={Title}", tokens.Count, title);
+                var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+                _logger.LogInformation("[FCM] Multicast done: {Success} success, {Failure} failure out of {Total}",
+                    response.SuccessCount, response.FailureCount, tokens.Count);
+
+                // Log individual failures for debugging
+                for (int i = 0; i < response.Responses.Count; i++)
+                {
+                    if (!response.Responses[i].IsSuccess)
+                    {
+                        _logger.LogWarning("[FCM] Token #{Index} failed: {Error}", i, response.Responses[i].Exception?.Message);
+                    }
+                }
+
                 return response.SuccessCount;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending multicast push notification to {Count} devices", tokens.Count);
+                _logger.LogError(ex, "[FCM] Multicast send FAILED for {Count} devices", tokens.Count);
                 return 0;
             }
         }
