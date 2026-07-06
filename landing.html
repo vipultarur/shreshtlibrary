@@ -520,6 +520,68 @@
             pointer-events: none;
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-close {
+            position: sticky;
+            top: 0;
+            float: right;
+            background: #f1f5f9;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dark);
+            z-index: 10;
+        }
+        .modal-close:hover {
+            background: #e2e8f0;
+        }
+        .modal-gallery-item {
+            margin-bottom: 24px;
+        }
+        .modal-gallery-item img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+
         /* Reviews Section */
         .reviews-section {
             padding: 100px 0;
@@ -938,6 +1000,9 @@
             <div class="gallery-grid" id="dynamic-gallery">
                 <p style="text-align:center; color: var(--gray);">Loading gallery...</p>
             </div>
+            <div id="gallery-btn-container" style="display: none; text-align: center; margin-top: 32px;">
+                <button onclick="openGalleryModal()" class="btn btn-primary">View All Gallery Images</button>
+            </div>
         </div>
     </section>
 
@@ -1298,12 +1363,31 @@
                             container.innerHTML = '<p style="text-align:center; color: var(--gray);">No gallery images.</p>';
                             return;
                         }
-                        container.innerHTML = result.data.map(g => `
-                            <div class="gallery-item">
+                        
+                        // Limit to 4 images for the main page preview
+                        const previewImages = result.data.slice(0, 4);
+                        container.innerHTML = previewImages.map(g => `
+                            <div class="gallery-item" onclick="openGalleryModal()" style="cursor: pointer;">
                                 <img src="${g.image_url}" alt="${g.title || 'Gallery Image'}" loading="lazy" />
                                 ${g.title ? `<div class="gallery-caption">${g.title}</div>` : ''}
                             </div>
                         `).join('');
+
+                        // If there are more than 4 images, show the "View All" button and populate the modal
+                        if (result.data.length > 4) {
+                            document.getElementById('gallery-btn-container').style.display = 'block';
+                        }
+                        
+                        // Populate modal with all images (full size/ratio in masonry)
+                        const modalContainer = document.getElementById('modal-gallery-grid');
+                        if (modalContainer) {
+                            modalContainer.innerHTML = result.data.map(g => `
+                                <div class="modal-gallery-item">
+                                    <img src="${g.image_url}" alt="${g.title || 'Gallery Image'}" loading="lazy" />
+                                    ${g.title ? `<p style="margin-top: 8px; font-weight: 500; color: var(--dark); text-align: center;">${g.title}</p>` : ''}
+                                </div>
+                            `).join('');
+                        }
                     }
                 }).catch(e => console.error("Error loading gallery:", e));
 
@@ -1313,6 +1397,27 @@
         }
         
         loadData();
+
+        // Modal Functions
+        window.openGalleryModal = function() {
+            document.getElementById('gallery-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+        window.closeGalleryModal = function() {
+            document.getElementById('gallery-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
     </script>
+
+    <!-- Gallery Modal -->
+    <div id="gallery-modal" class="modal-overlay" onclick="if(event.target === this) closeGalleryModal()">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeGalleryModal()">&times;</button>
+            <h2 style="margin-bottom: 24px; text-align: center; font-family: 'Outfit', sans-serif;">All Gallery Images</h2>
+            <div class="gallery-grid" id="modal-gallery-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>
