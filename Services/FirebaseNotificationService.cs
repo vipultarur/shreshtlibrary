@@ -67,6 +67,13 @@ namespace WebApplication1.Services
                     Title = title,
                     Body = body
                 },
+                Android = new AndroidConfig()
+                {
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = "admin_notifications"
+                    }
+                },
                 Data = data ?? new Dictionary<string, string>()
             };
 
@@ -107,6 +114,13 @@ namespace WebApplication1.Services
             {
                 Tokens = tokens,
                 Notification = notificationObj,
+                Android = new AndroidConfig()
+                {
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = "admin_notifications"
+                    }
+                },
                 Data = data ?? new Dictionary<string, string>()
             };
 
