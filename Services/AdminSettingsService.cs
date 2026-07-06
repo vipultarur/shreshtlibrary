@@ -34,7 +34,8 @@ namespace WebApplication1.Services
                     AllowNonPremiumSliders = true,
                     DefaultAllowedStudyMinutes = 0,
                     ExpiredStudentPermissions = "{\"allowed_paths\":[\"/api/v1/auth/\",\"/api/v1/student/profile/\",\"/api/v1/memberships/plans/\",\"/api/v1/payments/\",\"/api/v1/study/leaderboard/\",\"/api/v1/notifications/\"]}",
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    EnableWhatsappService = false
                 };
                 _context.LibraryAppconfigs.Add(appConfig);
                 await _context.SaveChangesAsync(ct);
@@ -68,7 +69,8 @@ namespace WebApplication1.Services
                 { "allow_non_premium_notifications", appConfig.AllowNonPremiumNotifications },
                 { "allow_non_premium_sliders", appConfig.AllowNonPremiumSliders },
                 { "allow_non_premium_library_info", appConfig.AllowNonPremiumLibraryInfo },
-                { "expired_student_permissions", safePermissions }
+                { "expired_student_permissions", safePermissions },
+                { "enable_whatsapp_service", appConfig.EnableWhatsappService }
             };
 
             if (role == "super_admin")
@@ -106,6 +108,9 @@ namespace WebApplication1.Services
                 appConfig = new LibraryAppconfig { UpdatedAt = DateTime.UtcNow, ExpiredStudentPermissions = "{}" };
                 _context.LibraryAppconfigs.Add(appConfig);
             }
+
+            if (payload.EnableWhatsappService.HasValue)
+                appConfig.EnableWhatsappService = payload.EnableWhatsappService.Value;
 
             if (payload.IsPremiumGatingEnabled.HasValue)
                 appConfig.IsPremiumGatingEnabled = payload.IsPremiumGatingEnabled.Value;

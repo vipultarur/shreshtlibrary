@@ -34,6 +34,8 @@ namespace WebApplication1.Services
             var info = await _context.LibraryLibraryinfos.AsNoTracking().OrderBy(i => i.Id).FirstOrDefaultAsync(ct);
             if (info == null) return ServiceResult<object>.Ok(null);
 
+            var appConfig = await _context.LibraryAppconfigs.AsNoTracking().OrderBy(i => i.Id).FirstOrDefaultAsync(ct);
+
             var responseData = new
             {
                 library_name = info.LibraryName,
@@ -91,7 +93,8 @@ namespace WebApplication1.Services
                 footer_text = info.FooterText,
 
                 created_at = info.CreatedAt,
-                updated_at = info.UpdatedAt
+                updated_at = info.UpdatedAt,
+                enable_whatsapp_service = appConfig?.EnableWhatsappService ?? false
             };
             
             _cache.Set(cacheKey, responseData, CacheDuration);

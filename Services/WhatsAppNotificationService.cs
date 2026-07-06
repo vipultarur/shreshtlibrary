@@ -51,12 +51,23 @@ namespace WebApplication1.Services
             return (baseUrl, sessionId, apiKey);
         }
 
+        private async Task<bool> IsWhatsappEnabledAsync()
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+            var appConfig = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                context.LibraryAppconfigs, c => true);
+            return appConfig?.EnableWhatsappService ?? false;
+        }
+
         public Task<bool> SendTextMessageAsync(string phoneNumber, string message)
         {
             _ = Task.Run(async () =>
             {
                 try
                 {
+                    if (!await IsWhatsappEnabledAsync()) return;
+
                     // Format the phone number (assuming India +91 as default if length is 10)
                     if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
                     {
@@ -109,6 +120,8 @@ namespace WebApplication1.Services
             {
                 try
                 {
+                    if (!await IsWhatsappEnabledAsync()) return;
+
                     if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
                     {
                         phoneNumber = "91" + phoneNumber;
@@ -163,6 +176,8 @@ namespace WebApplication1.Services
             {
                 try
                 {
+                    if (!await IsWhatsappEnabledAsync()) return;
+
                     if (phoneNumber.Length == 10 && !phoneNumber.StartsWith("91"))
                     {
                         phoneNumber = "91" + phoneNumber;

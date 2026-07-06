@@ -55,5 +55,8 @@ namespace WebApplication1.Models.DTOs
 
         [JsonPropertyName("wa_api_key")]
         public string? WaApiKey { get; set; }
+
+        [JsonPropertyName("enable_whatsapp_service")]
+        public bool? EnableWhatsappService { get; set; }
     }
 }

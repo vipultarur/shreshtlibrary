@@ -46,7 +46,11 @@ namespace WebApplication1.Services
             {
                 return ServiceResult<object>.Fail("Validation failed", errors);
             }
-            return ServiceResult<object>.Ok(null, "Available");
+            
+            var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
+            bool requireOtp = appConfig?.EnableWhatsappService ?? false;
+
+            return ServiceResult<object>.Ok(new { require_otp = requireOtp }, "Available");
         }
 
         public async Task<ServiceResult<object>> RegisterAsync(UserRegisterRequest request, string ipAddress, CancellationToken ct = default)
@@ -76,15 +80,21 @@ namespace WebApplication1.Services
                 errors["mobile"] = new[] { "Enter a valid 10-digit mobile number." };
             }
 
-            if (string.IsNullOrWhiteSpace(request.Otp))
+            var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
+            bool requireOtp = appConfig?.EnableWhatsappService ?? false;
+
+            if (requireOtp)
             {
-                errors["otp"] = new[] { "OTP is required for verification." };
-            }
-            else
-            {
-                if (!_cache.TryGetValue($"reg_otp_{request.Mobile}", out string expectedOtp) || expectedOtp != request.Otp)
+                if (string.IsNullOrWhiteSpace(request.Otp))
                 {
-                    errors["otp"] = new[] { "Invalid or expired OTP." };
+                    errors["otp"] = new[] { "OTP is required for verification." };
+                }
+                else
+                {
+                    if (!_cache.TryGetValue($"reg_otp_{request.Mobile}", out string expectedOtp) || expectedOtp != request.Otp)
+                    {
+                        errors["otp"] = new[] { "Invalid or expired OTP." };
+                    }
                 }
             }
 

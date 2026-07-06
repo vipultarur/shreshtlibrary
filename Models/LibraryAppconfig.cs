@@ -24,4 +24,6 @@ public partial class LibraryAppconfig
     public int DefaultAllowedStudyMinutes { get; set; }
 
     public string ExpiredStudentPermissions { get; set; } = null!;
+
+    public bool EnableWhatsappService { get; set; }
 }
