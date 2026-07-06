@@ -481,14 +481,14 @@
 
         /* Gallery Masonry */
         .gallery-grid {
-            column-count: 1;
-            column-gap: 16px;
+            column-count: 2;
+            column-gap: 12px;
         }
         @media (min-width: 600px) {
-            .gallery-grid { column-count: 2; }
+            .gallery-grid { column-count: 3; column-gap: 16px; }
         }
         @media (min-width: 900px) {
-            .gallery-grid { column-count: 3; }
+            .gallery-grid { column-count: 4; column-gap: 16px; }
         }
         .gallery-item {
             break-inside: avoid;
@@ -511,10 +511,10 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 40px 16px 16px;
+            padding: 30px 12px 12px;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
             color: white;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             font-family: 'Outfit', sans-serif;
             pointer-events: none;
