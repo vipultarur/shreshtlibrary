@@ -252,7 +252,9 @@ namespace WebApplication1.Services
                     {
                         { "notification_id", notification.Id.ToString() },
                         { "type", notification.Type },
-                        { "link_url", notification.LinkUrl ?? "" }
+                        { "link_url", notification.LinkUrl ?? "" },
+                        { "subtitle", notification.Subtitle ?? "" },
+                        { "link_button_text", notification.LinkButtonText ?? "" }
                     };
 
                     if (!string.IsNullOrEmpty(notification.BackgroundImage))
