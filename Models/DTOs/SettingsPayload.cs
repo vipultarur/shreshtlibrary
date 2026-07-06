@@ -58,5 +58,8 @@ namespace WebApplication1.Models.DTOs
 
         [JsonPropertyName("enable_whatsapp_service")]
         public bool? EnableWhatsappService { get; set; }
+
+        [JsonPropertyName("maintenance_mode")]
+        public bool? MaintenanceMode { get; set; }
     }
 }

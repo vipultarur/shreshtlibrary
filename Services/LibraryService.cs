@@ -36,6 +36,9 @@ namespace WebApplication1.Services
 
             var appConfig = await _context.LibraryAppconfigs.AsNoTracking().OrderBy(i => i.Id).FirstOrDefaultAsync(ct);
 
+            var maintenanceSetting = await _context.CoreGlobalsettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "MAINTENANCE_MODE", ct);
+            bool maintenanceMode = maintenanceSetting?.Value == "true";
+
             var responseData = new
             {
                 library_name = info.LibraryName,
@@ -94,7 +97,8 @@ namespace WebApplication1.Services
 
                 created_at = info.CreatedAt,
                 updated_at = info.UpdatedAt,
-                enable_whatsapp_service = appConfig?.EnableWhatsappService ?? false
+                enable_whatsapp_service = appConfig?.EnableWhatsappService ?? false,
+                maintenance_mode = maintenanceMode
             };
             
             _cache.Set(cacheKey, responseData, CacheDuration);

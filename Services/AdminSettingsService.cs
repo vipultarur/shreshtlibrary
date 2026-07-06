@@ -13,10 +13,12 @@ namespace WebApplication1.Services
     public class AdminSettingsService : IAdminSettingsService
     {
         private readonly ApplicationDbContext _context;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public AdminSettingsService(ApplicationDbContext context)
+        public AdminSettingsService(ApplicationDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> GetSettingsAsync(string role, CancellationToken ct = default)
@@ -70,7 +72,8 @@ namespace WebApplication1.Services
                 { "allow_non_premium_sliders", appConfig.AllowNonPremiumSliders },
                 { "allow_non_premium_library_info", appConfig.AllowNonPremiumLibraryInfo },
                 { "expired_student_permissions", safePermissions },
-                { "enable_whatsapp_service", appConfig.EnableWhatsappService }
+                { "enable_whatsapp_service", appConfig.EnableWhatsappService },
+                { "maintenance_mode", await GetMaintenanceMode(ct) }
             };
 
             if (role == "super_admin")
@@ -158,10 +161,15 @@ namespace WebApplication1.Services
 
             if (role == "super_admin")
             {
-                async Task UpdateGlobalSetting(string key, string value, string desc)
+                if (payload.MaintenanceMode.HasValue)
+                {
+                    await UpdateGlobalSetting("MAINTENANCE_MODE", payload.MaintenanceMode.Value ? "true" : "false", "App Maintenance Mode", ct);
+                }
+
+                async Task UpdateGlobalSetting(string key, string value, string desc, CancellationToken cancellationToken)
                 {
                     if (value == null) return;
-                    var setting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == key, ct);
+                    var setting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == key, cancellationToken);
                     if (setting == null)
                     {
                         _context.CoreGlobalsettings.Add(new CoreGlobalsetting { Key = key, Value = value, Description = desc });
@@ -172,27 +180,36 @@ namespace WebApplication1.Services
                     }
                 }
 
-                await UpdateGlobalSetting("smtp_host", payload.SmtpHost, "SMTP Host Server");
-                await UpdateGlobalSetting("smtp_port", payload.SmtpPort, "SMTP Port");
-                await UpdateGlobalSetting("smtp_user", payload.SmtpUser, "SMTP Username");
+                await UpdateGlobalSetting("smtp_host", payload.SmtpHost, "SMTP Host Server", ct);
+                await UpdateGlobalSetting("smtp_port", payload.SmtpPort, "SMTP Port", ct);
+                await UpdateGlobalSetting("smtp_user", payload.SmtpUser, "SMTP Username", ct);
                 if (!string.IsNullOrEmpty(payload.SmtpPass) && payload.SmtpPass != "******")
                 {
-                    await UpdateGlobalSetting("smtp_pass", payload.SmtpPass, "SMTP App Password");
+                    await UpdateGlobalSetting("smtp_pass", payload.SmtpPass, "SMTP App Password", ct);
                 }
-                await UpdateGlobalSetting("smtp_from_name", payload.SmtpFromName, "SMTP From Name");
-                await UpdateGlobalSetting("smtp_from_email", payload.SmtpFromEmail, "SMTP From Email Address");
+                await UpdateGlobalSetting("smtp_from_name", payload.SmtpFromName, "SMTP From Name", ct);
+                await UpdateGlobalSetting("smtp_from_email", payload.SmtpFromEmail, "SMTP From Email Address", ct);
                 
-                await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL");
-                await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID");
+                await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL", ct);
+                await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID", ct);
                 if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
                 {
-                    await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key");
+                    await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key", ct);
                 }
             }
 
+
+
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryInfo");
 
             return await GetSettingsAsync(role, ct);
+        }
+
+        private async Task<bool> GetMaintenanceMode(CancellationToken ct)
+        {
+            var maintenanceSetting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "MAINTENANCE_MODE", ct);
+            return maintenanceSetting?.Value == "true";
         }
     }
 }
