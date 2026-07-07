@@ -257,25 +257,28 @@ namespace WebApplication1.Services
                     var data = new Dictionary<string, string>
                     {
                         { "notification_id", notification.Id.ToString() },
-                        { "type", notification.Type },
-                        { "link_url", notification.LinkUrl ?? "" },
+                        { "type", notification.Type ?? "GENERAL" },
+                        { "layout", notification.Layout ?? "text_only" },
+                        { "display_mode", notification.DisplayMode ?? "persistent" },
+                        { "title", notification.Title ?? "" },
+                        { "body", notification.Body ?? "" },
                         { "subtitle", notification.Subtitle ?? "" },
+                        { "description", notification.Description ?? "" },
+                        { "link_url", notification.LinkUrl ?? "" },
                         { "link_button_text", notification.LinkButtonText ?? "" }
                     };
 
+                    var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
+
                     if (!string.IsNullOrEmpty(notification.BackgroundImage))
                     {
-                        var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
-                        data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
+                        data["background_image"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
                     }
-                    else 
+                    
+                    var firstImage = _context.NotificationsNotificationimages.FirstOrDefault(i => i.NotificationId == notification.Id);
+                    if (firstImage != null)
                     {
-                        var firstImage = _context.NotificationsNotificationimages.FirstOrDefault(i => i.NotificationId == notification.Id);
-                        if (firstImage != null)
-                        {
-                            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
-                            data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
-                        }
+                        data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
                     }
                     try
                     {
