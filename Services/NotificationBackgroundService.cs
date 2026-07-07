@@ -83,7 +83,7 @@ namespace WebApplication1.Services
 
                         if (!string.IsNullOrEmpty(notification.BackgroundImage))
                         {
-                            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
                             data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
                         }
                         else 
@@ -92,7 +92,7 @@ namespace WebApplication1.Services
                                 .FirstOrDefaultAsync(i => i.NotificationId == notification.Id, stoppingToken);
                             if (firstImage != null)
                             {
-                                var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5000";
+                                var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
                                 data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
                             }
                         }
