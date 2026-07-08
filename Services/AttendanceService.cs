@@ -346,7 +346,7 @@ namespace WebApplication1.Services
                     late_mark = a.LateMark,
                     under_time = a.UnderTime,
                     total_hours = a.TotalHours,
-                    status = a.Method == "PENDING" ? "Pending" : (!a.IsPresent ? "Absent" : (a.LateMark ? "Present (Arrived Late)" : "Present"))
+                    status = a.Method == "PENDING" ? "Pending" : (!a.IsPresent ? "Absent" : (a.LateMark ? "Arrived Late" : "Present"))
                 })
                 .ToListAsync(ct);
 

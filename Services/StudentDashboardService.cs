@@ -202,7 +202,7 @@ namespace WebApplication1.Services
                     {
                         attendanceTime = data.AttendanceToday.TimeIn.ToString("hh:mm tt");
                     }
-                    attendanceStatus = data.AttendanceToday.LateMark ? "Present (Arrived Late)" : "Present";
+                    attendanceStatus = data.AttendanceToday.LateMark ? "Arrived Late" : "Present";
                 }
                 else if (data.AttendanceToday.Method == "PENDING")
                 {
