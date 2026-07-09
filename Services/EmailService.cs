@@ -130,7 +130,7 @@ namespace WebApplication1.Services
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
-                Timeout = 15000
+                Timeout = 30000
             };
 
             using var mailMessage = new MailMessage
@@ -149,8 +149,8 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
-                throw; // Re-throw so callers can handle/log the failure
+                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Host: {Host}, Port: {Port} | Error: {ErrorMessage}", toEmail, subject, config.host, config.port, ex.Message);
+                throw new InvalidOperationException($"SMTP Error (Host: {config.host}, Port: {config.port}): {ex.Message}", ex);
             }
         }
 
