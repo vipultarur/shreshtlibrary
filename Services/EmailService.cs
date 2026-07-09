@@ -115,12 +115,11 @@ namespace WebApplication1.Services
                 return;
             }
 
-            // --- Safety check: never use SMTP sender as recipient ---
+            // --- Safety warning: sending to SMTP sender ---
             if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogError("[EMAIL BLOCKED] Attempted to send email to SMTP sender address '{ToEmail}'. This is a configuration error. Subject: '{Subject}'", toEmail, subject);
-                return;
+                _logger.LogWarning("[EMAIL] Note: Sending email to the SMTP sender address '{ToEmail}'. (Usually expected during testing)", toEmail);
             }
 
             _logger.LogInformation("[EMAIL] Sending → From: {From} | To: {To} | Subject: {Subject}",
