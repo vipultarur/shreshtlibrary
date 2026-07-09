@@ -46,52 +46,43 @@ namespace WebApplication1.Services
 
         private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail)> GetSmtpConfigAsync()
         {
-            // Start with appsettings defaults
-            var host = _config["EmailSettings:SmtpHost"];
-            var portString = _config["EmailSettings:SmtpPort"];
-            var user = _config["EmailSettings:SmtpUser"];
-            var pass = _config["EmailSettings:SmtpPass"];
-            var fromName = _config["EmailSettings:FromName"] ?? "Shresht Library";
-            var fromEmail = _config["EmailSettings:FromEmail"];
+            // ALL SMTP settings are read exclusively from the database (CoreGlobalsettings table).
+            // Configure via Admin Dashboard → Settings → SMTP Email Settings.
+            string host = null, portString = null, user = null, pass = null;
+            string fromName = "Shresht Library", fromEmail = null;
 
-            try
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var smtpKeys = new System.Collections.Generic.List<string>
             {
-                using var scope = _serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
-                // Batch all SMTP keys in a single DB query
-                var smtpKeys = new System.Collections.Generic.List<string> { "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email" };
-                var dbSettings = await context.CoreGlobalsettings
-                    .Where(s => smtpKeys.Contains(s.Key))
-                    .ToListAsync();
+                "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email"
+            };
 
-                string DbVal(string key) => dbSettings.FirstOrDefault(s => s.Key == key)?.Value;
+            var dbSettings = await context.CoreGlobalsettings
+                .Where(s => smtpKeys.Contains(s.Key))
+                .ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_host")))      host      = DbVal("smtp_host");
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_port")))      portString = DbVal("smtp_port");
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_user")))      user      = DbVal("smtp_user");
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_pass")))      pass      = DbVal("smtp_pass")?.Replace(" ", ""); // strip spaces from App Password
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_name"))) fromName  = DbVal("smtp_from_name");
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_email"))) fromEmail = DbVal("smtp_from_email");
+            string DbVal(string key) => dbSettings.FirstOrDefault(s => s.Key == key)?.Value?.Trim();
 
-                _logger.LogInformation("[EMAIL] SMTP config loaded from DB — Host: {Host}, Port: {Port}, User: {User}, FromEmail: {FromEmail}",
-                    DbVal("smtp_host") ?? "(fallback)", DbVal("smtp_port") ?? "(fallback)", DbVal("smtp_user") ?? "(fallback)", DbVal("smtp_from_email") ?? "(fallback)");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to retrieve SMTP settings from database. Falling back to appsettings.");
-            }
+            host      = DbVal("smtp_host");
+            portString = DbVal("smtp_port");
+            user      = DbVal("smtp_user");
+            pass      = DbVal("smtp_pass")?.Replace(" ", ""); // strip spaces from Google App Password
+            fromName  = DbVal("smtp_from_name") ?? "Shresht Library";
+            fromEmail = DbVal("smtp_from_email");
 
-            // fromEmail should always be the sender (SMTP account), never a student address
+            // If fromEmail not set separately, use the SMTP user as the sender
             if (string.IsNullOrWhiteSpace(fromEmail))
                 fromEmail = user;
-            
+
             int port = 587;
             if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
-            
-            _logger.LogInformation("[EMAIL] SMTP Config final — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
-                host, port, user, !string.IsNullOrEmpty(pass), fromEmail, fromName);
-            
+
+            _logger.LogInformation(
+                "[EMAIL] SMTP config from DB — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
+                host ?? "(not set)", port, user ?? "(not set)", !string.IsNullOrEmpty(pass), fromEmail ?? "(not set)", fromName);
+
             return (host, port, user, pass, fromName, fromEmail);
         }
 
