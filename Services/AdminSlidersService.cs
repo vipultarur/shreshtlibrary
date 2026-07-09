@@ -6,22 +6,24 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.DTOs.Admin;
 using WebApplication1.Models;
+using WebApplication1.Repositories;
 
 namespace WebApplication1.Services
 {
     public class AdminSlidersService : IAdminSlidersService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IRepository<LibraryHomeslider> _repository;
+        private readonly IRepository<LibraryDatabasefile> _fileRepository;
 
-        public AdminSlidersService(ApplicationDbContext context)
+        public AdminSlidersService(IRepository<LibraryHomeslider> repository, IRepository<LibraryDatabasefile> fileRepository)
         {
-            _context = context;
+            _repository = repository;
+            _fileRepository = fileRepository;
         }
 
         public async Task<ServiceResult<object>> GetSliders(CancellationToken ct = default)
         {
-            var sliders = await _context.LibraryHomesliders
-                .AsNoTracking()
+            var sliders = await _repository.Query(trackChanges: false)
                 .OrderBy(s => s.SortOrder)
                 .Select(s => new
                 {
@@ -77,16 +79,25 @@ namespace WebApplication1.Services
 
                 try
                 {
-                    var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
-                    await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, dto.Image.ContentType ?? "application/octet-stream", DateTime.UtcNow);
+                    _fileRepository.Add(new LibraryDatabasefile
+                    {
+                        Name = relativePath,
+                        Data = fileData,
+                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _fileRepository.SaveChangesAsync(ct);
                 }
-                catch {}
+                catch (Exception ex) 
+                {
+                    Serilog.Log.Error(ex, "Failed to insert slider database file record");
+                }
 
                 slider.Image = $"sliders/{fileName}";
             }
 
-            _context.LibraryHomesliders.Add(slider);
-            await _context.SaveChangesAsync(ct);
+            _repository.Add(slider);
+            await _repository.SaveChangesAsync(ct);
 
             return ServiceResult<object>.Ok(new
             {
@@ -103,7 +114,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateSlider(long id, SliderDto dto, CancellationToken ct = default)
         {
-            var slider = await _context.LibraryHomesliders.FirstOrDefaultAsync(s => s.Id == id, ct);
+            var slider = await _repository.GetByIdAsync(id, ct);
             if (slider == null) return ServiceResult<object>.NotFound("Slider not found.");
 
             if (dto.Title != null) slider.Title = dto.Title;
@@ -139,15 +150,25 @@ namespace WebApplication1.Services
 
                 try
                 {
-                    var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
-                    await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, dto.Image.ContentType ?? "application/octet-stream", DateTime.UtcNow);
+                    _fileRepository.Add(new LibraryDatabasefile
+                    {
+                        Name = relativePath,
+                        Data = fileData,
+                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _fileRepository.SaveChangesAsync(ct);
                 }
-                catch {}
+                catch (Exception ex) 
+                {
+                    Serilog.Log.Error(ex, "Failed to insert slider database file record");
+                }
 
                 slider.Image = $"sliders/{fileName}";
             }
 
-            await _context.SaveChangesAsync(ct);
+            _repository.Update(slider);
+            await _repository.SaveChangesAsync(ct);
 
             return ServiceResult<object>.Ok(new
             {
@@ -164,11 +185,11 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> DeleteSlider(long id, CancellationToken ct = default)
         {
-            var slider = await _context.LibraryHomesliders.FirstOrDefaultAsync(s => s.Id == id, ct);
+            var slider = await _repository.GetByIdAsync(id, ct);
             if (slider == null) return ServiceResult<object>.NotFound("Slider not found.");
 
-            _context.LibraryHomesliders.Remove(slider);
-            await _context.SaveChangesAsync(ct);
+            _repository.Remove(slider);
+            await _repository.SaveChangesAsync(ct);
 
             return ServiceResult<object>.Ok(new { message = "Slider deleted successfully." });
         }

@@ -117,9 +117,9 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("reviews")]
-        public async Task<IActionResult> GetReviews(CancellationToken ct)
+        public async Task<IActionResult> GetReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
-            var result = await _libraryService.GetReviews(ct);
+            var result = await _libraryService.GetReviews(page, page_size, ct);
             if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
         }

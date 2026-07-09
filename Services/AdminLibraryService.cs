@@ -25,8 +25,8 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> UpdateAchiever(long id, AdminLibraryController.AchieverDto dto, CancellationToken ct = default);
         Task<ServiceResult<object>> ToggleAchiever(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> DeleteAchiever(long id, CancellationToken ct = default);
-        Task<ServiceResult<object>> GetReviews(CancellationToken ct = default);
-        Task<ServiceResult<object>> GetPendingReviews(CancellationToken ct = default);
+        Task<ServiceResult<object>> GetReviews(int page = 1, int pageSize = 20, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetPendingReviews(int page = 1, int pageSize = 20, CancellationToken ct = default);
         Task<ServiceResult<object>> ApproveReview(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> RejectReview(long id, string reason, CancellationToken ct = default);
         Task<ServiceResult<object>> DeleteReview(long id, CancellationToken ct = default);
@@ -75,9 +75,10 @@ namespace WebApplication1.Services
                 var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
                 await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, file.ContentType ?? "application/octet-stream", DateTime.UtcNow);
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore DB save errors to not break the flow if table doesn't exist
+                Serilog.Log.Error(ex, "Failed to insert library database file record");
             }
 
             return relativePath;
@@ -485,9 +486,14 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok("Achiever deleted.");
         }
 
-        public async Task<ServiceResult<object>> GetReviews(CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetReviews(int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
-            var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+            var totalCount = await _context.LibraryReviews.CountAsync(ct);
+            var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student)
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
             var data = reviews.Select(r => new {
                 id = r.Id,
                 student_id = r.StudentId,
@@ -497,12 +503,17 @@ namespace WebApplication1.Services
                 is_published = r.IsApproved,
                 created_at = r.CreatedAt
             });
-            return ServiceResult<object>.Ok(data);
+            return ServiceResult<object>.Ok(new { results = data, total = totalCount, page, page_size = pageSize });
         }
 
-        public async Task<ServiceResult<object>> GetPendingReviews(CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetPendingReviews(int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
-            var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student).Where(r => r.IsApproved == false).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+            var query = _context.LibraryReviews.AsNoTracking().Include(r => r.Student).Where(r => r.IsApproved == false);
+            var totalCount = await query.CountAsync(ct);
+            var reviews = await query.OrderByDescending(r => r.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
             var data = reviews.Select(r => new {
                 id = r.Id,
                 student_id = r.StudentId,
@@ -512,7 +523,7 @@ namespace WebApplication1.Services
                 is_published = r.IsApproved,
                 created_at = r.CreatedAt
             });
-            return ServiceResult<object>.Ok(data);
+            return ServiceResult<object>.Ok(new { results = data, total = totalCount, page, page_size = pageSize });
         }
 
         public async Task<ServiceResult<object>> ApproveReview(long id, CancellationToken ct = default)

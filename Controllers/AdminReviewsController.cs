@@ -21,16 +21,16 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> GetReviews(CancellationToken ct)
+        public async Task<IActionResult> GetReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
-            var result = await _libraryService.GetReviews(ct);
+            var result = await _libraryService.GetReviews(page, page_size, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
         [HttpGet("pending")]
-        public async Task<IActionResult> GetPendingReviews(CancellationToken ct)
+        public async Task<IActionResult> GetPendingReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
-            var result = await _libraryService.GetPendingReviews(ct);
+            var result = await _libraryService.GetPendingReviews(page, page_size, ct);
             return Ok(ApiResponse<object>.Ok(result.Data)); 
         }
         [HttpPost("{id}/approve")]

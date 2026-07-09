@@ -297,12 +297,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Customuser).WithMany(p => p.AccountsCustomuserGroups)
                 .HasForeignKey(d => d.CustomuserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("accounts_customuser__customuser_id_bc55088e_fk_accounts_");
 
             entity.HasOne(d => d.Group).WithMany(p => p.AccountsCustomuserGroups)
                 .HasForeignKey(d => d.GroupId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("accounts_customuser_groups_group_id_86ba5f9e_fk_auth_group_id");
         });
 
@@ -324,12 +324,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Customuser).WithMany(p => p.AccountsCustomuserUserPermissions)
                 .HasForeignKey(d => d.CustomuserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("accounts_customuser__customuser_id_0deaefae_fk_accounts_");
 
             entity.HasOne(d => d.Permission).WithMany(p => p.AccountsCustomuserUserPermissions)
                 .HasForeignKey(d => d.PermissionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("accounts_customuser__permission_id_aea3d0e5_fk_auth_perm");
         });
 
@@ -383,7 +383,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.AttendanceAttendances)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("attendance_attendanc_student_id_94863613_fk_accounts_");
         });
 
@@ -485,12 +485,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Group).WithMany(p => p.AuthGroupPermissions)
                 .HasForeignKey(d => d.GroupId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("auth_group_permissions_group_id_b120cbf9_fk_auth_group_id");
 
             entity.HasOne(d => d.Permission).WithMany(p => p.AuthGroupPermissions)
                 .HasForeignKey(d => d.PermissionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("auth_group_permissio_permission_id_84c5c92e_fk_auth_perm");
         });
 
@@ -515,7 +515,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.ContentType).WithMany(p => p.AuthPermissions)
                 .HasForeignKey(d => d.ContentTypeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("auth_permission_content_type_id_2f476e4b_fk_django_co");
         });
 
@@ -595,7 +595,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.DjangoAdminLogs)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("django_admin_log_user_id_c564eba6_fk_accounts_customuser_id");
         });
 
@@ -859,7 +859,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.LibraryReviews)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("library_review_student_id_b855301a_fk_accounts_customuser_id");
         });
 
@@ -905,12 +905,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Plan).WithMany(p => p.MembershipsMemberships)
                 .HasForeignKey(d => d.PlanId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("memberships_membersh_plan_id_a999e2c0_fk_membershi");
 
             entity.HasOne(d => d.Student).WithMany(p => p.MembershipsMemberships)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("memberships_membersh_student_id_aa07aea9_fk_accounts_");
         });
 
@@ -982,7 +982,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.NotificationsDevicetokens)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("notifications_device_student_id_206fe9a0_fk_accounts_");
         });
 
@@ -1072,7 +1072,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Notification).WithMany(p => p.NotificationsNotificationimages)
                 .HasForeignKey(d => d.NotificationId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("notifications_notifi_notification_id_433e3be0_fk_notificat");
         });
 
@@ -1099,12 +1099,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Notification).WithMany(p => p.NotificationsStudentnotifications)
                 .HasForeignKey(d => d.NotificationId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("notifications_studen_notification_id_c183c280_fk_notificat");
 
             entity.HasOne(d => d.Student).WithMany(p => p.NotificationsStudentnotifications)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("notifications_studen_student_id_269c68ed_fk_accounts_");
         });
 
@@ -1182,7 +1182,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.PaymentsPayments)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("payments_payment_student_id_b5fab56a_fk_accounts_customuser_id");
 
             entity.HasOne(d => d.VerifiedBy).WithMany(p => p.PaymentsPaymentVerifiedBies)
@@ -1274,12 +1274,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Seat).WithMany(p => p.SeatsSeatassignments)
                 .HasForeignKey(d => d.SeatId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("seats_seatassignment_seat_id_d5ddd646_fk_seats_seat_id");
 
             entity.HasOne(d => d.Student).WithMany(p => p.SeatsSeatassignments)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("seats_seatassignment_student_id_cab95c5c_fk_accounts_");
         });
 
@@ -1318,7 +1318,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Seat).WithMany(p => p.SeatsSeatchangelogSeats)
                 .HasForeignKey(d => d.SeatId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("seats_seatchangelog_seat_id_d31cdd48_fk_seats_seat_id");
 
             entity.HasOne(d => d.Student).WithMany(p => p.SeatsSeatchangelogs)
@@ -1345,7 +1345,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Floor).WithMany(p => p.SeatsSeatrows)
                 .HasForeignKey(d => d.FloorId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("seats_seatrow_floor_id_d4f49e54_fk_seats_floor_id");
         });
 
@@ -1373,7 +1373,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.StudentsReferralcodes)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("students_referralcod_student_id_ca5fc2fe_fk_accounts_");
         });
 
@@ -1394,12 +1394,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.ReferredStudent).WithMany(p => p.StudentsReferralhistoryReferredStudents)
                 .HasForeignKey(d => d.ReferredStudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("students_referralhis_referred_student_id_9f6f3db5_fk_accounts_");
 
             entity.HasOne(d => d.Referrer).WithMany(p => p.StudentsReferralhistoryReferrers)
                 .HasForeignKey(d => d.ReferrerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("students_referralhis_referrer_id_bb28ff49_fk_accounts_");
         });
 
@@ -1477,7 +1477,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.User).WithOne(p => p.StudentsStudentprofile)
                 .HasForeignKey<StudentsStudentprofile>(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("students_studentprof_user_id_43a83eee_fk_accounts_");
         });
 
@@ -1501,7 +1501,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Student).WithMany(p => p.StudyStudysessions)
                 .HasForeignKey(d => d.StudentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("study_studysession_student_id_4613795f_fk_accounts_");
         });
 
@@ -1519,7 +1519,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Token).WithOne(p => p.TokenBlacklistBlacklistedtoken)
                 .HasForeignKey<TokenBlacklistBlacklistedtoken>(d => d.TokenId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk");
         });
 

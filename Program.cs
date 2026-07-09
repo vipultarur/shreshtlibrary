@@ -215,6 +215,15 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1)
         });
     });
+    options.AddPolicy("OtpRateThrottle", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ip, _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 3,
+            Window = TimeSpan.FromMinutes(5)
+        });
+    });
     options.RejectionStatusCode = 429;
 });
 
@@ -382,8 +391,15 @@ app.MapGet("/media/{*path}", async (string path, WebApplication1.Data.Applicatio
             ".webp" => "image/webp",
             ".gif" => "image/gif",
             ".svg" => "image/svg+xml",
-            _ => "application/octet-stream"
+            _ => null
         };
+        
+        if (mime == null) 
+        {
+            logger.LogWarning("Blocked attempt to access non-image file: {Path}", fullPath);
+            return Results.Forbid();
+        }
+        
         return Results.File(fullPath, mime, enableRangeProcessing: true);
     }
 

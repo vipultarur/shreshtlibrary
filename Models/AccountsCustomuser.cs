@@ -39,6 +39,8 @@ public partial class AccountsCustomuser
 
     public int OtpAttempts { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual ICollection<AccountsCustomuserGroup> AccountsCustomuserGroups { get; set; } = new List<AccountsCustomuserGroup>();
 
     public virtual ICollection<AccountsCustomuserUserPermission> AccountsCustomuserUserPermissions { get; set; } = new List<AccountsCustomuserUserPermission>();

@@ -47,6 +47,8 @@ public partial class StudentsStudentprofile
 
     public DateOnly JoiningDate { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual ICollection<StudentsStudentprofile> InverseReferredBy { get; set; } = new List<StudentsStudentprofile>();
 
     public virtual StudentsStudentprofile? ReferredBy { get; set; }

@@ -297,7 +297,15 @@ namespace WebApplication1.Services
             try
             {
                 _context.AccountsCustomusers.Add(newUser);
-                await _context.SaveChangesAsync(ct);
+                try 
+                {
+                    await _context.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pgEx && pgEx.SqlState == "23505")
+                {
+                    if (transaction != null) await transaction.RollbackAsync(ct);
+                    return ServiceResult<object>.Fail("Validation failed", new Dictionary<string, string[]> { { "mobile_or_email", new[] { "Username, mobile, or email already exists." } } });
+                }
 
                 var newProfile = new StudentsStudentprofile
                 {
@@ -431,44 +439,32 @@ namespace WebApplication1.Services
             {
                 using var transaction = await _context.Database.BeginTransactionAsync(ct);
                 try
-            {
-                // Nullify foreign keys that shouldn't be deleted
-                await _context.SeatsSeats.Where(s => s.StudentId == userId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.StudentId, (int?)null), ct);
+                {
+                    // Soft delete user and profile
+                    student.IsDeleted = true;
+                    student.IsActive = false;
+                    
+                    if (student.StudentsStudentprofile != null)
+                    {
+                        student.StudentsStudentprofile.IsDeleted = true;
+                        student.StudentsStudentprofile.Status = "SUSPENDED";
+                        student.StudentsStudentprofile.SuspendedAt = DateTime.UtcNow;
+                    }
 
-                // Delete related records
-                await _context.NotificationsDevicetokens.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.AttendanceAttendances.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.PaymentsPayments.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.MembershipsMemberships.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.NotificationsAdmininboxnotifications.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.NotificationsStudentnotifications.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.StudyStudysessions.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.SeatsSeatassignments.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.SeatsSeatchangelogs.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.LibraryReviews.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                await _context.StudentsReferralhistories.Where(x => x.ReferredStudentId == userId || x.ReferrerId == userId).ExecuteDeleteAsync(ct);
-                await _context.StudentsReferralcodes.Where(x => x.StudentId == userId).ExecuteDeleteAsync(ct);
-                
-                // Clear out tokens
-                var tokenIds = _context.TokenBlacklistOutstandingtokens.Where(x => x.UserId == userId).Select(x => x.Id);
-                await _context.TokenBlacklistBlacklistedtokens.Where(x => tokenIds.Contains(x.TokenId)).ExecuteDeleteAsync(ct);
-                await _context.TokenBlacklistOutstandingtokens.Where(x => x.UserId == userId).ExecuteDeleteAsync(ct);
+                    // Nullify foreign keys that shouldn't be soft deleted (e.g., active seat)
+                    await _context.SeatsSeats.Where(s => s.StudentId == userId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.StudentId, (int?)null), ct);
 
-                // Clear out auth related rows
-                await _context.AccountsCustomuserGroups.Where(x => x.CustomuserId == userId).ExecuteDeleteAsync(ct);
-                await _context.AccountsCustomuserUserPermissions.Where(x => x.CustomuserId == userId).ExecuteDeleteAsync(ct);
-                await _context.CoreActivitylogs.Where(x => x.UserId == userId).ExecuteDeleteAsync(ct);
+                    // Clear out tokens
+                    var tokenIds = _context.TokenBlacklistOutstandingtokens.Where(x => x.UserId == userId).Select(x => x.Id);
+                    await _context.TokenBlacklistBlacklistedtokens.Where(x => tokenIds.Contains(x.TokenId)).ExecuteDeleteAsync(ct);
+                    await _context.TokenBlacklistOutstandingtokens.Where(x => x.UserId == userId).ExecuteDeleteAsync(ct);
 
-                if (student.StudentsStudentprofile != null)
-                    _context.StudentsStudentprofiles.Remove(student.StudentsStudentprofile);
-                _context.AccountsCustomusers.Remove(student);
-                
-                await _context.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-                
-                return ServiceResult<bool>.Ok(true);
-            }
+                    await _context.SaveChangesAsync(ct);
+                    await transaction.CommitAsync(ct);
+                    
+                    return ServiceResult<bool>.Ok(true);
+                }
             catch (Exception)
             {
                 await transaction.RollbackAsync(ct);
@@ -483,17 +479,19 @@ namespace WebApplication1.Services
             if (profile == null) return ServiceResult<object>.NotFound("Student not found");
 
             var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
-            var attendances = await _context.AttendanceAttendances
+            var attendancesRaw = await _context.AttendanceAttendances
                 .Where(a => a.StudentId == profile.UserId && a.Date >= thirtyDaysAgo)
                 .OrderBy(a => a.Date)
-                .Select(a => new {
-                    date = a.Date.ToString("yyyy-MM-dd"),
-                    is_present = a.IsPresent,
-                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
-                    time_out = a.TimeOut,
-                    total_hours = a.TotalHours
-                })
+                .Select(a => new { a.Date, a.IsPresent, a.MarkedAt, a.TimeIn, a.TimeOut, a.TotalHours })
                 .ToListAsync(ct);
+
+            var attendances = attendancesRaw.Select(a => new {
+                date = a.Date.ToString("yyyy-MM-dd"),
+                is_present = a.IsPresent,
+                time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
+                time_out = a.TimeOut,
+                total_hours = a.TotalHours
+            }).ToList();
 
             return ServiceResult<object>.Ok(new { period = "monthly", attendance = attendances, study = new object[] { } });
         }
@@ -642,7 +640,10 @@ namespace WebApplication1.Services
                 var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
                 await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, photo.ContentType ?? "application/octet-stream", DateTime.UtcNow);
             }
-            catch {}
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Failed to insert student photo database file record");
+            }
 
             student.StudentsStudentprofile!.ProfilePhoto = relativePath;
             student.StudentsStudentprofile.UpdatedAt = DateTime.UtcNow;
