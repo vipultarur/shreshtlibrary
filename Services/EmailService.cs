@@ -1,13 +1,14 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Net.Mail;
 using System.Threading.Tasks;
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace WebApplication1.Services
 {
@@ -88,125 +89,78 @@ namespace WebApplication1.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
         {
-            // --- Recipient validation ---
-            if (string.IsNullOrWhiteSpace(toEmail))
+            if (string.IsNullOrWhiteSpace(toEmail) || !toEmail.Contains('@'))
             {
-                _logger.LogWarning("[EMAIL SKIPPED] Recipient email is null or empty. Subject: '{Subject}'", subject);
-                return;
-            }
-            if (!toEmail.Contains('@'))
-            {
-                _logger.LogWarning("[EMAIL SKIPPED] Recipient email '{ToEmail}' is not a valid email address. Subject: '{Subject}'", toEmail, subject);
+                _logger.LogWarning("[EMAIL SKIPPED] Invalid recipient: '{ToEmail}'", toEmail);
                 return;
             }
 
             var config = await GetSmtpConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) ||
-                string.IsNullOrWhiteSpace(config.pass) || config.user.Contains("example.com") || config.user == "your-email@gmail.com")
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
             {
-                _logger.LogWarning("[EMAIL SKIPPED] SMTP not properly configured. Host='{Host}', User='{User}'", config.host, config.user);
-                throw new InvalidOperationException($"SMTP is not properly configured. Please check your Dashboard Settings. Host: {config.host}, User: {config.user}");
+                throw new InvalidOperationException($"SMTP not configured in database. Host: {config.host}, User: {config.user}");
             }
 
-            // --- Safety warning: sending to SMTP sender ---
-            if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("[EMAIL] Note: Sending email to the SMTP sender address '{ToEmail}'. (Usually expected during testing)", toEmail);
-            }
+            _logger.LogInformation("[EMAIL] Sending via MailKit → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
 
-            _logger.LogInformation("[EMAIL] Sending → From: {From} | To: {To} | Subject: {Subject}",
-                config.fromEmail, toEmail, subject);
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(config.fromName, config.fromEmail));
+            message.To.Add(MailboxAddress.Parse(toEmail.Trim()));
+            message.Subject = subject;
+            message.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = htmlMessage };
 
-            using var client = new SmtpClient(config.host, config.port)
-            {
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(config.user, config.pass),
-                EnableSsl = true,
-                Timeout = 15000
-            };
-
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(config.fromEmail, config.fromName),
-                Subject = subject,
-                Body = htmlMessage,
-                IsBodyHtml = true
-            };
-            mailMessage.To.Add(toEmail.Trim());
-
+            using var client = new MailKit.Net.Smtp.SmtpClient();
             try
             {
-                await client.SendMailAsync(mailMessage);
+                await client.ConnectAsync(config.host, config.port, SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync(config.user, config.pass);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
                 _logger.LogInformation("[EMAIL OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
-                throw; // Re-throw so callers can handle/log the failure
+                _logger.LogError(ex, "[EMAIL FAILED] → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                throw;
             }
         }
 
         public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string htmlMessage, byte[] attachmentData, string attachmentName)
         {
-            // --- Recipient validation ---
-            if (string.IsNullOrWhiteSpace(toEmail))
+            if (string.IsNullOrWhiteSpace(toEmail) || !toEmail.Contains('@'))
             {
-                _logger.LogWarning("[EMAIL SKIPPED] Recipient email is null or empty. Subject: '{Subject}'", subject);
-                return;
-            }
-            if (!toEmail.Contains('@'))
-            {
-                _logger.LogWarning("[EMAIL SKIPPED] Recipient email '{ToEmail}' is not a valid email address. Subject: '{Subject}'", toEmail, subject);
+                _logger.LogWarning("[EMAIL SKIPPED] Invalid recipient: '{ToEmail}'", toEmail);
                 return;
             }
 
             var config = await GetSmtpConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) ||
-                string.IsNullOrWhiteSpace(config.pass) || config.user.Contains("example.com") || config.user == "your-email@gmail.com")
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
             {
-                _logger.LogWarning("[EMAIL SKIPPED] SMTP not properly configured. Host='{Host}', User='{User}'", config.host, config.user);
-                throw new InvalidOperationException($"SMTP is not properly configured. Please check your Dashboard Settings. Host: {config.host}, User: {config.user}");
+                throw new InvalidOperationException($"SMTP not configured in database. Host: {config.host}, User: {config.user}");
             }
 
-            // --- Safety warning: sending to SMTP sender ---
-            if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("[EMAIL+ATTACHMENT] Note: Sending email to the SMTP sender address '{ToEmail}'. (Usually expected during testing)", toEmail);
-            }
-
-            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending → From: {From} | To: {To} | Subject: {Subject} | Attachment: {AttachmentName}",
+            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via MailKit → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
                 config.fromEmail, toEmail, subject, attachmentName);
 
-            using var client = new SmtpClient(config.host, config.port)
-            {
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(config.user, config.pass),
-                EnableSsl = true,
-                Timeout = 15000
-            };
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(config.fromName, config.fromEmail));
+            message.To.Add(MailboxAddress.Parse(toEmail.Trim()));
+            message.Subject = subject;
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(config.fromEmail, config.fromName),
-                Subject = subject,
-                Body = htmlMessage,
-                IsBodyHtml = true
-            };
-            mailMessage.To.Add(toEmail.Trim());
-
+            var builder = new BodyBuilder { HtmlBody = htmlMessage };
             if (attachmentData != null && attachmentData.Length > 0 && !string.IsNullOrEmpty(attachmentName))
-            {
-                var stream = new System.IO.MemoryStream(attachmentData);
-                mailMessage.Attachments.Add(new Attachment(stream, attachmentName, "application/pdf"));
-            }
+                builder.Attachments.Add(attachmentName, attachmentData, new MimeKit.ContentType("application", "pdf"));
+            message.Body = builder.ToMessageBody();
 
+            using var client = new MailKit.Net.Smtp.SmtpClient();
             try
             {
-                await client.SendMailAsync(mailMessage);
+                await client.ConnectAsync(config.host, config.port, SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync(config.user, config.pass);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
                 _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
