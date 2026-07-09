@@ -70,9 +70,12 @@ namespace WebApplication1.Services
                 if (!string.IsNullOrWhiteSpace(DbVal("smtp_host")))      host      = DbVal("smtp_host");
                 if (!string.IsNullOrWhiteSpace(DbVal("smtp_port")))      portString = DbVal("smtp_port");
                 if (!string.IsNullOrWhiteSpace(DbVal("smtp_user")))      user      = DbVal("smtp_user");
-                if (!string.IsNullOrWhiteSpace(DbVal("smtp_pass")))      pass      = DbVal("smtp_pass");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_pass")))      pass      = DbVal("smtp_pass")?.Replace(" ", ""); // strip spaces from App Password
                 if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_name"))) fromName  = DbVal("smtp_from_name");
                 if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_email"))) fromEmail = DbVal("smtp_from_email");
+
+                _logger.LogInformation("[EMAIL] SMTP config loaded from DB — Host: {Host}, Port: {Port}, User: {User}, FromEmail: {FromEmail}",
+                    DbVal("smtp_host") ?? "(fallback)", DbVal("smtp_port") ?? "(fallback)", DbVal("smtp_user") ?? "(fallback)", DbVal("smtp_from_email") ?? "(fallback)");
             }
             catch (Exception ex)
             {
@@ -86,8 +89,8 @@ namespace WebApplication1.Services
             int port = 587;
             if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
             
-            _logger.LogDebug("SMTP Config resolved — Host: {Host}, Port: {Port}, User: {User}, FromEmail: {FromEmail}, FromName: {FromName}",
-                host, port, user, user?.Length > 3 ? user[..3] + "***" : "***", fromName);
+            _logger.LogInformation("[EMAIL] SMTP Config final — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
+                host, port, user, !string.IsNullOrEmpty(pass), fromEmail, fromName);
             
             return (host, port, user, pass, fromName, fromEmail);
         }
@@ -130,7 +133,7 @@ namespace WebApplication1.Services
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
-                Timeout = 30000
+                Timeout = 15000
             };
 
             using var mailMessage = new MailMessage
@@ -149,8 +152,8 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Host: {Host}, Port: {Port} | Error: {ErrorMessage}", toEmail, subject, config.host, config.port, ex.Message);
-                throw new InvalidOperationException($"SMTP Error (Host: {config.host}, Port: {config.port}): {ex.Message}", ex);
+                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
+                throw; // Re-throw so callers can handle/log the failure
             }
         }
 
