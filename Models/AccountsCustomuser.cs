@@ -39,6 +39,7 @@ public partial class AccountsCustomuser
 
     public int OtpAttempts { get; set; }
 
+    [System.ComponentModel.DataAnnotations.Schema.Column("is_deleted")]
     public bool IsDeleted { get; set; }
 
     public virtual ICollection<AccountsCustomuserGroup> AccountsCustomuserGroups { get; set; } = new List<AccountsCustomuserGroup>();
