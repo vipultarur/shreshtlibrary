@@ -37,6 +37,7 @@ namespace WebApplication1.Services
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
         private readonly IServiceProvider _serviceProvider;
+        private static readonly System.Net.Http.HttpClient _brevoClient = new System.Net.Http.HttpClient();
 
         public EmailService(IConfiguration config, ILogger<EmailService> logger, IServiceProvider serviceProvider)
         {
@@ -45,7 +46,7 @@ namespace WebApplication1.Services
             _serviceProvider = serviceProvider;
         }
 
-        private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail)> GetSmtpConfigAsync()
+        private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail, string brevoApiKey)> GetSmtpConfigAsync()
         {
             // ALL SMTP settings are read exclusively from the database (CoreGlobalsettings table).
             // Configure via Admin Dashboard → Settings → SMTP Email Settings.
@@ -57,7 +58,7 @@ namespace WebApplication1.Services
 
             var smtpKeys = new System.Collections.Generic.List<string>
             {
-                "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email"
+                "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email", "brevo_api_key"
             };
 
             var dbSettings = await context.CoreGlobalsettings
@@ -90,7 +91,38 @@ namespace WebApplication1.Services
                 "[EMAIL] SMTP config from DB — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
                 host ?? "(not set)", port, user ?? "(not set)", !string.IsNullOrEmpty(pass), fromEmail ?? "(not set)", fromName);
 
-            return (host, port, user, pass, fromName, fromEmail);
+            var brevoApiKey = DbVal("brevo_api_key");
+            return (host, port, user, pass, fromName, fromEmail, brevoApiKey);
+        }
+
+        private async Task SendViaBrevoApiAsync(string apiKey, string fromName, string fromEmail, string toEmail, string subject, string htmlMessage, byte[] attachmentData = null, string attachmentName = null)
+        {
+            var payloadObj = new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["sender"] = new { name = fromName, email = fromEmail },
+                ["to"] = new[] { new { email = toEmail.Trim() } },
+                ["subject"] = subject,
+                ["htmlContent"] = htmlMessage
+            };
+
+            if (attachmentData != null && attachmentData.Length > 0)
+            {
+                payloadObj["attachment"] = new[] { new { content = Convert.ToBase64String(attachmentData), name = attachmentName ?? "attachment.pdf" } };
+            }
+
+            var json = System.Text.Json.JsonSerializer.Serialize(payloadObj);
+            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
+            request.Headers.Add("api-key", apiKey);
+            request.Content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await _brevoClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("[BREVO API FAILED] Status: {Status} | Response: {Body}", response.StatusCode, responseBody);
+                throw new InvalidOperationException($"Brevo API error ({(int)response.StatusCode}): {responseBody}");
+            }
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
@@ -103,12 +135,30 @@ namespace WebApplication1.Services
 
             var config = await GetSmtpConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
+            // Prefer Brevo HTTP API (bypasses port restrictions on Render/cloud hosting)
+            if (!string.IsNullOrWhiteSpace(config.brevoApiKey))
             {
-                throw new InvalidOperationException($"SMTP not configured in database. Host: {config.host}, User: {config.user}");
+                _logger.LogInformation("[EMAIL] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
+                try
+                {
+                    await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage);
+                    _logger.LogInformation("[EMAIL OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[EMAIL FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                    throw;
+                }
             }
 
-            _logger.LogInformation("[EMAIL] Sending via MailKit → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
+            // Fallback to SMTP (for local development)
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
+            {
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key or SMTP settings in database.");
+            }
+
+            _logger.LogInformation("[EMAIL] Sending via MailKit SMTP → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(config.fromName, config.fromEmail));
@@ -123,11 +173,11 @@ namespace WebApplication1.Services
                 await client.AuthenticateAsync(config.user, config.pass);
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
-                _logger.LogInformation("[EMAIL OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                _logger.LogInformation("[EMAIL OK] Delivered via SMTP → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL FAILED] → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                _logger.LogError(ex, "[EMAIL FAILED] SMTP → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
                 throw;
             }
         }
@@ -142,12 +192,31 @@ namespace WebApplication1.Services
 
             var config = await GetSmtpConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
+            // Prefer Brevo HTTP API
+            if (!string.IsNullOrWhiteSpace(config.brevoApiKey))
             {
-                throw new InvalidOperationException($"SMTP not configured in database. Host: {config.host}, User: {config.user}");
+                _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
+                    config.fromEmail, toEmail, subject, attachmentName);
+                try
+                {
+                    await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage, attachmentData, attachmentName);
+                    _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                    throw;
+                }
             }
 
-            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via MailKit → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
+            // Fallback to SMTP
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
+            {
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key or SMTP settings in database.");
+            }
+
+            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via MailKit SMTP → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
                 config.fromEmail, toEmail, subject, attachmentName);
 
             var message = new MimeMessage();
@@ -167,11 +236,11 @@ namespace WebApplication1.Services
                 await client.AuthenticateAsync(config.user, config.pass);
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
-                _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered via SMTP → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
+                _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] SMTP → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
                 throw;
             }
         }
@@ -317,7 +386,7 @@ namespace WebApplication1.Services
             var subject = "Your OTP Code 🔐";
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: $"Hello {studentName}!",
-                subtitle: "Use the OTP below to verify your identity. It is valid for <strong>15 minutes</strong>. Do not share it with anyone.",
+                subtitle: "Use the OTP below to verify your identity. It is valid for <strong>45 seconds</strong>. Do not share it with anyone.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/otp.png",
                 colorStart: "#fb923c", // orange-400
                 colorEnd: "#ef4444",   // red-500
@@ -336,7 +405,7 @@ namespace WebApplication1.Services
             var subject = "Password Reset OTP 🔑";
             var html = EmailTemplateBuilder.BuildTemplate(
                 title: $"Hello {studentName}, Reset Your Password",
-                subtitle: "We received a request to reset your password. Enter the OTP below in the app. It is valid for <strong>15 minutes</strong>.",
+                subtitle: "We received a request to reset your password. Enter the OTP below in the app. It is valid for <strong>45 seconds</strong>.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/forgot_password.png",
                 colorStart: "#fb7185", // rose-400
                 colorEnd: "#ec4899",   // pink-500

@@ -289,7 +289,7 @@ namespace WebApplication1.Services
 
             string rawOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
             user.Otp = WebApplication1.Utils.PasswordHasher.HashDjangoPassword(rawOtp);
-            user.OtpExpiry = System.DateTime.UtcNow.AddMinutes(5);
+            user.OtpExpiry = System.DateTime.UtcNow.AddSeconds(45);
             user.OtpAttempts = 0;
 
             var ip = ipAddress;
@@ -632,7 +632,7 @@ namespace WebApplication1.Services
                 using var sha256 = System.Security.Cryptography.SHA256.Create();
                 string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken))).ToLower();
                 user.Otp = hashedToken;
-                user.OtpExpiry = System.DateTime.UtcNow.AddMinutes(15);
+                user.OtpExpiry = System.DateTime.UtcNow.AddSeconds(45);
                 await _context.SaveChangesAsync(ct);
 
                 var ip = ipAddress;
