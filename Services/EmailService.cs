@@ -60,7 +60,7 @@ namespace WebApplication1.Services
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 
                 // Batch all SMTP keys in a single DB query
-                var smtpKeys = new[] { "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email" };
+                var smtpKeys = new System.Collections.Generic.List<string> { "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email" };
                 var dbSettings = await context.CoreGlobalsettings
                     .Where(s => smtpKeys.Contains(s.Key))
                     .ToListAsync();
