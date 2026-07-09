@@ -18,6 +18,7 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> LoginMobileAsync(LoginMobileRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> AdminLoginAsync(AdminLoginRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> ForgotPasswordAsync(ForgotPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
+        Task<ServiceResult<object>> VerifyForgotPasswordOtpAsync(VerifyResetOtpRequest request, CancellationToken ct = default);
         Task<ServiceResult<object>> ResetPasswordAsync(ResetPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> LogoutAsync(LogoutRequest request, string authHeader, string currentUserIdStr, string role, string ipAddress, string path, string method, CancellationToken ct = default);
         Task<ServiceResult<object>> RefreshTokenAsync(TokenRefreshRequest request, CancellationToken ct = default);

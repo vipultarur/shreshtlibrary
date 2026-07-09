@@ -132,6 +132,13 @@ namespace WebApplication1.Controllers
             return HandleResult(result);
         }
 
+        [HttpPost("forgot-password/verify")]
+        public async Task<IActionResult> VerifyForgotPasswordOtpAsync([FromBody] VerifyResetOtpRequest request, CancellationToken ct)
+        {
+            var result = await _authService.VerifyForgotPasswordOtpAsync(request, ct);
+            return HandleResult(result);
+        }
+
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request, CancellationToken ct)
         {
@@ -270,6 +277,15 @@ namespace WebApplication1.Controllers
     {
         [System.Text.Json.Serialization.JsonPropertyName("identifier")]
         public string Identifier { get; set; }
+    }
+
+    public class VerifyResetOtpRequest
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("identifier")]
+        public string Identifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("token")]
+        public string Token { get; set; }
     }
 
     public class ResetPasswordRequest

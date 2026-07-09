@@ -681,6 +681,32 @@ namespace WebApplication1.Services
             return ServiceResult<object>.NotFound("User not found.");
         }
 
+        public async Task<ServiceResult<object>> VerifyForgotPasswordOtpAsync(VerifyResetOtpRequest request, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(request.Identifier) || string.IsNullOrWhiteSpace(request.Token))
+            {
+                return ServiceResult<object>.Fail("Validation failed.", new Dictionary<string, string[]> { { "identifier", new[] { "This field is required." } }, { "token", new[] { "This field is required." } } });
+            }
+
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            string hashedToken = System.Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.Token))).ToLower();
+            
+            bool isEmail = request.Identifier.Contains("@");
+            var user = await _context.AccountsCustomusers.FirstOrDefaultAsync(u => 
+                (isEmail ? u.Email == request.Identifier : u.Mobile == request.Identifier) 
+                && u.Otp == hashedToken && u.OtpExpiry > System.DateTime.UtcNow, ct);
+
+            if (user != null)
+            {
+                // Extend OTP expiry to 15 minutes to allow them time to change password without a strict limit
+                user.OtpExpiry = System.DateTime.UtcNow.AddMinutes(15);
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok(null, "OTP verified successfully.");
+            }
+
+            return ServiceResult<object>.Fail("Invalid or expired OTP.", new Dictionary<string, string[]> { { "token", new[] { "Invalid or expired OTP." } } });
+        }
+
         public async Task<ServiceResult<object>> ResetPasswordAsync(ResetPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
