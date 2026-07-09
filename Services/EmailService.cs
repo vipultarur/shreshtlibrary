@@ -46,6 +46,7 @@ namespace WebApplication1.Services
 
         private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail)> GetSmtpConfigAsync()
         {
+            // Start with appsettings defaults
             var host = _config["EmailSettings:SmtpHost"];
             var portString = _config["EmailSettings:SmtpPort"];
             var user = _config["EmailSettings:SmtpUser"];
@@ -58,56 +59,79 @@ namespace WebApplication1.Services
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 
-                var dbHost = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_host");
-                if (dbHost != null && !string.IsNullOrEmpty(dbHost.Value)) host = dbHost.Value;
-                
-                var dbPort = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_port");
-                if (dbPort != null && !string.IsNullOrEmpty(dbPort.Value)) portString = dbPort.Value;
-                
-                var dbUser = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_user");
-                if (dbUser != null && !string.IsNullOrEmpty(dbUser.Value)) user = dbUser.Value;
-                
-                var dbPass = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_pass");
-                if (dbPass != null && !string.IsNullOrEmpty(dbPass.Value)) pass = dbPass.Value;
-                
-                var dbFromName = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_name");
-                if (dbFromName != null && !string.IsNullOrEmpty(dbFromName.Value)) fromName = dbFromName.Value;
-                
-                var dbFromEmail = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_email");
-                if (dbFromEmail != null && !string.IsNullOrEmpty(dbFromEmail.Value)) fromEmail = dbFromEmail.Value;
+                // Batch all SMTP keys in a single DB query
+                var smtpKeys = new[] { "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email" };
+                var dbSettings = await context.CoreGlobalsettings
+                    .Where(s => smtpKeys.Contains(s.Key))
+                    .ToListAsync();
+
+                string DbVal(string key) => dbSettings.FirstOrDefault(s => s.Key == key)?.Value;
+
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_host")))      host      = DbVal("smtp_host");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_port")))      portString = DbVal("smtp_port");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_user")))      user      = DbVal("smtp_user");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_pass")))      pass      = DbVal("smtp_pass");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_name"))) fromName  = DbVal("smtp_from_name");
+                if (!string.IsNullOrWhiteSpace(DbVal("smtp_from_email"))) fromEmail = DbVal("smtp_from_email");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to retrieve SMTP settings from database. Falling back to appsettings.");
             }
 
-            if (string.IsNullOrEmpty(fromEmail))
-            {
+            // fromEmail should always be the sender (SMTP account), never a student address
+            if (string.IsNullOrWhiteSpace(fromEmail))
                 fromEmail = user;
-            }
             
             int port = 587;
             if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
+            
+            _logger.LogDebug("SMTP Config resolved — Host: {Host}, Port: {Port}, User: {User}, FromEmail: {FromEmail}, FromName: {FromName}",
+                host, port, user, user?.Length > 3 ? user[..3] + "***" : "***", fromName);
             
             return (host, port, user, pass, fromName, fromEmail);
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
         {
-            var config = await GetSmtpConfigAsync();
-
-            if (string.IsNullOrEmpty(config.host) || string.IsNullOrEmpty(config.user) || string.IsNullOrEmpty(config.pass) || config.user == "your-email@gmail.com")
+            // --- Recipient validation ---
+            if (string.IsNullOrWhiteSpace(toEmail))
             {
-                _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
+                _logger.LogWarning("[EMAIL SKIPPED] Recipient email is null or empty. Subject: '{Subject}'", subject);
                 return;
             }
+            if (!toEmail.Contains('@'))
+            {
+                _logger.LogWarning("[EMAIL SKIPPED] Recipient email '{ToEmail}' is not a valid email address. Subject: '{Subject}'", toEmail, subject);
+                return;
+            }
+
+            var config = await GetSmtpConfigAsync();
+
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) ||
+                string.IsNullOrWhiteSpace(config.pass) || config.user.Contains("example.com") || config.user == "your-email@gmail.com")
+            {
+                _logger.LogWarning("[EMAIL SKIPPED] SMTP not properly configured. Host='{Host}', User='{User}'", config.host, config.user);
+                return;
+            }
+
+            // --- Safety check: never use SMTP sender as recipient ---
+            if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("[EMAIL BLOCKED] Attempted to send email to SMTP sender address '{ToEmail}'. This is a configuration error. Subject: '{Subject}'", toEmail, subject);
+                return;
+            }
+
+            _logger.LogInformation("[EMAIL] Sending → From: {From} | To: {To} | Subject: {Subject}",
+                config.fromEmail, toEmail, subject);
 
             using var client = new SmtpClient(config.host, config.port)
             {
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
-                Timeout = 10000 // 10 seconds timeout
+                Timeout = 15000
             };
 
             using var mailMessage = new MailMessage
@@ -117,35 +141,60 @@ namespace WebApplication1.Services
                 Body = htmlMessage,
                 IsBodyHtml = true
             };
-            mailMessage.To.Add(toEmail);
+            mailMessage.To.Add(toEmail.Trim());
 
             try
             {
                 await client.SendMailAsync(mailMessage);
-                _logger.LogInformation("Email sent to {ToEmail} with subject '{Subject}'.", toEmail, subject);
+                _logger.LogInformation("[EMAIL OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email to {ToEmail}", toEmail);
+                _logger.LogError(ex, "[EMAIL FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
+                throw; // Re-throw so callers can handle/log the failure
             }
         }
 
         public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string htmlMessage, byte[] attachmentData, string attachmentName)
         {
-            var config = await GetSmtpConfigAsync();
-
-            if (string.IsNullOrEmpty(config.host) || string.IsNullOrEmpty(config.user) || string.IsNullOrEmpty(config.pass) || config.user == "your-email@gmail.com")
+            // --- Recipient validation ---
+            if (string.IsNullOrWhiteSpace(toEmail))
             {
-                _logger.LogWarning("Email not sent. SMTP not configured in appsettings.");
+                _logger.LogWarning("[EMAIL SKIPPED] Recipient email is null or empty. Subject: '{Subject}'", subject);
                 return;
             }
+            if (!toEmail.Contains('@'))
+            {
+                _logger.LogWarning("[EMAIL SKIPPED] Recipient email '{ToEmail}' is not a valid email address. Subject: '{Subject}'", toEmail, subject);
+                return;
+            }
+
+            var config = await GetSmtpConfigAsync();
+
+            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) ||
+                string.IsNullOrWhiteSpace(config.pass) || config.user.Contains("example.com") || config.user == "your-email@gmail.com")
+            {
+                _logger.LogWarning("[EMAIL SKIPPED] SMTP not properly configured. Host='{Host}', User='{User}'", config.host, config.user);
+                return;
+            }
+
+            // --- Safety check: never use SMTP sender as recipient ---
+            if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("[EMAIL BLOCKED] Attempted to send email with attachment to SMTP sender address '{ToEmail}'. Subject: '{Subject}'", toEmail, subject);
+                return;
+            }
+
+            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending → From: {From} | To: {To} | Subject: {Subject} | Attachment: {AttachmentName}",
+                config.fromEmail, toEmail, subject, attachmentName);
 
             using var client = new SmtpClient(config.host, config.port)
             {
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
-                Timeout = 10000 // 10 seconds timeout
+                Timeout = 15000
             };
 
             using var mailMessage = new MailMessage
@@ -155,7 +204,7 @@ namespace WebApplication1.Services
                 Body = htmlMessage,
                 IsBodyHtml = true
             };
-            mailMessage.To.Add(toEmail);
+            mailMessage.To.Add(toEmail.Trim());
 
             if (attachmentData != null && attachmentData.Length > 0 && !string.IsNullOrEmpty(attachmentName))
             {
@@ -166,11 +215,12 @@ namespace WebApplication1.Services
             try
             {
                 await client.SendMailAsync(mailMessage);
-                _logger.LogInformation("Email with attachment sent to {ToEmail} with subject '{Subject}'.", toEmail, subject);
+                _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email to {ToEmail}", toEmail);
+                _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] Failed to deliver → To: {ToEmail} | Subject: '{Subject}' | Error: {ErrorMessage}", toEmail, subject, ex.Message);
+                throw;
             }
         }
 

@@ -174,7 +174,7 @@ namespace WebApplication1.Services
                         Description = dto.Description ?? "Library Description",
                         OwnerName = dto.OwnerName ?? "Admin",
                         ContactNumber = dto.ContactNumber ?? "0000000000",
-                        Email = dto.Email ?? "admin@example.com",
+                        Email = dto.Email ?? "",
                         AddressLine1 = dto.AddressLine1 ?? "Address 1",
                         Area = dto.Area ?? "Area",
                         City = dto.City ?? "City",
