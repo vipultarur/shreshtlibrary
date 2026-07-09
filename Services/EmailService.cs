@@ -80,6 +80,12 @@ namespace WebApplication1.Services
             int port = 587;
             if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
 
+            // Render free tier blocks port 587 and 465. Brevo supports 2525 which is often unblocked.
+            if (host != null && host.Contains("brevo.com", StringComparison.OrdinalIgnoreCase))
+            {
+                port = 2525;
+            }
+
             _logger.LogInformation(
                 "[EMAIL] SMTP config from DB — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
                 host ?? "(not set)", port, user ?? "(not set)", !string.IsNullOrEmpty(pass), fromEmail ?? "(not set)", fromName);
