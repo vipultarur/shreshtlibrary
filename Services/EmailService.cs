@@ -177,12 +177,11 @@ namespace WebApplication1.Services
                 return;
             }
 
-            // --- Safety check: never use SMTP sender as recipient ---
+            // --- Safety warning: sending to SMTP sender ---
             if (string.Equals(toEmail.Trim(), config.fromEmail?.Trim(), StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(toEmail.Trim(), config.user?.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogError("[EMAIL BLOCKED] Attempted to send email with attachment to SMTP sender address '{ToEmail}'. Subject: '{Subject}'", toEmail, subject);
-                return;
+                _logger.LogWarning("[EMAIL+ATTACHMENT] Note: Sending email to the SMTP sender address '{ToEmail}'. (Usually expected during testing)", toEmail);
             }
 
             _logger.LogInformation("[EMAIL+ATTACHMENT] Sending → From: {From} | To: {To} | Subject: {Subject} | Attachment: {AttachmentName}",
