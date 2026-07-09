@@ -57,6 +57,7 @@ namespace WebApplication1.Services
                         Layout = "text_only",
                         Subtitle = "",
                         Description = "",
+                        LinkUrl = "",          // Required NOT NULL — updated later if PDF is attached
                         LinkButtonText = "",
                         CreatedAt = now,
                         ScheduledAt = now,
