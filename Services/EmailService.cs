@@ -112,7 +112,7 @@ namespace WebApplication1.Services
                 string.IsNullOrWhiteSpace(config.pass) || config.user.Contains("example.com") || config.user == "your-email@gmail.com")
             {
                 _logger.LogWarning("[EMAIL SKIPPED] SMTP not properly configured. Host='{Host}', User='{User}'", config.host, config.user);
-                return;
+                throw new InvalidOperationException($"SMTP is not properly configured. Please check your Dashboard Settings. Host: {config.host}, User: {config.user}");
             }
 
             // --- Safety warning: sending to SMTP sender ---
