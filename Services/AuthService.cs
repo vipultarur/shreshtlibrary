@@ -648,18 +648,17 @@ namespace WebApplication1.Services
 
                 if (isEmail)
                 {
-                    string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
                     _ = Task.Run(async () =>
                     {
                         try {
                             using var scope = _scopeFactory.CreateScope();
                             var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                            await emailSvc.SendOtpEmailAsync(user.Email ?? "", user.FirstName ?? "Student", rawToken);
                         } catch (Exception ex) { 
-                            Console.WriteLine($"Error sending forgot password email: {ex}");
+                            Console.WriteLine($"Error sending forgot password OTP email: {ex}");
                         }
                     });
-                    return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
+                    return ServiceResult<object>.Ok(null, "Password reset OTP sent to your email.");
                 }
                 else
                 {

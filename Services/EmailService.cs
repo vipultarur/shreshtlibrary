@@ -104,6 +104,7 @@ namespace WebApplication1.Services
 
             using var client = new SmtpClient(config.host, config.port)
             {
+                UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
                 Timeout = 10000 // 10 seconds timeout
@@ -141,6 +142,7 @@ namespace WebApplication1.Services
 
             using var client = new SmtpClient(config.host, config.port)
             {
+                UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(config.user, config.pass),
                 EnableSsl = true,
                 Timeout = 10000 // 10 seconds timeout
