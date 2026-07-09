@@ -6,9 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
 
 namespace WebApplication1.Services
 {
@@ -46,53 +43,27 @@ namespace WebApplication1.Services
             _serviceProvider = serviceProvider;
         }
 
-        private async Task<(string host, int port, string user, string pass, string fromName, string fromEmail, string brevoApiKey)> GetSmtpConfigAsync()
+        private async Task<(string brevoApiKey, string fromName, string fromEmail)> GetBrevoConfigAsync()
         {
-            // ALL SMTP settings are read exclusively from the database (CoreGlobalsettings table).
-            // Configure via Admin Dashboard → Settings → SMTP Email Settings.
-            string host = null, portString = null, user = null, pass = null;
-            string fromName = "Shresht Library", fromEmail = null;
-
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var smtpKeys = new System.Collections.Generic.List<string>
+            var keys = new System.Collections.Generic.List<string>
             {
-                "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email", "brevo_api_key"
+                "brevo_api_key", "brevo_from_name", "brevo_from_email"
             };
 
             var dbSettings = await context.CoreGlobalsettings
-                .Where(s => smtpKeys.Contains(s.Key))
+                .Where(s => keys.Contains(s.Key))
                 .ToListAsync();
 
             string DbVal(string key) => dbSettings.FirstOrDefault(s => s.Key == key)?.Value?.Trim();
 
-            host      = DbVal("smtp_host");
-            portString = DbVal("smtp_port");
-            user      = DbVal("smtp_user");
-            pass      = DbVal("smtp_pass")?.Replace(" ", ""); // strip spaces from Google App Password
-            fromName  = DbVal("smtp_from_name") ?? "Shresht Library";
-            fromEmail = DbVal("smtp_from_email");
-
-            // If fromEmail not set separately, use the SMTP user as the sender
-            if (string.IsNullOrWhiteSpace(fromEmail))
-                fromEmail = user;
-
-            int port = 587;
-            if (int.TryParse(portString, out int parsedPort)) port = parsedPort;
-
-            // Render free tier blocks port 587 and 465. Brevo supports 2525 which is often unblocked.
-            if (host != null && host.Contains("brevo.com", StringComparison.OrdinalIgnoreCase))
-            {
-                port = 2525;
-            }
-
-            _logger.LogInformation(
-                "[EMAIL] SMTP config from DB — Host: {Host}, Port: {Port}, User: {User}, HasPassword: {HasPass}, FromEmail: {FromEmail}, FromName: {FromName}",
-                host ?? "(not set)", port, user ?? "(not set)", !string.IsNullOrEmpty(pass), fromEmail ?? "(not set)", fromName);
-
             var brevoApiKey = DbVal("brevo_api_key");
-            return (host, port, user, pass, fromName, fromEmail, brevoApiKey);
+            var fromName = DbVal("brevo_from_name") ?? "Shresht Library";
+            var fromEmail = DbVal("brevo_from_email") ?? "no-reply@shreshtlibrary.com";
+
+            return (brevoApiKey, fromName, fromEmail);
         }
 
         private async Task SendViaBrevoApiAsync(string apiKey, string fromName, string fromEmail, string toEmail, string subject, string htmlMessage, byte[] attachmentData = null, string attachmentName = null)
@@ -133,51 +104,22 @@ namespace WebApplication1.Services
                 return;
             }
 
-            var config = await GetSmtpConfigAsync();
+            var config = await GetBrevoConfigAsync();
 
-            // Prefer Brevo HTTP API (bypasses port restrictions on Render/cloud hosting)
-            if (!string.IsNullOrWhiteSpace(config.brevoApiKey))
+            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
             {
-                _logger.LogInformation("[EMAIL] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
-                try
-                {
-                    await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage);
-                    _logger.LogInformation("[EMAIL OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "[EMAIL FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
-                    throw;
-                }
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
-            // Fallback to SMTP (for local development)
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
-            {
-                throw new InvalidOperationException($"Email not configured. Set brevo_api_key or SMTP settings in database.");
-            }
-
-            _logger.LogInformation("[EMAIL] Sending via MailKit SMTP → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(config.fromName, config.fromEmail));
-            message.To.Add(MailboxAddress.Parse(toEmail.Trim()));
-            message.Subject = subject;
-            message.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = htmlMessage };
-
-            using var client = new MailKit.Net.Smtp.SmtpClient();
+            _logger.LogInformation("[EMAIL] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
             try
             {
-                await client.ConnectAsync(config.host, config.port, SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(config.user, config.pass);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                _logger.LogInformation("[EMAIL OK] Delivered via SMTP → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage);
+                _logger.LogInformation("[EMAIL OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL FAILED] SMTP → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                _logger.LogError(ex, "[EMAIL FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
                 throw;
             }
         }
@@ -190,57 +132,23 @@ namespace WebApplication1.Services
                 return;
             }
 
-            var config = await GetSmtpConfigAsync();
+            var config = await GetBrevoConfigAsync();
 
-            // Prefer Brevo HTTP API
-            if (!string.IsNullOrWhiteSpace(config.brevoApiKey))
+            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
             {
-                _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
-                    config.fromEmail, toEmail, subject, attachmentName);
-                try
-                {
-                    await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage, attachmentData, attachmentName);
-                    _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
-                    throw;
-                }
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
-            // Fallback to SMTP
-            if (string.IsNullOrWhiteSpace(config.host) || string.IsNullOrWhiteSpace(config.user) || string.IsNullOrWhiteSpace(config.pass))
-            {
-                throw new InvalidOperationException($"Email not configured. Set brevo_api_key or SMTP settings in database.");
-            }
-
-            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via MailKit SMTP → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
+            _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject} | File: {File}",
                 config.fromEmail, toEmail, subject, attachmentName);
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(config.fromName, config.fromEmail));
-            message.To.Add(MailboxAddress.Parse(toEmail.Trim()));
-            message.Subject = subject;
-
-            var builder = new BodyBuilder { HtmlBody = htmlMessage };
-            if (attachmentData != null && attachmentData.Length > 0 && !string.IsNullOrEmpty(attachmentName))
-                builder.Attachments.Add(attachmentName, attachmentData, new MimeKit.ContentType("application", "pdf"));
-            message.Body = builder.ToMessageBody();
-
-            using var client = new MailKit.Net.Smtp.SmtpClient();
             try
             {
-                await client.ConnectAsync(config.host, config.port, SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(config.user, config.pass);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered via SMTP → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
+                await SendViaBrevoApiAsync(config.brevoApiKey, config.fromName, config.fromEmail, toEmail, subject, htmlMessage, attachmentData, attachmentName);
+                _logger.LogInformation("[EMAIL+ATTACHMENT OK] Delivered via Brevo API → To: {ToEmail} | Subject: '{Subject}'", toEmail, subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] SMTP → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
+                _logger.LogError(ex, "[EMAIL+ATTACHMENT FAILED] Brevo API → To: {ToEmail} | Subject: '{Subject}' | Error: {Msg}", toEmail, subject, ex.Message);
                 throw;
             }
         }

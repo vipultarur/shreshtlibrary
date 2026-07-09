@@ -78,22 +78,16 @@ namespace WebApplication1.Services
 
             if (role == "super_admin")
             {
-                var smtpHost = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_host", ct);
-                var smtpPort = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_port", ct);
-                var smtpUser = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_user", ct);
-                var smtpPass = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_pass", ct);
-                var smtpFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_name", ct);
-                var smtpFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "smtp_from_email", ct);
+                var brevoApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_api_key", ct);
+                var brevoFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_name", ct);
+                var brevoFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_email", ct);
                 var waBaseUrl = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_base_url", ct);
                 var waSessionId = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_session_id", ct);
                 var waApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_api_key", ct);
 
-                result.Add("smtp_host", smtpHost?.Value ?? "");
-                result.Add("smtp_port", smtpPort?.Value ?? "");
-                result.Add("smtp_user", smtpUser?.Value ?? "");
-                result.Add("smtp_pass", smtpPass?.Value ?? "");
-                result.Add("smtp_from_name", smtpFromName?.Value ?? "");
-                result.Add("smtp_from_email", smtpFromEmail?.Value ?? "");
+                result.Add("brevo_api_key", brevoApiKey?.Value ?? "");
+                result.Add("brevo_from_name", brevoFromName?.Value ?? "");
+                result.Add("brevo_from_email", brevoFromEmail?.Value ?? "");
                 
                 result.Add("wa_base_url", waBaseUrl?.Value ?? "");
                 result.Add("wa_session_id", waSessionId?.Value ?? "");
@@ -180,15 +174,12 @@ namespace WebApplication1.Services
                     }
                 }
 
-                await UpdateGlobalSetting("smtp_host", payload.SmtpHost, "SMTP Host Server", ct);
-                await UpdateGlobalSetting("smtp_port", payload.SmtpPort, "SMTP Port", ct);
-                await UpdateGlobalSetting("smtp_user", payload.SmtpUser, "SMTP Username", ct);
-                if (!string.IsNullOrEmpty(payload.SmtpPass) && payload.SmtpPass != "******")
+                if (!string.IsNullOrEmpty(payload.BrevoApiKey) && payload.BrevoApiKey != "******")
                 {
-                    await UpdateGlobalSetting("smtp_pass", payload.SmtpPass, "SMTP App Password", ct);
+                    await UpdateGlobalSetting("brevo_api_key", payload.BrevoApiKey, "Brevo HTTP API Key", ct);
                 }
-                await UpdateGlobalSetting("smtp_from_name", payload.SmtpFromName, "SMTP From Name", ct);
-                await UpdateGlobalSetting("smtp_from_email", payload.SmtpFromEmail, "SMTP From Email Address", ct);
+                await UpdateGlobalSetting("brevo_from_name", payload.BrevoFromName, "Brevo From Name", ct);
+                await UpdateGlobalSetting("brevo_from_email", payload.BrevoFromEmail, "Brevo From Email Address", ct);
                 
                 await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL", ct);
                 await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID", ct);

@@ -29,23 +29,14 @@ namespace WebApplication1.Models.DTOs
         [JsonPropertyName("expired_student_permissions")]
         public JsonElement? ExpiredStudentPermissions { get; set; }
 
-        [JsonPropertyName("smtp_host")]
-        public string? SmtpHost { get; set; }
+        [JsonPropertyName("brevo_api_key")]
+        public string? BrevoApiKey { get; set; }
 
-        [JsonPropertyName("smtp_port")]
-        public string? SmtpPort { get; set; }
+        [JsonPropertyName("brevo_from_name")]
+        public string? BrevoFromName { get; set; }
 
-        [JsonPropertyName("smtp_user")]
-        public string? SmtpUser { get; set; }
-
-        [JsonPropertyName("smtp_pass")]
-        public string? SmtpPass { get; set; }
-
-        [JsonPropertyName("smtp_from_name")]
-        public string? SmtpFromName { get; set; }
-
-        [JsonPropertyName("smtp_from_email")]
-        public string? SmtpFromEmail { get; set; }
+        [JsonPropertyName("brevo_from_email")]
+        public string? BrevoFromEmail { get; set; }
 
         [JsonPropertyName("wa_base_url")]
         public string? WaBaseUrl { get; set; }
