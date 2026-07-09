@@ -308,23 +308,32 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
 
-                if (!string.IsNullOrWhiteSpace(student.Email))
+                if (!string.IsNullOrWhiteSpace(student.Email) || !string.IsNullOrWhiteSpace(student.Mobile))
                 {
                     var email = student.Email;
                     var planName = plan.Name;
                     var validUntil = endDate.ToString("dd MMM yyyy");
+                    var fName = student.FirstName ?? "Student";
+                    var studentId = student.Id;
                     
                     _ = Task.Run(async () =>
                     {
                         try
                         {
                             using var scope = _scopeFactory.CreateScope();
-                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendPlanDetailsEmailAsync(email, planName, validUntil, "Unassigned");
+                            if (!string.IsNullOrWhiteSpace(email))
+                            {
+                                var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                                await emailSvc.SendPlanDetailsEmailAsync(email, planName, validUntil, "Unassigned");
+                            }
+                            
+                            var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                            string whatsappMsg = $"📚 *Plan Activated*\n\nHi {fName},\nYour {planName} plan has been successfully activated. It is valid until {validUntil}. Happy studying!";
+                            await dispatcher.SendToStudentAsync(studentId, "Plan Activated ✅", $"Your {planName} plan is active until {validUntil}.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: whatsappMsg);
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Error sending plan details email: {ex}");
+                            Console.WriteLine($"Error sending plan details email/notification: {ex}");
                         }
                     });
                 }
@@ -682,10 +691,21 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
                         await billingSvc.SendPaymentReceiptEmailAsync(payment.Id);
+                        
+                        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                        byte[]? pdfBytes = null;
+                        var pdfResult = await billingSvc.GetPaymentReceiptPdfAsync(payment.Id);
+                        if (pdfResult.Success && pdfResult.Data is byte[] b)
+                        {
+                            pdfBytes = b;
+                        }
+                        
+                        string msg = $"🧾 *Payment Confirmed*\n\nYour payment of ₹{payment.Amount} has been recorded successfully. Please find your receipt attached.";
+                        await dispatcher.SendToStudentAsync(payload.student_id, "Payment Confirmed ✅", $"Payment of ₹{payment.Amount} recorded.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending receipt email: {ex}");
+                        Console.WriteLine($"Error sending receipt email/notification: {ex}");
                     }
                     
                 });
@@ -783,10 +803,25 @@ namespace WebApplication1.Services
                         using var scope = _scopeFactory.CreateScope();
                         var billingSvc = scope.ServiceProvider.GetRequiredService<IAdminBillingService>();
                         await billingSvc.SendPaymentReceiptEmailAsync(id);
+                        
+                        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                        byte[]? pdfBytes = null;
+                        var pdfResult = await billingSvc.GetPaymentReceiptPdfAsync(payment.Id);
+                        if (pdfResult.Success && pdfResult.Data is byte[] b)
+                        {
+                            pdfBytes = b;
+                        }
+                        
+                        var studentId = payment.StudentId;
+                        if (studentId > 0)
+                        {
+                            string msg = $"🧾 *Payment Verified*\n\nYour payment of ₹{payment.Amount} has been verified successfully. Please find your receipt attached.";
+                            await dispatcher.SendToStudentAsync(studentId, "Payment Verified ✅", $"Payment of ₹{payment.Amount} verified.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending receipt email: {ex}");
+                        Console.WriteLine($"Error sending receipt email/notification: {ex}");
                     }
 
                 });

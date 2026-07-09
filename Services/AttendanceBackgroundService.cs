@@ -263,48 +263,21 @@ namespace WebApplication1.Services
                     // Add Notification if it's not a holiday
                     if (!isHoliday)
                     {
-                        var notification = new NotificationsNotification
+                        try
                         {
-                            Title = "Attendance Update",
-                            Body = $"You have been marked Absent for {record.Date.ToString("dd MMM yyyy")} because you did not check in by the cutoff time.",
-                            Type = "ATTENDANCE",
-                            TargetGroup = "all",
-                            Target = "ALL",
-                            Audience = "selected",
-                            DisplayMode = "persistent",
-                            Layout = "text_only",
-                            Subtitle = "",
-                            Description = "",
-                            LinkButtonText = "",
-                            CreatedAt = nowUtc,
-                            ScheduledAt = nowUtc,
-                            SendPush = true,
-                            LinkUrl = "/attendance",
-                            FailureCount = 0,
-                            SuccessCount = 0,
-                            TotalRecipients = 1
-                        };
-                        context.NotificationsNotifications.Add(notification);
-                        
-                        var studentNotification = new NotificationsStudentnotification
+                            var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                            string stName = record.Student?.FirstName ?? "Student";
+                            string msg = $"❌ *Attendance Update*\n\nHi {stName},\nYou have been marked Absent for {record.Date:dd MMM yyyy} because you did not check in by the cutoff time.";
+                            await dispatcher.SendToStudentAsync(
+                                record.StudentId,
+                                "Attendance Update",
+                                $"You have been marked Absent for {record.Date:dd MMM yyyy} because you did not check in by the cutoff time.",
+                                WebApplication1.Utils.NotificationTypes.Attendance,
+                                whatsappMessage: msg);
+                        }
+                        catch (Exception ex)
                         {
-                            StudentId = record.StudentId,
-                            Notification = notification,
-                            IsRead = false
-                        };
-                        context.NotificationsStudentnotifications.Add(studentNotification);
-
-                        var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
-                        var mobile = record.Student?.Mobile;
-                        if (whatsapp != null && !string.IsNullOrWhiteSpace(mobile))
-                        {
-                            try
-                            {
-                                string stName = record.Student?.FirstName ?? "Student";
-                                string msg = $"❌ *Attendance Update*\n\nHi {stName},\nYou have been marked Absent for {record.Date:dd MMM yyyy} because you did not check in by the cutoff time.";
-                                await whatsapp.SendTextMessageAsync(mobile, msg);
-                            }
-                            catch { }
+                            _logger.LogError(ex, "Failed to send absent notification for student {Id}", record.StudentId);
                         }
                     }
                 }
@@ -429,7 +402,6 @@ namespace WebApplication1.Services
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
 
                 var tomorrow = today.AddDays(1);
                 var threeDays = today.AddDays(3);
@@ -486,15 +458,26 @@ namespace WebApplication1.Services
                             }
                         }
 
-                        if (whatsapp != null && !string.IsNullOrWhiteSpace(m.Student.Mobile) && !string.IsNullOrEmpty(whatsappMsg))
+                        if (!string.IsNullOrEmpty(whatsappMsg))
                         {
                             try
                             {
-                                await whatsapp.SendTextMessageAsync(m.Student.Mobile, whatsappMsg);
+                                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                                string title = m.EndDate == today ? "Plan Expired ⚠️" : "Plan Expiry Reminder ⏰";
+                                string body = m.EndDate == today 
+                                    ? $"Your {planName} plan has expired today." 
+                                    : $"Your {planName} plan will expire on {endDate}.";
+                                
+                                await dispatcher.SendToStudentAsync(
+                                    m.Student.Id,
+                                    title,
+                                    body,
+                                    WebApplication1.Utils.NotificationTypes.Expiry,
+                                    whatsappMessage: whatsappMsg);
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "Failed to send plan expiry WhatsApp to {Mobile}", m.Student.Mobile);
+                                _logger.LogError(ex, "Failed to send plan expiry notification to {Mobile}", m.Student.Mobile);
                             }
                         }
                     }
@@ -521,9 +504,6 @@ namespace WebApplication1.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var whatsapp = scope.ServiceProvider.GetService<WhatsAppNotificationService>();
-
-                if (whatsapp == null) return;
 
                 var yesterday = today.AddDays(-1);
                 
@@ -552,7 +532,7 @@ namespace WebApplication1.Services
                     int rank = 1;
                     foreach (var item in leaderboardData)
                     {
-                        if (item.Student != null && !string.IsNullOrWhiteSpace(item.Student.Mobile))
+                        if (item.Student != null)
                         {
                             try
                             {
@@ -562,11 +542,17 @@ namespace WebApplication1.Services
                                 
                                 string msg = $"{emoji} *Congratulations!* {emoji}\n\nHi {stName},\nYou achieved Rank {rank} on yesterday's leaderboard with {hoursStr} hours of study time! Keep up the great work and stay dedicated! 📚💪";
                                 
-                                await whatsapp.SendTextMessageAsync(item.Student.Mobile, msg);
+                                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                                await dispatcher.SendToStudentAsync(
+                                    item.Student.Id,
+                                    "Leaderboard Reward 🏆",
+                                    $"You achieved Rank {rank} with {hoursStr} hours! Keep it up!",
+                                    WebApplication1.Utils.NotificationTypes.General,
+                                    whatsappMessage: msg);
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "Failed to send leaderboard reward WhatsApp to {Mobile}", item.Student.Mobile);
+                                _logger.LogError(ex, "Failed to send leaderboard reward notification for student {Id}", item.Student.Id);
                             }
                         }
                         rank++;

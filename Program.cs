@@ -101,6 +101,7 @@ builder.Services.AddScoped<WebApplication1.Services.IStudentAdminService, WebApp
 builder.Services.AddScoped<WebApplication1.Services.IAdminSeatService, WebApplication1.Services.AdminSeatService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminAttendanceService, WebApplication1.Services.AdminAttendanceService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminNotificationService, WebApplication1.Services.AdminNotificationService>();
+builder.Services.AddScoped<WebApplication1.Services.INotificationDispatcher, WebApplication1.Services.NotificationDispatcher>();
 builder.Services.AddScoped<WebApplication1.Services.IAuthService, WebApplication1.Services.AuthService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminLibraryService, WebApplication1.Services.AdminLibraryService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminBillingService, WebApplication1.Services.AdminBillingService>();

@@ -309,13 +309,16 @@ namespace WebApplication1.Services
             
             if (!string.IsNullOrEmpty(user.Email))
             {
-                try {
-                    using var scope = _scopeFactory.CreateScope();
-                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                    await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
-                } catch (Exception ex) { 
-                    Console.WriteLine($"Error sending OTP email: {ex}");
-                }
+                _ = Task.Run(async () =>
+                {
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendOtpEmailAsync(user.Email, user.FirstName ?? "Student", rawOtp);
+                    } catch (Exception ex) { 
+                        Console.WriteLine($"Error sending OTP email: {ex}");
+                    }
+                });
             }
 
             if (!string.IsNullOrEmpty(user.Mobile))
@@ -646,13 +649,16 @@ namespace WebApplication1.Services
                 if (isEmail)
                 {
                     string resetLink = $"https://shreshtlibrary.onrender.com/reset-password?token={rawToken}";
-                    try {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
-                    } catch (Exception ex) { 
-                        Console.WriteLine($"Error sending forgot password email: {ex}");
-                    }
+                    _ = Task.Run(async () =>
+                    {
+                        try {
+                            using var scope = _scopeFactory.CreateScope();
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendForgotPasswordEmailAsync(user.Email ?? "", user.FirstName ?? "Student", resetLink);
+                        } catch (Exception ex) { 
+                            Console.WriteLine($"Error sending forgot password email: {ex}");
+                        }
+                    });
                     return ServiceResult<object>.Ok(null, "Password reset link sent to your email.");
                 }
                 else

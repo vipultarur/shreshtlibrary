@@ -323,17 +323,24 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 if (transaction != null) await transaction.CommitAsync(ct);
 
-                if (!string.IsNullOrWhiteSpace(payload.Email))
+                if (!string.IsNullOrWhiteSpace(payload.Email) || !string.IsNullOrWhiteSpace(payload.Mobile))
                 {
-                    var email = payload.Email!;
+                    var email = payload.Email ?? "";
                     var fName = payload.FirstName ?? "";
                     var lName = payload.LastName ?? "";
                     try {
                         using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendWelcomeEmailAsync(email, fName, lName);
+                        if (!string.IsNullOrWhiteSpace(email))
+                        {
+                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                            await emailSvc.SendWelcomeEmailAsync(email, fName, lName);
+                        }
+                        
+                        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                        string msg = $"🎉 Welcome to Shresht Library, {fName}!\nYour student ID is {newProfile.StudentId}. You can login using this ID/mobile number.";
+                        await dispatcher.SendToStudentAsync(newUser.Id, "Welcome to Shresht Library 🎉", "Your account has been created successfully.", WebApplication1.Utils.NotificationTypes.Account, whatsappMessage: msg);
                     } catch (Exception ex) { 
-                        Console.WriteLine($"Error sending welcome email on admin create: {ex}");
+                        Console.WriteLine($"Error sending welcome notification on admin create: {ex}");
                     }
                 }
 
@@ -518,12 +525,9 @@ namespace WebApplication1.Services
                         await emailSvc.SendSuspendedEmailAsync(email, suspensionReason);
                     }
                     
-                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                    if (!string.IsNullOrWhiteSpace(student.Mobile))
-                    {
-                        string msg = $"⚠️ Your library account has been suspended.\nReason: {(string.IsNullOrEmpty(suspensionReason) ? "Policy violation or unpaid dues" : suspensionReason)}\nContact Admin for details.";
-                        await whatsapp.SendTextMessageAsync(student.Mobile, msg);
-                    }
+                    var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                    string msg = $"⚠️ Your library account has been suspended.\nReason: {(string.IsNullOrEmpty(suspensionReason) ? "Policy violation or unpaid dues" : suspensionReason)}\nContact Admin for details.";
+                    await dispatcher.SendToStudentAsync(student.Id, "Account Suspended", string.IsNullOrEmpty(suspensionReason) ? "Your account has been suspended." : suspensionReason, WebApplication1.Utils.NotificationTypes.Account, whatsappMessage: msg);
                 }
                 catch (Exception ex)
                 {
@@ -544,31 +548,26 @@ namespace WebApplication1.Services
             student.StudentsStudentprofile.SuspensionReason = null;
             await _context.SaveChangesAsync(ct);
 
-            if (!string.IsNullOrWhiteSpace(student.Email))
+            _ = Task.Run(async () => 
             {
-                var email = student.Email!;
-
-                _ = Task.Run(async () => 
+                try
                 {
-                    try
+                    using var scope = _scopeFactory.CreateScope();
+                    var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    if (!string.IsNullOrWhiteSpace(student.Email))
                     {
-                        using var scope = _scopeFactory.CreateScope();
-                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        await emailSvc.SendActivatedEmailAsync(email);
-                        
-                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                        if (!string.IsNullOrWhiteSpace(student.Mobile))
-                        {
-                            string msg = "✅ Good news! Your Shresht Library account has been successfully reactivated. You can now access library facilities again.";
-                            await whatsapp.SendTextMessageAsync(student.Mobile, msg);
-                        }
+                        await emailSvc.SendActivatedEmailAsync(student.Email);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error sending activate notification: {ex}");
-                    }
-                });
-            }
+                    
+                    var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                    string msg = "✅ Good news! Your Shresht Library account has been successfully reactivated. You can now access library facilities again.";
+                    await dispatcher.SendToStudentAsync(student.Id, "Account Activated ✅", "Your account has been successfully reactivated.", WebApplication1.Utils.NotificationTypes.Account, whatsappMessage: msg);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending activate notification: {ex}");
+                }
+            });
 
             return ServiceResult<object>.Ok(new { student_id = pk, status = WebApplication1.Utils.Constants.StudentStatus.Live });
         }
