@@ -364,33 +364,33 @@ namespace WebApplication1.Services
         {
             var subject = "Your OTP Code 🔐";
             var html = EmailTemplateBuilder.BuildTemplate(
-                title: $"Hello {studentName}, Verify Your Login",
-                subtitle: "Use the following OTP to complete your sign in. Valid for 10 mins.",
+                title: $"Hello {studentName}!",
+                subtitle: "Use the OTP below to verify your identity. It is valid for <strong>15 minutes</strong>. Do not share it with anyone.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/otp.png",
                 colorStart: "#fb923c", // orange-400
                 colorEnd: "#ef4444",   // red-500
-                highlight: string.Join(" ", otp.ToCharArray()),
-                actionText: "Verify Now",
-                footer: "If you didn't request this, please ignore this email."
+                highlight: otp,        // Plain 6-digit OTP — NO spaces
+                actionText: null,      // No button needed, user enters OTP in app
+                footer: "If you didn't request this OTP, please ignore this email. Your account is safe."
             );
             await SendEmailAsync(toEmail, subject, html);
         }
 
         public async Task SendForgotPasswordEmailAsync(string toEmail, string studentName, string resetLink)
         {
-            // Extract the OTP from the end of the resetLink
-            string otp = resetLink.Split('=').LastOrDefault() ?? "unknown";
+            // This method kept for backward compatibility. New flow uses SendOtpEmailAsync directly.
+            string otp = resetLink.Contains('=') ? resetLink.Split('=').LastOrDefault() ?? "" : resetLink;
             
-            var subject = "Reset Your Password 🔑";
+            var subject = "Password Reset OTP 🔑";
             var html = EmailTemplateBuilder.BuildTemplate(
-                title: $"Hello {studentName}, Reset Password",
-                subtitle: $"We received a request to reset your password. Your 6-digit Reset OTP is: <strong>{otp}</strong>. You can enter this OTP in the app, or click the button below.",
+                title: $"Hello {studentName}, Reset Your Password",
+                subtitle: "We received a request to reset your password. Enter the OTP below in the app. It is valid for <strong>15 minutes</strong>.",
                 imageUrl: "https://raw.githubusercontent.com/tarurinfotech/shreshtibrary/main/public/images/emails/forgot_password.png",
                 colorStart: "#fb7185", // rose-400
                 colorEnd: "#ec4899",   // pink-500
-                actionText: "Reset via Web",
-                actionUrl: resetLink,
-                footer: "If you didn't request a reset, you can safely ignore this email."
+                highlight: otp,        // Plain OTP — no spaces
+                actionText: null,      // Enter OTP in the app
+                footer: "If you didn't request a password reset, please ignore this email. Your account is safe."
             );
             await SendEmailAsync(toEmail, subject, html);
         }
