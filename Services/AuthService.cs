@@ -648,17 +648,15 @@ namespace WebApplication1.Services
 
                 if (isEmail)
                 {
-                    _ = Task.Run(async () =>
-                    {
-                        try {
-                            using var scope = _scopeFactory.CreateScope();
-                            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendOtpEmailAsync(user.Email ?? "", user.FirstName ?? "Student", rawToken);
-                        } catch (Exception ex) { 
-                            Console.WriteLine($"Error sending forgot password OTP email: {ex}");
-                        }
-                    });
-                    return ServiceResult<object>.Ok(null, "Password reset OTP sent to your email.");
+                    try {
+                        using var scope = _scopeFactory.CreateScope();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        await emailSvc.SendOtpEmailAsync(user.Email ?? "", user.FirstName ?? "Student", rawToken);
+                        return ServiceResult<object>.Ok(null, "Password reset OTP sent to your email.");
+                    } catch (Exception ex) { 
+                        Console.WriteLine($"Error sending forgot password OTP email: {ex}");
+                        return ServiceResult<object>.Fail($"Failed to send email: {ex.Message}");
+                    }
                 }
                 else
                 {
