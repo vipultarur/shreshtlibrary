@@ -48,7 +48,7 @@ namespace WebApplication1.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Unauthorized"));
 
-            var result = await _profileService.UpdateProfileAsync(userId.Value, dto, ct);
+            var result = await _profileService.UpdateProfileAsync(userId.Value, dto, Request.Scheme, Request.Host.ToString(), ct);
             if (result == null) return NotFound(ApiResponse<object>.Fail("Profile not found"));
 
             return Ok(result);

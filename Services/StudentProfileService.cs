@@ -2,7 +2,9 @@ using System.Threading.Tasks;
 using System.Linq;
 using WebApplication1.Models.Responses;
 using WebApplication1.Models.DTOs.Student;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using System.IO;
 using System;
 using System.Threading;
@@ -13,10 +15,12 @@ namespace WebApplication1.Services
     public class StudentProfileService : IStudentProfileService
     {
         private readonly IStudentRepository _repository;
+        private readonly IWebHostEnvironment _env;
 
-        public StudentProfileService(IStudentRepository repository)
+        public StudentProfileService(IStudentRepository repository, IWebHostEnvironment env)
         {
             _repository = repository;
+            _env = env;
         }
 
         public async Task<ApiResponse<object>?> GetProfileAsync(long userId, string scheme, string host, CancellationToken ct = default)
@@ -41,7 +45,7 @@ namespace WebApplication1.Services
             });
         }
 
-        public async Task<ApiResponse<object>?> UpdateProfileAsync(long userId, UpdateProfileDto dto, CancellationToken ct = default)
+        public async Task<ApiResponse<object>?> UpdateProfileAsync(long userId, UpdateProfileDto dto, string scheme, string host, CancellationToken ct = default)
         {
             var user = await _repository.GetUserWithProfileAsync(userId, ct);
 
@@ -79,6 +83,7 @@ namespace WebApplication1.Services
                 dob = user.StudentsStudentprofile.Dob?.ToString("yyyy-MM-dd"),
                 caste = user.StudentsStudentprofile.Caste,
                 address = user.StudentsStudentprofile.Address,
+                profile_photo = !string.IsNullOrEmpty(user.StudentsStudentprofile.ProfilePhoto) ? $"{scheme}://{host}/media/{user.StudentsStudentprofile.ProfilePhoto}" : (string?)null,
                 parent_mobile = user.StudentsStudentprofile.ParentMobile
             });
         }
@@ -118,7 +123,11 @@ namespace WebApplication1.Services
             var profile = await _repository.GetProfileWithUserAsync(userId, ct);
             if (profile == null) return ApiResponse<object>.Fail("Profile not found");
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "media", "profiles");
+            var mediaPath = _env.IsDevelopment() 
+                ? Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "shreshtlibrary", "media"))
+                : Path.Combine(_env.ContentRootPath, "media");
+
+            var uploadsFolder = Path.Combine(mediaPath, "profiles");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
             var uniqueFileName = Guid.NewGuid().ToString() + ext;
