@@ -32,6 +32,24 @@ namespace WebApplication1.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet("/favicon.ico")]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<IActionResult> GetFaviconAsync(CancellationToken ct)
+        {
+            var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var result = await _libraryService.GetLibraryInfoAsync(mediaBaseUrl, ct);
+            if (result.Success && result.Data != null)
+            {
+                var logoUrl = result.Data.GetType().GetProperty("logo")?.GetValue(result.Data) as string;
+                if (!string.IsNullOrEmpty(logoUrl))
+                {
+                    return Redirect(logoUrl);
+                }
+            }
+            return NotFound();
+        }
+
+        [AllowAnonymous]
         [HttpGet("library/facilities")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetFacilitiesAsync(CancellationToken ct)
