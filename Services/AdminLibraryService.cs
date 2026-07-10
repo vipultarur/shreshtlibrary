@@ -489,6 +489,7 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> GetReviews(int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
             var totalCount = await _context.LibraryReviews.CountAsync(ct);
+            var totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 1;
             var reviews = await _context.LibraryReviews.AsNoTracking().Include(r => r.Student)
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip((page - 1) * pageSize)
@@ -496,34 +497,55 @@ namespace WebApplication1.Services
                 .ToListAsync(ct);
             var data = reviews.Select(r => new {
                 id = r.Id,
-                student_id = r.StudentId,
+                student = r.StudentId,
                 student_name = r.Student != null ? r.Student.FirstName + " " + r.Student.LastName : "Unknown",
                 rating = r.Rating,
                 comment = r.Comment,
-                is_published = r.IsApproved,
-                created_at = r.CreatedAt
+                is_approved = r.IsApproved,
+                rejection_reason = r.RejectionReason,
+                created_at = r.CreatedAt,
+                updated_at = (DateTime?)null
             });
-            return ServiceResult<object>.Ok(new { results = data, total = totalCount, page, page_size = pageSize });
+            return ServiceResult<object>.Ok(new
+            {
+                count = totalCount,
+                total_pages = totalPages,
+                current_page = page,
+                next = (string?)null,
+                previous = (string?)null,
+                data = data
+            });
         }
 
         public async Task<ServiceResult<object>> GetPendingReviews(int page = 1, int pageSize = 20, CancellationToken ct = default)
         {
-            var query = _context.LibraryReviews.AsNoTracking().Include(r => r.Student).Where(r => r.IsApproved == false);
+            var query = _context.LibraryReviews.AsNoTracking().Include(r => r.Student).Where(r => r.IsApproved == false && r.RejectionReason == null);
             var totalCount = await query.CountAsync(ct);
+            var totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 1;
             var reviews = await query.OrderByDescending(r => r.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(ct);
             var data = reviews.Select(r => new {
                 id = r.Id,
-                student_id = r.StudentId,
+                student = r.StudentId,
                 student_name = r.Student != null ? r.Student.FirstName + " " + r.Student.LastName : "Unknown",
                 rating = r.Rating,
                 comment = r.Comment,
-                is_published = r.IsApproved,
-                created_at = r.CreatedAt
+                is_approved = r.IsApproved,
+                rejection_reason = r.RejectionReason,
+                created_at = r.CreatedAt,
+                updated_at = (DateTime?)null
             });
-            return ServiceResult<object>.Ok(new { results = data, total = totalCount, page, page_size = pageSize });
+            return ServiceResult<object>.Ok(new
+            {
+                count = totalCount,
+                total_pages = totalPages,
+                current_page = page,
+                next = (string?)null,
+                previous = (string?)null,
+                data = data
+            });
         }
 
         public async Task<ServiceResult<object>> ApproveReview(long id, CancellationToken ct = default)
@@ -563,8 +585,15 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetReviewSummary(CancellationToken ct = default)
         {
-            var count = await _context.LibraryReviews.CountAsync(ct);
-            return ServiceResult<object>.Ok(new { count });
+            var approvedReviews = await _context.LibraryReviews.AsNoTracking()
+                .Where(r => r.IsApproved == true)
+                .ToListAsync();
+            var count = approvedReviews.Count;
+            var averageRating = count > 0 ? approvedReviews.Average(r => r.Rating) : 0.0;
+            var breakdown = approvedReviews
+                .GroupBy(r => r.Rating)
+                .ToDictionary(g => g.Key, g => g.Count());
+            return ServiceResult<object>.Ok(new { count, average_rating = Math.Round(averageRating, 1), breakdown });
         }
 
         public async Task<ServiceResult<object>> GetGalleryImages(CancellationToken ct = default)

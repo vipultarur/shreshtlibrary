@@ -89,6 +89,7 @@ builder.Services.AddScoped<WebApplication1.Services.IEmailService, WebApplicatio
 builder.Services.AddHttpClient<WebApplication1.Services.WhatsAppNotificationService>();
 
 // Add Repositories
+builder.Services.AddScoped(typeof(WebApplication1.Repositories.IRepository<>), typeof(WebApplication1.Repositories.Repository<>));
 builder.Services.AddScoped<WebApplication1.Repositories.IStudentRepository, WebApplication1.Repositories.StudentRepository>();
 builder.Services.AddScoped<WebApplication1.Repositories.IAttendanceRepository, WebApplication1.Repositories.AttendanceRepository>();
 
