@@ -1080,13 +1080,13 @@
                         if (info.banner_image) {
                             const logoAnchor = document.querySelector('.logo');
                             if (logoAnchor) {
-                                logoAnchor.innerHTML = `<img src="${info.banner_image}" alt="Library Logo" style="height: 48px; width: auto; object-fit: contain; border-radius: 4px;">`;
+                                logoAnchor.innerHTML = `<img src="${info.banner_image}" alt="Library Logo" style="height: 68px; max-width: 300px; width: auto; object-fit: contain; border-radius: 6px;">`;
                                 logoAnchor.style.background = 'none';
                                 logoAnchor.style.webkitTextFillColor = 'initial';
                             }
                             const footerLogo = document.querySelector('.footer-logo');
                             if (footerLogo) {
-                                footerLogo.innerHTML = `<img src="${info.banner_image}" alt="Library Logo" style="height: 48px; width: auto; object-fit: contain; border-radius: 4px; filter: drop-shadow(0 0 1px rgba(255,255,255,0.5));">`;
+                                footerLogo.innerHTML = `<img src="${info.banner_image}" alt="Library Logo" style="height: 80px; max-width: 340px; width: auto; object-fit: contain; border-radius: 6px; filter: drop-shadow(0 0 1px rgba(255,255,255,0.5));">`;
                                 footerLogo.style.background = 'none';
                                 footerLogo.style.webkitTextFillColor = 'initial';
                             }
