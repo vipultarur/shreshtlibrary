@@ -15,10 +15,18 @@ namespace WebApplication1.Controllers
     public class BillingController : BaseApiController
     {
         private readonly IPaymentService _paymentService;
+        private readonly IAdminBillingService _adminBillingService;
+        private readonly WebApplication1.Data.ApplicationDbContext _context;
 
-        public BillingController(IPaymentService paymentService, ICurrentUserService currentUserService) : base(currentUserService)
+        public BillingController(
+            IPaymentService paymentService, 
+            IAdminBillingService adminBillingService, 
+            WebApplication1.Data.ApplicationDbContext context, 
+            ICurrentUserService currentUserService) : base(currentUserService)
         {
             _paymentService = paymentService;
+            _adminBillingService = adminBillingService;
+            _context = context;
         }
 
         [AllowAnonymous]
@@ -75,6 +83,25 @@ namespace WebApplication1.Controllers
 
             var result = await _paymentService.GetPaymentHistoryAsync(userId.Value, ct);
             return Ok(ApiResponse<object>.Ok(result.Data));
+        }
+
+        [HttpGet("payments/{pk}/receipt")]
+        [ProducesResponseType(typeof(FileContentResult), 200)]
+        public async Task<IActionResult> GetPaymentReceiptAsync(long pk, CancellationToken ct)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("Authentication required."));
+
+            var payment = await _context.PaymentsPayments.FindAsync(new object[] { pk }, ct);
+            if (payment == null || payment.StudentId != userId.Value)
+            {
+                return NotFound(ApiResponse<object>.Fail("Payment not found or access denied."));
+            }
+
+            var result = await _adminBillingService.GetPaymentReceiptPdfAsync(pk, ct);
+            if (!result.Success) return NotFound(ApiResponse<object>.Fail(result.Message!));
+
+            return File((byte[])result.Data!, "application/pdf", $"receipt-{pk}.pdf");
         }
     }
 }
