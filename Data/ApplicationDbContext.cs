@@ -179,7 +179,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("jsonb")
                 .HasColumnName("permissions");
             entity.Property(e => e.ProfileImage)
-                .HasMaxLength(100)
+                .HasMaxLength(500)
                 .HasColumnName("profile_image");
             entity.Property(e => e.Role)
                 .HasMaxLength(20)
@@ -999,7 +999,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("audience");
             entity.Property(e => e.BackgroundImage)
-                .HasMaxLength(100)
+                .HasMaxLength(500)
                 .HasColumnName("background_image");
             entity.Property(e => e.Body).HasColumnName("body");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -1065,7 +1065,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Image)
-                .HasMaxLength(100)
+                .HasMaxLength(500)
                 .HasColumnName("image");
             entity.Property(e => e.NotificationId).HasColumnName("notification_id");
             entity.Property(e => e.SortOrder).HasColumnName("sort_order");
@@ -1452,7 +1452,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(10)
                 .HasColumnName("preferred_language");
             entity.Property(e => e.ProfilePhoto)
-                .HasMaxLength(100)
+                .HasMaxLength(500)
                 .HasColumnName("profile_photo");
             entity.Property(e => e.ReferredById).HasColumnName("referred_by_id");
             entity.Property(e => e.Status)

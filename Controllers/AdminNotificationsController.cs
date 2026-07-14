@@ -84,7 +84,8 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail($"Failed to send notification: {ex.Message}"));
+                var detail = ex.InnerException?.InnerException?.Message ?? ex.InnerException?.Message ?? ex.Message;
+                return BadRequest(WebApplication1.Models.Responses.ApiResponse<object>.Fail($"Failed to send notification: {detail}"));
             }
         }
 
