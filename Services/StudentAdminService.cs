@@ -37,9 +37,10 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Ok(cachedResult!);
             }
 
-            var total = await _context.AccountsCustomusers.CountAsync(u => u.Role == WebApplication1.Utils.Constants.Roles.Student, ct);
+            var total = await _context.AccountsCustomusers.CountAsync(u => u.Role == WebApplication1.Utils.Constants.Roles.Student && !u.IsDeleted, ct);
             
             var stats = await _context.StudentsStudentprofiles
+                .Where(x => !x.IsDeleted)
                 .GroupBy(x => 1)
                 .Select(g => new {
                     Live = g.Count(x => x.Status == WebApplication1.Utils.Constants.StudentStatus.Live),
@@ -71,6 +72,7 @@ namespace WebApplication1.Services
             pageSize = Math.Clamp(pageSize, 1, 100);
             var query = _context.StudentsStudentprofiles
                 .AsNoTracking()
+                .Where(s => !s.IsDeleted)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
@@ -179,7 +181,7 @@ namespace WebApplication1.Services
             var dbStudent = await _context.StudentsStudentprofiles
                 .AsNoTracking()
                 .Include(s => s.User)
-                .Where(s => s.User.Username == pk || s.User.Id.ToString() == pk || s.StudentId == pk)
+                .Where(s => !s.IsDeleted && (s.User.Username == pk || s.User.Id.ToString() == pk || s.StudentId == pk))
                 .Select(s => new {
                     id = s.Id,
                     user_id = s.UserId,
@@ -368,7 +370,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateStudentAsync(string pk, WebApplication1.Models.DTOs.Admin.StudentPayload payload, CancellationToken ct = default)
         {
-            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
+            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<object>.NotFound("Student not found");
 
             var validationErrors = new Dictionary<string, string[]>();
@@ -429,7 +431,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<bool>> DeleteStudentAsync(string pk, CancellationToken ct = default)
         {
-            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
+            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<bool>.NotFound("Student not found");
 
             var userId = student.Id;
@@ -447,8 +449,6 @@ namespace WebApplication1.Services
                     if (student.StudentsStudentprofile != null)
                     {
                         student.StudentsStudentprofile.IsDeleted = true;
-                        student.StudentsStudentprofile.Status = "SUSPENDED";
-                        student.StudentsStudentprofile.SuspendedAt = DateTime.UtcNow;
                     }
 
                     // Nullify foreign keys that shouldn't be soft deleted (e.g., active seat)
@@ -532,7 +532,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> SuspendStudentAsync(string pk, string? reason, CancellationToken ct = default)
         {
-            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
+            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<object>.NotFound("Student not found");
 
             student.StudentsStudentprofile!.Status = WebApplication1.Utils.Constants.StudentStatus.Suspended;
@@ -572,7 +572,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> ActivateStudentAsync(string pk, CancellationToken ct = default)
         {
-            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
+            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<object>.NotFound("Student not found");
 
             student.StudentsStudentprofile!.Status = WebApplication1.Utils.Constants.StudentStatus.Live;
@@ -609,7 +609,7 @@ namespace WebApplication1.Services
             var student = await _context.AccountsCustomusers
                 .AsNoTracking()
                 .Include(u => u.StudentsStudentprofile)
-                .FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && 
+                .FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && 
                     (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             
             if (student == null) return ServiceResult<object>.NotFound("Student not found");
@@ -646,7 +646,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UploadStudentPhotoAsync(string pk, Microsoft.AspNetCore.Http.IFormFile photo, string scheme, string host, CancellationToken ct = default)
         {
-            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
+            var student = await _context.AccountsCustomusers.Include(u => u.StudentsStudentprofile).FirstOrDefaultAsync(u => u.StudentsStudentprofile != null && !u.IsDeleted && (u.Username == pk || u.Id.ToString() == pk || u.StudentsStudentprofile.StudentId == pk), ct);
             if (student == null) return ServiceResult<object>.NotFound("Student not found");
 
             if (photo == null || photo.Length == 0)
@@ -693,6 +693,7 @@ namespace WebApplication1.Services
         {
             var students = await _context.StudentsStudentprofiles
                 .AsNoTracking()
+                .Where(s => !s.IsDeleted)
                 .Include(s => s.User)
                 .OrderByDescending(s => s.CreatedAt)
                 .Select(s => new {
