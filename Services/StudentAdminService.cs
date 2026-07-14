@@ -493,7 +493,41 @@ namespace WebApplication1.Services
                 total_hours = a.TotalHours
             }).ToList();
 
-            return ServiceResult<object>.Ok(new { period = "monthly", attendance = attendances, study = new object[] { } });
+            var targetHours = profile.AllowedStudyMinutes.HasValue ? Math.Round(profile.AllowedStudyMinutes.Value / 60.0, 2) : 6.0;
+
+            var studyHours = attendancesRaw
+                .Where(a => a.IsPresent)
+                .GroupBy(a => a.Date)
+                .Select(g => {
+                    double totalHours = 0;
+                    foreach (var a in g)
+                    {
+                        if (!string.IsNullOrEmpty(a.TotalHours))
+                        {
+                            if (a.TotalHours.Contains(':'))
+                            {
+                                var parts = a.TotalHours.Split(':');
+                                if (parts.Length == 2 && int.TryParse(parts[0], out var hrs) && int.TryParse(parts[1], out var mins))
+                                {
+                                    totalHours += hrs + (mins / 60.0);
+                                }
+                            }
+                            else if (double.TryParse(a.TotalHours, out var h))
+                            {
+                                totalHours += h;
+                            }
+                        }
+                    }
+                    return new {
+                        label = g.Key.ToString("yyyy-MM-dd"),
+                        hours = Math.Round(totalHours, 2),
+                        target_hours = targetHours
+                    };
+                })
+                .OrderBy(s => s.label)
+                .ToList();
+
+            return ServiceResult<object>.Ok(new { period = "monthly", attendance = attendances, study = studyHours });
         }
 
         public async Task<ServiceResult<object>> SuspendStudentAsync(string pk, string? reason, CancellationToken ct = default)
