@@ -114,6 +114,7 @@ builder.Services.AddScoped<WebApplication1.Services.IStudentNotificationService,
 builder.Services.AddScoped<WebApplication1.Services.IReportsService, WebApplication1.Services.ReportsService>();
 builder.Services.AddScoped<WebApplication1.Services.ISuperAdminService, WebApplication1.Services.SuperAdminService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminSlidersService, WebApplication1.Services.AdminSlidersService>();
+builder.Services.AddScoped<WebApplication1.Services.ICloudinaryService, WebApplication1.Services.CloudinaryService>();
 
 // Add Foundation Services
 builder.Services.AddHttpContextAccessor();

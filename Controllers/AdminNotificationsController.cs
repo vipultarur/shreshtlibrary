@@ -140,5 +140,14 @@ namespace WebApplication1.Controllers
             if (result.IsNotFound) return NotFound(new { message = result.Message });
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { message = "Deleted successfully" }));
         }
+
+        [HttpDelete("notifications/clear-all")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
+        public async Task<IActionResult> ClearAllNotificationsAsync(CancellationToken ct)
+        {
+            var result = await _adminNotificationService.ClearAllNotificationsAsync(ct);
+            if (!result.Success) return BadRequest(new { success = false, message = result.Message });
+            return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { message = "All notifications cleared successfully" }));
+        }
     }
 }

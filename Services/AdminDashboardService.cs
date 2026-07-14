@@ -12,11 +12,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICloudinaryService cloudinary)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _cloudinary = cloudinary;
         }
 
         public async Task<object?> GetAdminProfileAsync(long userId, CancellationToken ct)
@@ -37,7 +39,7 @@ namespace WebApplication1.Services
                     is_active = user.IsActive,
                     date_joined = user.DateJoined,
                     last_login = user.LastLogin,
-                    profile_image = !string.IsNullOrEmpty(user.ProfileImage) ? $"/media/{user.ProfileImage}" : null,
+                    profile_image = !string.IsNullOrEmpty(user.ProfileImage) ? (user.ProfileImage.StartsWith("http") ? user.ProfileImage : $"/media/{user.ProfileImage}") : null,
                     permissions = !string.IsNullOrEmpty(user.Permissions) && user.Permissions != "{}" 
                         ? System.Text.Json.JsonSerializer.Deserialize<object>(user.Permissions) 
                         : (user.Role == "super_admin" 
@@ -66,33 +68,42 @@ namespace WebApplication1.Services
 
             if (request.profile_image != null)
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var mediaDir = isDev 
-                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "admins"))
-                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "admins");
-                if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
-
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                var ext = System.IO.Path.GetExtension(request.profile_image.FileName).ToLowerInvariant();
-                if (!allowedExtensions.Contains(ext)) throw new InvalidOperationException("Invalid file type.");
-                
-                var fileName = $"admin_{userId}_{Guid.NewGuid()}{ext}";
-                var filePath = System.IO.Path.Combine(mediaDir, fileName);
-
-                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
+                var cloudinaryUrl = await _cloudinary.UploadImageAsync(request.profile_image, "admins");
+                if (!string.IsNullOrEmpty(cloudinaryUrl))
                 {
-                    await request.profile_image.CopyToAsync(stream, ct);
-                }
-
-                try
-                {
-                    user.ProfileImage = $"admins/{fileName}";
+                    user.ProfileImage = cloudinaryUrl;
                     await _context.SaveChangesAsync(ct);
                 }
-                catch
+                else
                 {
-                    if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
-                    throw;
+                    var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                    var mediaDir = isDev 
+                        ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "admins"))
+                        : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "admins");
+                    if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
+
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var ext = System.IO.Path.GetExtension(request.profile_image.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(ext)) throw new InvalidOperationException("Invalid file type.");
+                    
+                    var fileName = $"admin_{userId}_{Guid.NewGuid()}{ext}";
+                    var filePath = System.IO.Path.Combine(mediaDir, fileName);
+
+                    using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
+                    {
+                        await request.profile_image.CopyToAsync(stream, ct);
+                    }
+
+                    try
+                    {
+                        user.ProfileImage = $"admins/{fileName}";
+                        await _context.SaveChangesAsync(ct);
+                    }
+                    catch
+                    {
+                        if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+                        throw;
+                    }
                 }
             }
             else
@@ -111,7 +122,7 @@ namespace WebApplication1.Services
                 is_active = user.IsActive,
                 date_joined = user.DateJoined,
                 last_login = user.LastLogin,
-                profile_image = !string.IsNullOrEmpty(user.ProfileImage) ? $"/media/{user.ProfileImage}" : null,
+                profile_image = !string.IsNullOrEmpty(user.ProfileImage) ? (user.ProfileImage.StartsWith("http") ? user.ProfileImage : $"/media/{user.ProfileImage}") : null,
                 permissions = !string.IsNullOrEmpty(user.Permissions) && user.Permissions != "{}" 
                     ? System.Text.Json.JsonSerializer.Deserialize<object>(user.Permissions) 
                     : (user.Role == "super_admin" 

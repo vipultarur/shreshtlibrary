@@ -16,13 +16,15 @@ namespace WebApplication1.Services
         private readonly INotificationService _notificationService;
         private readonly WhatsAppNotificationService _whatsAppService;
         private readonly ILogger<AdminNotificationService> _logger;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService, ILogger<AdminNotificationService> logger)
+        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService, ILogger<AdminNotificationService> logger, ICloudinaryService cloudinary)
         {
             _context = context;
             _notificationService = notificationService;
             _whatsAppService = whatsAppService;
             _logger = logger;
+            _cloudinary = cloudinary;
         }
 
         public async Task<ServiceResult<object>> GetNotificationTemplatesAsync(CancellationToken ct = default)
@@ -120,16 +122,24 @@ namespace WebApplication1.Services
 
             if (dto.BackgroundImage != null)
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var mediaPath = isDev 
-                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
-                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
-                var fileName = $"notifications/bg_{Guid.NewGuid()}{System.IO.Path.GetExtension(dto.BackgroundImage.FileName)}";
-                var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
-                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
-                using var stream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
-                await dto.BackgroundImage.CopyToAsync(stream, ct);
-                notification.BackgroundImage = fileName;
+                var cloudinaryUrl = await _cloudinary.UploadImageAsync(dto.BackgroundImage, "notifications");
+                if (!string.IsNullOrEmpty(cloudinaryUrl))
+                {
+                    notification.BackgroundImage = cloudinaryUrl;
+                }
+                else
+                {
+                    var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                    var mediaPath = isDev 
+                        ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
+                        : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
+                    var fileName = $"notifications/bg_{Guid.NewGuid()}{System.IO.Path.GetExtension(dto.BackgroundImage.FileName)}";
+                    var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
+                    using var stream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
+                    await dto.BackgroundImage.CopyToAsync(stream, ct);
+                    notification.BackgroundImage = fileName;
+                }
             }
 
             _context.NotificationsNotifications.Add(notification);
@@ -145,16 +155,26 @@ namespace WebApplication1.Services
                 int sortOrder = 0;
                 foreach (var img in dto.Images)
                 {
-                    var fileName = $"notifications/img_{Guid.NewGuid()}{System.IO.Path.GetExtension(img.FileName)}";
-                    var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
-                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
-                    using var imgStream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
-                    await img.CopyToAsync(imgStream, ct);
+                    var cloudinaryUrl = await _cloudinary.UploadImageAsync(img, "notifications");
+                    string imageVal;
+                    if (!string.IsNullOrEmpty(cloudinaryUrl))
+                    {
+                        imageVal = cloudinaryUrl;
+                    }
+                    else
+                    {
+                        var fileName = $"notifications/img_{Guid.NewGuid()}{System.IO.Path.GetExtension(img.FileName)}";
+                        var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
+                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
+                        using var imgStream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
+                        await img.CopyToAsync(imgStream, ct);
+                        imageVal = fileName;
+                    }
 
                     _context.NotificationsNotificationimages.Add(new NotificationsNotificationimage
                     {
                         NotificationId = notification.Id,
-                        Image = fileName,
+                        Image = imageVal,
                         SortOrder = sortOrder++
                     });
                 }
@@ -272,13 +292,13 @@ namespace WebApplication1.Services
 
                     if (!string.IsNullOrEmpty(notification.BackgroundImage))
                     {
-                        data["background_image"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
+                        data["background_image"] = notification.BackgroundImage.StartsWith("http") ? notification.BackgroundImage : $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
                     }
                     
                     var firstImage = _context.NotificationsNotificationimages.FirstOrDefault(i => i.NotificationId == notification.Id);
                     if (firstImage != null)
                     {
-                        data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
+                        data["image_url"] = firstImage.Image.StartsWith("http") ? firstImage.Image : $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
                     }
                     try
                     {
@@ -318,15 +338,24 @@ namespace WebApplication1.Services
                     string? imageFileName = null;
                     if (!string.IsNullOrEmpty(notification.BackgroundImage))
                     {
-                        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                        var mediaPath = isDev 
-                            ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
-                            : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
-                        var filePath = System.IO.Path.Combine(mediaPath, notification.BackgroundImage);
-                        if (System.IO.File.Exists(filePath))
+                        if (notification.BackgroundImage.StartsWith("http"))
                         {
-                            imageBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
-                            imageFileName = System.IO.Path.GetFileName(filePath);
+                            using var httpClient = new System.Net.Http.HttpClient();
+                            imageBytes = await httpClient.GetByteArrayAsync(notification.BackgroundImage, ct);
+                            imageFileName = "image.jpg";
+                        }
+                        else
+                        {
+                            var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                            var mediaPath = isDev 
+                                ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
+                                : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
+                            var filePath = System.IO.Path.Combine(mediaPath, notification.BackgroundImage);
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                imageBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                                imageFileName = System.IO.Path.GetFileName(filePath);
+                            }
                         }
                     }
 
@@ -484,6 +513,32 @@ namespace WebApplication1.Services
             _context.NotificationsAdmininboxnotifications.Remove(notification);
             await _context.SaveChangesAsync(ct);
             return ServiceResult<bool>.Ok(true);
+        }
+
+        public async Task<ServiceResult<bool>> ClearAllNotificationsAsync(CancellationToken ct = default)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            try
+            {
+                // Due to EF Core translations for bulk delete, raw SQL might be faster or we can do RemoveRange
+                var allStudentNotifications = await _context.NotificationsStudentnotifications.ToListAsync(ct);
+                _context.NotificationsStudentnotifications.RemoveRange(allStudentNotifications);
+
+                var allNotificationImages = await _context.NotificationsNotificationimages.ToListAsync(ct);
+                _context.NotificationsNotificationimages.RemoveRange(allNotificationImages);
+
+                var allNotifications = await _context.NotificationsNotifications.ToListAsync(ct);
+                _context.NotificationsNotifications.RemoveRange(allNotifications);
+                
+                await _context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return ServiceResult<bool>.Ok(true);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct);
+                return ServiceResult<bool>.Fail($"Failed to clear notifications: {ex.Message}");
+            }
         }
     }
 }
