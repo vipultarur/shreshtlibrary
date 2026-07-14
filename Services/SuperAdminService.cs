@@ -211,6 +211,12 @@ namespace WebApplication1.Services
 
             try
             {
+                var activityLogs = await _context.CoreActivitylogs.Where(log => log.AdminId == pk).ToListAsync(ct);
+                if (activityLogs.Any())
+                {
+                    _context.CoreActivitylogs.RemoveRange(activityLogs);
+                }
+
                 _context.AccountsAdminusers.Remove(admin);
                 await _context.SaveChangesAsync(ct);
                 return ServiceResult<object>.Ok(new { });

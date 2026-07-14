@@ -542,7 +542,7 @@ namespace WebApplication1.Services
                 .FirstOrDefaultAsync(u => u.Mobile == request.Username, ct);
 
             bool isValidPassword = false;
-            if (user != null && (user.Role == "admin" || user.Role == "super_admin"))
+            if (user != null && (user.Role == "admin" || user.Role == "super_admin" || user.Role == "sub_super_admin"))
             {
                 isValidPassword = WebApplication1.Utils.PasswordHasher.VerifyDjangoPassword(request.Password, user.Password);
             }
