@@ -17,16 +17,19 @@ namespace WebApplication1.Repositories
 
         public async Task<StudentsStudentprofile?> GetProfileWithUserAsync(long userId, CancellationToken ct = default)
         {
+            // NOTE: Do NOT use AsNoTracking() here — callers (UploadPhotoAsync) mutate
+            // the returned entity and rely on EF Core change tracking to persist via SaveChangesAsync().
             return await _context.StudentsStudentprofiles
-                .AsNoTracking()
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.UserId == userId, ct);
         }
 
         public async Task<AccountsCustomuser?> GetUserWithProfileAsync(long userId, CancellationToken ct = default)
         {
+            // NOTE: Do NOT use AsNoTracking() here — the caller (UpdateProfileAsync) mutates
+            // fields on the returned entity and relies on EF Core's change tracker to persist
+            // those changes via SaveChangesAsync().
             return await _context.AccountsCustomusers
-                .AsNoTracking()
                 .Include(u => u.StudentsStudentprofile)
                 .FirstOrDefaultAsync(u => u.Id == userId, ct);
         }
