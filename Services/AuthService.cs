@@ -575,6 +575,7 @@ namespace WebApplication1.Services
                     new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
                     new System.Security.Claims.Claim("role", user.Role),
                     new System.Security.Claims.Claim("token_type", "access"),
+                    new System.Security.Claims.Claim("permissions", user.Permissions ?? "[]")
                 }),
                 Expires = System.DateTime.UtcNow.AddHours(1),
                 Issuer = jwtSettings["Issuer"],

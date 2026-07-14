@@ -7,7 +7,7 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/superadmin")]
-    [Authorize(Roles = "super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class SuperAdminController : ControllerBase
     {
 
@@ -19,6 +19,7 @@ namespace WebApplication1.Controllers
             _superAdminService = superAdminService;
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Create)]
         [HttpPost("admins")]
         public async Task<IActionResult> AdminsAddAsync([FromBody] AdminPayload payload, System.Threading.CancellationToken ct)
         {
@@ -27,6 +28,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Edit)]
         [HttpPut("admins/{pk}")]
         public async Task<IActionResult> AdminsUpdateAsync(long pk, [FromBody] AdminPayload payload, System.Threading.CancellationToken ct)
         {
@@ -35,6 +37,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("admins")]
         public async Task<IActionResult> AdminsListAsync(System.Threading.CancellationToken ct)
         {
@@ -42,6 +45,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("admins/{pk}")]
         public async Task<IActionResult> AdminDetailAsync(long pk, System.Threading.CancellationToken ct)
         {
@@ -50,6 +54,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Delete)]
         [HttpDelete("admins/{pk}/remove")]
         public async Task<IActionResult> AdminRemoveAsync(long pk, System.Threading.CancellationToken ct)
         {
@@ -58,6 +63,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, "Admin removed"));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Suspend)]
         [HttpPost("admins/{pk}/deactivate")]
         public async Task<IActionResult> AdminDeactivateAsync(long pk, System.Threading.CancellationToken ct)
         {
@@ -66,6 +72,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(new { }, "Admin deactivated"));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("permissions")]
         public async Task<IActionResult> PermissionsListAsync(System.Threading.CancellationToken ct)
         {
@@ -73,6 +80,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.ChangePermissions)]
         [HttpPost("permissions/assign")]
         public async Task<IActionResult> PermissionsAssignAsync([FromBody] PermissionPayload payload, System.Threading.CancellationToken ct)
         {
@@ -80,6 +88,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Create)]
         [HttpPost("backup/create")]
         public async Task<IActionResult> BackupCreateAsync(System.Threading.CancellationToken ct)
         {
@@ -87,6 +96,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, "Backup created"));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Download)]
         [HttpGet("backup/list")]
         public async Task<IActionResult> BackupListAsync(System.Threading.CancellationToken ct)
         {
@@ -96,6 +106,7 @@ namespace WebApplication1.Controllers
 
         public record RestoreBackupRequest(string BackupId);
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Restore)]
         [HttpPost("backup/restore")]
         public async Task<IActionResult> BackupRestoreAsync([FromBody] RestoreBackupRequest request, System.Threading.CancellationToken ct)
         {
@@ -104,6 +115,7 @@ namespace WebApplication1.Controllers
             var result = await _superAdminService.RestoreBackupAsync(request.BackupId, ct);
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, "Backup restored"));
         }
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Download)]
         [HttpGet("backup/{id}/download")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> BackupDownload(string id, System.Threading.CancellationToken ct)
@@ -117,6 +129,7 @@ namespace WebApplication1.Controllers
             return File(bytes, "application/json", $"{id}.json");
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AuditLogs.View)]
         [HttpGet("activity-log")]
         public async Task<IActionResult> ActivityLogAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, System.Threading.CancellationToken ct = default)
         {

@@ -5,11 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using System.Collections.Generic;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminAttendanceController : ControllerBase
     {
         private readonly IAdminAttendanceService _adminAttendanceService;
@@ -20,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/current")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrCurrentAsync(CancellationToken ct)
         {
             var result = await _adminAttendanceService.GetCurrentQrAsync(ct);
@@ -27,6 +30,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/history")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrHistoryAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 20)
         {
             var result = await _adminAttendanceService.GetQrHistoryAsync(page, page_size, ct);
@@ -40,6 +44,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/generate")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrGenerateAsync([FromBody] QrGenerateDto? dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.GenerateQrAsync(dto?.ExpiryDuration, ct);
@@ -47,6 +52,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/regenerate")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrRegenerateAsync([FromBody] QrGenerateDto? dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.RegenerateQrAsync(dto?.ExpiryDuration, ct);
@@ -54,6 +60,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/expire")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrExpireAsync(CancellationToken ct)
         {
             await _adminAttendanceService.ExpireAllQrAsync(ct);
@@ -61,6 +68,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("qr/{pk}")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminAttendanceService.DeleteQrAsync(pk, ct);
@@ -77,6 +85,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/{pk}/scans")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrScansAsync(int pk, CancellationToken ct)
         {
             var result = await _adminAttendanceService.GetQrScansAsync(pk, ct);
@@ -84,6 +93,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("holidays")]
+        [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> HolidaysListAsync(CancellationToken ct, [FromQuery] string? from_date = null, [FromQuery] string? to_date = null, [FromQuery] string? date = null, [FromQuery] bool? is_active = null)
         {
             var result = await _adminAttendanceService.GetHolidaysAsync(from_date, to_date, date, is_active, ct);
@@ -91,6 +101,7 @@ namespace WebApplication1.Controllers
         }
         
         [HttpGet("holidays/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> HolidayDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminAttendanceService.GetHolidayDetailAsync(pk, ct);
@@ -99,6 +110,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("holidays")]
+        [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> CreateHolidayAsync([FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.CreateHolidayAsync(dto, ct);
@@ -107,6 +119,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("holidays/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> UpdateHolidayAsync(int pk, [FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.UpdateHolidayAsync(pk, dto, ct);
@@ -116,6 +129,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("holidays/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> DeleteHolidayAsync(int pk, CancellationToken ct)
         {
             var result = await _adminAttendanceService.DeleteHolidayAsync(pk, ct);
@@ -124,6 +138,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/daily-summary")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceDailySummaryAsync(CancellationToken ct, [FromQuery] string? date = null)
         {
             var result = await _adminAttendanceService.GetAttendanceDailySummaryAsync(date, ct);
@@ -131,6 +146,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/absentees")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceAbsenteesAsync(CancellationToken ct, [FromQuery] string? date = null)
         {
             var result = await _adminAttendanceService.GetAttendanceAbsenteesAsync(date, ct);
@@ -138,6 +154,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/streak")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceStreakAsync(CancellationToken ct)
         {
             var result = await _adminAttendanceService.GetAttendanceStreakAsync(ct);
@@ -145,6 +162,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("attendance/manual")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> AttendanceManualAsync([FromBody] WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto dto, CancellationToken ct)
         {
             var result = await _adminAttendanceService.RecordManualAttendanceAsync(dto, ct);
@@ -153,6 +171,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("attendance/manual/bulk")]
+        [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> AttendanceManualBulkAsync([FromBody] List<WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto> dtos, CancellationToken ct)
         {
             var result = await _adminAttendanceService.RecordManualBulkAttendanceAsync(dtos, ct);
@@ -161,6 +180,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceListAsync(CancellationToken ct, [FromQuery] string? date = null, [FromQuery] string? from_date = null, [FromQuery] string? to_date = null, [FromQuery] int page = 1, [FromQuery] int page_size = 100)
         {
             page_size = Math.Clamp(page_size, 1, 500);
@@ -173,6 +193,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/{pk}")]
+        [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminAttendanceService.GetAttendanceDetailAsync(pk, ct);

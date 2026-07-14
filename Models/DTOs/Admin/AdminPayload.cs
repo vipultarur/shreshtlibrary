@@ -13,6 +13,6 @@ namespace WebApplication1.Models.DTOs.Admin
         public string? Role { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("is_active")]
         public bool? IsActive { get; set; }
-        public System.Collections.Generic.Dictionary<string, bool>? Permissions { get; set; }
+        public string[]? Permissions { get; set; }
     }
 }

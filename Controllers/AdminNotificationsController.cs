@@ -5,11 +5,13 @@ using System.Threading;
 using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminNotificationsController : ControllerBase
     {
         private readonly IAdminNotificationService _adminNotificationService;
@@ -20,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/templates")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationTemplatesAsync(CancellationToken ct)
         {
             var result = await _adminNotificationService.GetNotificationTemplatesAsync(ct);
@@ -27,6 +30,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/scheduled")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduledAsync(CancellationToken ct)
         {
             var result = await _adminNotificationService.GetScheduledNotificationsAsync(ct);
@@ -34,6 +38,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("notifications/scheduled/{pk}/cancel")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduledCancelAsync(int pk, CancellationToken ct)
         {
             var result = await _adminNotificationService.CancelScheduledNotificationAsync(pk, ct);
@@ -42,6 +47,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("notifications/schedule")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduleAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
             try
@@ -62,6 +68,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("notifications/send")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationSendAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
             try
@@ -82,6 +89,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications")]
+        [AuthorizePermission(Permissions.NotificationManagement.View)]
         public async Task<IActionResult> NotificationsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 50)
         {
             page_size = Math.Clamp(page_size, 1, 200);
@@ -91,6 +99,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/{pk}")]
+        [AuthorizePermission(Permissions.NotificationManagement.View)]
         public async Task<IActionResult> NotificationDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminNotificationService.GetNotificationDetailAsync(pk, ct);
@@ -99,6 +108,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/{pk}/recipients")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationRecipientsAsync(int pk, CancellationToken ct)
         {
             var result = await _adminNotificationService.GetNotificationRecipientsAsync(pk, ct);
@@ -106,6 +116,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("inbox")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxNotificationsAsync(CancellationToken ct)
         {
             var result = await _adminNotificationService.GetInboxNotificationsAsync(ct);
@@ -113,6 +124,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("inbox/{pk}/{actionType}")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxActionAsync(long pk, string actionType, CancellationToken ct)
         {
             var result = await _adminNotificationService.MarkInboxActionAsync(pk, actionType, ct);
@@ -121,6 +133,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("inbox/{pk}")]
+        [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxDeleteAsync(long pk, CancellationToken ct)
         {
             var result = await _adminNotificationService.DeleteInboxNotificationAsync(pk, ct);

@@ -10,7 +10,7 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin/students")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminStudentsController : ControllerBase
     {
         private readonly IStudentAdminService _studentAdminService;
@@ -20,6 +20,7 @@ namespace WebApplication1.Controllers
             _studentAdminService = studentAdminService;
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.View)]
         [HttpGet("counts")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetStudentCountsAsync(CancellationToken ct)
@@ -28,6 +29,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Export)]
         [HttpGet("export")]
         public async Task<IActionResult> ExportStudentsAsync(CancellationToken ct)
         {
@@ -39,6 +41,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.View)]
         [HttpGet]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ManageStudentsGetAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "")
@@ -49,6 +52,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.View)]
         [HttpGet("{pk}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetStudentDetailAsync(string pk, CancellationToken ct)
@@ -59,6 +63,7 @@ namespace WebApplication1.Controllers
         }
 
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Add)]
         [HttpPost]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 201)]
         public async Task<IActionResult> CreateStudentAsync([FromBody] StudentPayload payload, CancellationToken ct)
@@ -73,6 +78,7 @@ namespace WebApplication1.Controllers
                 WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Edit)]
         [HttpPut("{pk}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> UpdateStudentAsync(string pk, [FromBody] StudentPayload payload, CancellationToken ct)
@@ -85,6 +91,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Delete)]
         [HttpDelete("{pk}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> DeleteStudentAsync(string pk, CancellationToken ct)
@@ -95,6 +102,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(null, "Student deleted successfully."));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Edit)]
         [HttpPost("{pk}/photo")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> UploadStudentPhotoAsync(string pk, Microsoft.AspNetCore.Http.IFormFile profile_photo, CancellationToken ct)
@@ -106,6 +114,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data, "Photo uploaded successfully"));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Analytics.Student)]
         [HttpGet("{pk}/analytics")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetStudentAnalyticsAsync(string pk, CancellationToken ct)
@@ -117,6 +126,7 @@ namespace WebApplication1.Controllers
         }
 
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Suspend)]
         [HttpPost("{pk}/suspend")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> SuspendStudentAsync(string pk, [FromBody] SuspendStudentRequest request, CancellationToken ct)
@@ -127,6 +137,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Activate)]
         [HttpPost("{pk}/activate")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ActivateStudentAsync(string pk, CancellationToken ct)
@@ -137,6 +148,7 @@ namespace WebApplication1.Controllers
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));
         }
         
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.View)]
         [HttpGet("{pk}/{kind}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetStudentRelatedDataAsync(string pk, string kind, CancellationToken ct)

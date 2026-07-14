@@ -6,11 +6,13 @@ using System.Threading;
 using Microsoft.AspNetCore.Http;
 using WebApplication1.Models.Responses;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [Route("api/v1/admin/library")]
     [ApiController]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminLibraryController : ControllerBase
     {
         private readonly IAdminLibraryService _libraryService;
@@ -21,6 +23,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("info")]
+        [AuthorizePermission(Permissions.LibraryManagement.Info)]
         public async Task<IActionResult> GetLibraryInfo(CancellationToken ct)
         {
             var result = await _libraryService.GetLibraryInfo(ct);
@@ -29,6 +32,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("info")]
+        [AuthorizePermission(Permissions.LibraryManagement.Info)]
         public async Task<IActionResult> UpdateLibraryInfo([FromForm] LibraryInfoUpdateDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateLibraryInfo(dto, ct);
@@ -37,6 +41,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("facilities")]
+        [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> GetFacilities(CancellationToken ct)
         {
             var result = await _libraryService.GetFacilities(ct);
@@ -45,6 +50,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("facilities")]
+        [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> CreateFacility([FromForm] FacilityDto dto, CancellationToken ct)
         {
             var result = await _libraryService.CreateFacility(dto, ct);
@@ -53,6 +59,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("facilities/{id}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> UpdateFacility(long id, [FromForm] FacilityDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateFacility(id, dto, ct);
@@ -61,6 +68,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("facilities/{id}/toggle")]
+        [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> ToggleFacility(long id, CancellationToken ct)
         {
             var result = await _libraryService.ToggleFacility(id, ct);
@@ -69,6 +77,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("facilities/{id}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> DeleteFacility(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteFacility(id, ct);
@@ -133,6 +142,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("gallery")]
+        [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> GetGalleryImages(CancellationToken ct)
         {
             var result = await _libraryService.GetGalleryImages(ct);
@@ -141,6 +151,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("gallery")]
+        [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> UploadGalleryImage([FromForm] GalleryImageDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UploadGalleryImage(dto, ct);
@@ -149,6 +160,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("gallery/{id}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> DeleteGalleryImage(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteGalleryImage(id, ct);

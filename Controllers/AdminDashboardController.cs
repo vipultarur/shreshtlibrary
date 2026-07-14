@@ -11,7 +11,7 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminDashboardController : ControllerBase
     {
         private readonly IAdminDashboardService _adminDashboardService;
@@ -61,6 +61,7 @@ namespace WebApplication1.Controllers
 
 
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/stats")]
         [HttpGet("/api/v1/dashboard/stats")]
         [HttpGet("dashboard/stats/{section}")]
@@ -71,6 +72,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(stats));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts")]
         [HttpGet("/api/v1/dashboard/charts")]
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
@@ -79,6 +81,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(charts));
         }
         
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/attendance/overview")]
         [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
@@ -87,6 +90,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/revenue/overview")]
         [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
@@ -95,6 +99,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/students/overview")]
         [HttpGet("/api/v1/dashboard/charts/students/overview")]
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
@@ -103,6 +108,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/memberships/overview")]
         [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
@@ -113,6 +119,7 @@ namespace WebApplication1.Controllers
 
 
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/alerts")]
         [HttpGet("/api/v1/dashboard/alerts")]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
@@ -121,6 +128,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(data));
         }
 
+        [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/activity/recent")]
         [HttpGet("/api/v1/dashboard/activity/recent")]
         public async Task<IActionResult> GetRecentActivityAsync(CancellationToken ct)

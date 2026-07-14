@@ -5,11 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminBillingController : ControllerBase
     {
         private readonly IAdminBillingService _billingService;
@@ -20,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/stats")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanStatsAsync(CancellationToken ct)
         {
             var result = await _billingService.GetPlanStatsAsync(ct);
@@ -27,6 +30,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlansAllAsync(CancellationToken ct)
         {
             var result = await _billingService.GetAllPlansAsync(ct);
@@ -55,6 +59,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("plans/create")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlansCreateAsync([FromBody] PlanPayload payload, CancellationToken ct)
         {
             var result = await _billingService.CreatePlanAsync(payload, ct);
@@ -63,6 +68,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/{pk}")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanDetailAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.GetPlanDetailAsync(pk, ct);
@@ -71,6 +77,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("plans/{pk}")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanUpdateAsync(long pk, [FromBody] PlanPayload payload, CancellationToken ct)
         {
             var result = await _billingService.UpdatePlanAsync(pk, payload, ct);
@@ -84,6 +91,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPatch("plans/{pk}/toggle")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanToggleAsync(long pk, [FromBody] TogglePayload payload, CancellationToken ct)
         {
             var result = await _billingService.TogglePlanAsync(pk, payload, ct);
@@ -92,6 +100,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("plans/{pk}")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanDeleteAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.DeletePlanAsync(pk, ct);
@@ -100,6 +109,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/{pk}/students")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanStudentsAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.GetPlanStudentsAsync(pk, ct);
@@ -107,6 +117,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/expiring")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsExpiringAsync([FromQuery] int days = 7, CancellationToken ct = default)
         {
             var result = await _billingService.GetExpiringMembershipsAsync(days, ct);
@@ -114,6 +125,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/expired-today")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsExpiredTodayAsync(CancellationToken ct)
         {
             var result = await _billingService.GetExpiredTodayMembershipsAsync(ct);
@@ -130,6 +142,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/assign")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsAssignAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
             var result = await _billingService.AssignMembershipAsync(payload, ct);
@@ -138,6 +151,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/renew")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsRenewAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
             var result = await _billingService.RenewMembershipAsync(payload, ct);
@@ -146,6 +160,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/upgrade")]
+        [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsUpgradeAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
             var result = await _billingService.UpgradeMembershipAsync(payload, ct);
@@ -154,6 +169,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsListAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "", [FromQuery] long? student_id = null, CancellationToken ct = default)
         {
             page_size = System.Math.Clamp(page_size, 1, 100);
@@ -169,6 +185,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/{pk}")]
+        [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipDetailAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.GetMembershipDetailAsync(pk, ct);
@@ -177,6 +194,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/summary")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsSummaryAsync(CancellationToken ct)
         {
             var result = await _billingService.GetPaymentsSummaryAsync(ct);
@@ -184,6 +202,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/pending")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsPendingAsync(CancellationToken ct)
         {
             var result = await _billingService.GetPendingPaymentsAsync(ct);
@@ -191,6 +210,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/overdue")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsOverdueAsync(CancellationToken ct)
         {
             var result = await _billingService.GetOverduePaymentsAsync(ct);
@@ -198,6 +218,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsListAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "", CancellationToken ct = default)
         {
             page_size = System.Math.Clamp(page_size, 1, 100);
@@ -220,6 +241,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments")]
+        [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentsCreateAsync([FromBody] PaymentCreatePayload payload, CancellationToken ct)
         {
             var result = await _billingService.CreatePaymentAsync(payload, ct);
@@ -228,6 +250,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/{pk}")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentDetailAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.GetPaymentDetailAsync(pk, ct);
@@ -236,6 +259,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/verify")]
+        [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentVerifyAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.VerifyPaymentAsync(pk, ct);
@@ -250,6 +274,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/refund")]
+        [AuthorizePermission(Permissions.Payment.Refund)]
         public async Task<IActionResult> PaymentRefundAsync(long pk, [FromBody] RefundPayload payload, CancellationToken ct)
         {
             var result = await _billingService.RefundPaymentAsync(pk, payload, ct);
@@ -266,6 +291,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("payments/{pk}")]
+        [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentUpdateAsync(long pk, [FromBody] PaymentUpdateDto payload, CancellationToken ct)
         {
             var result = await _billingService.UpdatePaymentAsync(pk, payload, ct);
@@ -274,6 +300,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/{pk}/receipt")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentReceiptAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.GetPaymentReceiptPdfAsync(pk, ct);
@@ -282,6 +309,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/send-receipt")]
+        [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> SendPaymentReceiptAsync(long pk, CancellationToken ct)
         {
             var result = await _billingService.SendPaymentReceiptEmailAsync(pk, ct);

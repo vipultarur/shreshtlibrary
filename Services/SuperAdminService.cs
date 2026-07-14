@@ -7,21 +7,26 @@ using WebApplication1.Models.DTOs.Admin;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using System.Collections.Generic;
 
 namespace WebApplication1.Services
 {
     public class SuperAdminService : ISuperAdminService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public SuperAdminService(ApplicationDbContext context)
+        private const string SuperAdminEmail = "vipultarur@gmail.com";
+
+        public SuperAdminService(ApplicationDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
         }
 
         private ServiceResult<object>? ValidateAdminPayload(AdminPayload payload)
         {
-            var errors = new System.Collections.Generic.Dictionary<string, string[]>();
+            var errors = new Dictionary<string, string[]>();
 
             if (string.IsNullOrWhiteSpace(payload.Email) || !payload.Email.Contains("@"))
             {
@@ -43,6 +48,17 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> AddAdminAsync(AdminPayload payload, CancellationToken ct = default)
         {
+            var currentUserRole = _currentUserService.GetUserRole();
+            if (currentUserRole == "sub_super_admin" && payload.Role != "admin")
+            {
+                return ServiceResult<object>.Fail("Sub Super Admins can only create Admin roles.");
+            }
+
+            if (payload.Email?.ToLower() == SuperAdminEmail)
+            {
+                return ServiceResult<object>.Fail("Cannot create an admin with the reserved super admin email.");
+            }
+
             var validationError = ValidateAdminPayload(payload);
             if (validationError != null) return validationError;
 
@@ -60,7 +76,7 @@ namespace WebApplication1.Services
                 IsActive = payload.IsActive ?? true,
                 DateJoined = DateTime.UtcNow,
                 Password = Utils.PasswordHasher.HashDjangoPassword(payload.Password ?? "admin@123"),
-                Permissions = payload.Permissions != null ? System.Text.Json.JsonSerializer.Serialize(payload.Permissions) : "{}"
+                Permissions = payload.Permissions != null ? System.Text.Json.JsonSerializer.Serialize(payload.Permissions) : "[]"
             };
 
             _context.AccountsAdminusers.Add(newUser);
@@ -70,11 +86,29 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UpdateAdminAsync(long pk, AdminPayload payload, CancellationToken ct = default)
         {
+            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk, ct);
+            if (admin == null) return ServiceResult<object>.NotFound("Admin not found");
+
+            if (admin.Email?.ToLower() == SuperAdminEmail)
+            {
+                return ServiceResult<object>.Fail("The primary Super Admin account cannot be modified.");
+            }
+
+            var currentUserRole = _currentUserService.GetUserRole();
+            if (currentUserRole == "sub_super_admin")
+            {
+                if (admin.Role == "super_admin" || admin.Role == "sub_super_admin")
+                {
+                    return ServiceResult<object>.Fail("Sub Super Admins cannot modify Super Admins or other Sub Super Admins.");
+                }
+                if (payload.Role != null && payload.Role != "admin")
+                {
+                    return ServiceResult<object>.Fail("Sub Super Admins cannot assign roles other than Admin.");
+                }
+            }
+
             var validationError = ValidateAdminPayload(payload);
             if (validationError != null) return validationError;
-
-            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk && (u.Role == "admin" || u.Role == "super_admin"), ct);
-            if (admin == null) return ServiceResult<object>.NotFound("Admin not found");
 
             if (await _context.AccountsAdminusers.AnyAsync(u => u.Id != pk && (u.Email == payload.Email || (!string.IsNullOrEmpty(payload.Username) && u.Username == payload.Username)), ct))
                 return ServiceResult<object>.Fail("Admin with this email or username already exists");
@@ -84,6 +118,7 @@ namespace WebApplication1.Services
             admin.LastName = payload.LastName ?? admin.LastName;
             admin.Email = payload.Email ?? admin.Email;
             admin.Mobile = payload.Mobile ?? admin.Mobile;
+            
             if (payload.Role != null) admin.Role = payload.Role;
             if (payload.IsActive.HasValue) admin.IsActive = payload.IsActive.Value;
             if (payload.Permissions != null) admin.Permissions = System.Text.Json.JsonSerializer.Serialize(payload.Permissions);
@@ -99,14 +134,14 @@ namespace WebApplication1.Services
 
         private object ParsePermissions(string permissionsJson)
         {
-            if (string.IsNullOrWhiteSpace(permissionsJson)) return new { };
+            if (string.IsNullOrWhiteSpace(permissionsJson)) return new string[0];
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize<object>(permissionsJson) ?? new { };
+                return System.Text.Json.JsonSerializer.Deserialize<string[]>(permissionsJson) ?? new string[0];
             }
             catch
             {
-                return new { }; // Return empty object if JSON parsing fails (e.g. legacy python dict string)
+                return new string[0]; // Return empty array if JSON parsing fails
             }
         }
 
@@ -114,7 +149,8 @@ namespace WebApplication1.Services
         {
             var admins = await _context.AccountsAdminusers
                 .AsNoTracking()
-                .Where(u => u.Role == "admin" || u.Role == "super_admin")
+                .Where(u => u.Role == "admin" || u.Role == "super_admin" || u.Role == "sub_super_admin")
+                .Where(u => u.Email != SuperAdminEmail) // Hide main super admin
                 .ToListAsync(ct);
 
             var result = admins.Select(u => new {
@@ -137,10 +173,11 @@ namespace WebApplication1.Services
         {
             var admin = await _context.AccountsAdminusers
                 .AsNoTracking()
-                .Where(u => u.Id == pk && (u.Role == "admin" || u.Role == "super_admin"))
+                .Where(u => u.Id == pk)
                 .FirstOrDefaultAsync(ct);
 
-            if (admin == null) return ServiceResult<object>.NotFound("Admin not found");
+            if (admin == null || admin.Email?.ToLower() == SuperAdminEmail) 
+                return ServiceResult<object>.NotFound("Admin not found");
             
             return ServiceResult<object>.Ok(new {
                 id = admin.Id,
@@ -158,8 +195,19 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> RemoveAdminAsync(long pk, CancellationToken ct = default)
         {
-            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk && (u.Role == "admin" || u.Role == "super_admin"), ct);
+            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk, ct);
             if (admin == null) return ServiceResult<object>.NotFound("Admin not found");
+
+            if (admin.Email?.ToLower() == SuperAdminEmail)
+            {
+                return ServiceResult<object>.Fail("The primary Super Admin account cannot be deleted.");
+            }
+
+            var currentUserRole = _currentUserService.GetUserRole();
+            if (currentUserRole == "sub_super_admin" && (admin.Role == "super_admin" || admin.Role == "sub_super_admin"))
+            {
+                return ServiceResult<object>.Fail("Sub Super Admins cannot delete Super Admins or other Sub Super Admins.");
+            }
 
             try
             {
@@ -169,14 +217,25 @@ namespace WebApplication1.Services
             }
             catch (DbUpdateException)
             {
-                return ServiceResult<object>.Fail("Cannot delete this admin because they are tied to existing records (e.g. payments, students, activity logs). Please deactivate them instead.");
+                return ServiceResult<object>.Fail("Cannot delete this admin because they are tied to existing records. Please deactivate them instead.");
             }
         }
 
         public async Task<ServiceResult<object>> DeactivateAdminAsync(long pk, CancellationToken ct = default)
         {
-            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk && (u.Role == "admin" || u.Role == "super_admin"), ct);
+            var admin = await _context.AccountsAdminusers.FirstOrDefaultAsync(u => u.Id == pk, ct);
             if (admin == null) return ServiceResult<object>.NotFound("Admin not found");
+
+            if (admin.Email?.ToLower() == SuperAdminEmail)
+            {
+                return ServiceResult<object>.Fail("The primary Super Admin account cannot be deactivated.");
+            }
+
+            var currentUserRole = _currentUserService.GetUserRole();
+            if (currentUserRole == "sub_super_admin" && (admin.Role == "super_admin" || admin.Role == "sub_super_admin"))
+            {
+                return ServiceResult<object>.Fail("Sub Super Admins cannot deactivate Super Admins or other Sub Super Admins.");
+            }
 
             admin.IsActive = false;
             await _context.SaveChangesAsync(ct);
@@ -187,10 +246,32 @@ namespace WebApplication1.Services
         {
             var permissions = new[] 
             { 
-                new { key = "manage_students", label = "Manage Students" },
-                new { key = "manage_seats", label = "Manage Seats" },
-                new { key = "manage_billing", label = "Manage Billing" },
-                new { key = "manage_attendance", label = "Manage Attendance" }
+                new { category = "Dashboard", permissions = new[] { "Dashboard.View", "Dashboard.Analytics", "Dashboard.Export" } },
+                new { category = "Student Management", permissions = new[] { "StudentManagement.View", "StudentManagement.Add", "StudentManagement.Edit", "StudentManagement.Delete", "StudentManagement.Suspend", "StudentManagement.Activate", "StudentManagement.Import", "StudentManagement.Export", "StudentManagement.ResetPassword" } },
+                new { category = "Attendance", permissions = new[] { "Attendance.View", "Attendance.Mark", "Attendance.Edit", "Attendance.Delete", "Attendance.Export", "Attendance.Manage" } },
+                new { category = "QR Attendance", permissions = new[] { "QRAttendance.View", "QRAttendance.Generate", "QRAttendance.Delete" } },
+                new { category = "Library Management", permissions = new[] { "LibraryManagement.Settings", "LibraryManagement.Timing", "LibraryManagement.Holiday", "LibraryManagement.Seat", "LibraryManagement.Floor", "LibraryManagement.Room", "LibraryManagement.Capacity", "LibraryManagement.Info", "LibraryManagement.Gallery", "LibraryManagement.Facilities", "LibraryManagement.Slider", "LibraryManagement.Review", "LibraryManagement.Achiever" } },
+                new { category = "Notification Management", permissions = new[] { "NotificationManagement.View", "NotificationManagement.Create", "NotificationManagement.Edit", "NotificationManagement.Delete", "NotificationManagement.SendPush", "NotificationManagement.SendEmail", "NotificationManagement.SendSMS", "NotificationManagement.Send" } },
+                new { category = "User Management", permissions = new[] { "UserManagement.View", "UserManagement.Add", "UserManagement.Edit", "UserManagement.Delete", "UserManagement.Activate", "UserManagement.Suspend", "UserManagement.ResetPassword" } },
+                new { category = "Admin Management", permissions = new[] { "AdminManagement.View", "AdminManagement.Create", "AdminManagement.Edit", "AdminManagement.Delete", "AdminManagement.Suspend", "AdminManagement.Activate", "AdminManagement.ResetPassword", "AdminManagement.ChangePermissions", "AdminManagement.ViewActivity", "AdminManagement.Export", "AdminManagement.ManageRoles" } },
+                new { category = "Reports", permissions = new[] { "Reports.View", "Reports.Attendance", "Reports.Student", "Reports.Revenue", "Reports.Export" } },
+                new { category = "Analytics", permissions = new[] { "Analytics.View", "Analytics.Attendance", "Analytics.Student", "Analytics.Revenue" } },
+                new { category = "Fee Management", permissions = new[] { "FeeManagement.View", "FeeManagement.Create", "FeeManagement.Edit", "FeeManagement.Delete", "FeeManagement.Collect", "FeeManagement.Refund", "FeeManagement.Export" } },
+                new { category = "Payment", permissions = new[] { "Payment.View", "Payment.Verify", "Payment.Refund", "Payment.Export" } },
+                new { category = "Membership", permissions = new[] { "Membership.View", "Membership.Create", "Membership.Edit", "Membership.Delete", "Membership.Renew", "Membership.ManagePlans" } },
+                new { category = "Course Management", permissions = new[] { "CourseManagement.View", "CourseManagement.Add", "CourseManagement.Edit", "CourseManagement.Delete" } },
+                new { category = "Batch Management", permissions = new[] { "BatchManagement.View", "BatchManagement.Create", "BatchManagement.Edit", "BatchManagement.Delete" } },
+                new { category = "Staff Management", permissions = new[] { "StaffManagement.View", "StaffManagement.Add", "StaffManagement.Edit", "StaffManagement.Delete", "StaffManagement.Salary" } },
+                new { category = "Visitor Management", permissions = new[] { "VisitorManagement.View", "VisitorManagement.Add", "VisitorManagement.Edit", "VisitorManagement.Delete" } },
+                new { category = "Feedback", permissions = new[] { "Feedback.View", "Feedback.Reply", "Feedback.Delete" } },
+                new { category = "Announcement", permissions = new[] { "Announcement.View", "Announcement.Create", "Announcement.Edit", "Announcement.Delete" } },
+                new { category = "Maintenance", permissions = new[] { "Maintenance.View", "Maintenance.Enable", "Maintenance.Disable", "Maintenance.EditMessage", "Maintenance.ManageSchedule" } },
+                new { category = "System Settings", permissions = new[] { "SystemSettings.View", "SystemSettings.Edit", "SystemSettings.Backup", "SystemSettings.Restore", "SystemSettings.Configuration", "SystemSettings.APIConfiguration", "SystemSettings.SMTPConfiguration", "SystemSettings.StorageConfiguration" } },
+                new { category = "Security", permissions = new[] { "Security.ViewLoginHistory", "Security.ViewActivityLogs", "Security.ClearLogs", "Security.ManageSessions", "Security.ForceLogout", "Security.BlockUsers" } },
+                new { category = "Localization", permissions = new[] { "Localization.Manage", "Localization.Add", "Localization.Edit", "Localization.Delete" } },
+                new { category = "Backup", permissions = new[] { "Backup.Create", "Backup.Download", "Backup.Restore", "Backup.Delete" } },
+                new { category = "Audit Logs", permissions = new[] { "AuditLogs.View", "AuditLogs.Export", "AuditLogs.Delete" } },
+                new { category = "App Settings", permissions = new[] { "AppSettings.Manage" } }
             };
             return ServiceResult<object>.Ok(permissions);
         }

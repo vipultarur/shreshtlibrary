@@ -5,11 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using WebApplication1.Services;
 using System.Collections.Generic;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminSeatsController : ControllerBase
     {
         private readonly IAdminSeatService _adminSeatService;
@@ -89,6 +91,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/layout")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsLayoutAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.GetSeatsLayoutAsync(ct);
@@ -96,6 +99,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/release-all")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsReleaseAllAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.ReleaseAllSeatsAsync(ct);
@@ -103,6 +107,7 @@ namespace WebApplication1.Controllers
         }
         
         [HttpPost("seats/reserve-bulk")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsReserveBulkAsync([FromBody] SeatReserveBulkDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.ReserveBulkSeatsAsync(dto.SeatIds, dto.IsReservedForGirls, ct);
@@ -111,6 +116,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/available")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsAvailableAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.GetAvailableSeatsAsync(ct);
@@ -118,6 +124,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/stats")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsStatsAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.GetSeatsStatsAsync(ct);
@@ -125,6 +132,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsAddAsync([FromBody] SeatCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.AddSeatAsync(dto.Floor, dto.Row, dto.SeatNumber, dto.Status, dto.Notes, dto.IsReservedForGirls, dto.RowRefId, ct);
@@ -132,6 +140,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("seats/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.DeleteSeatAsync(pk, ct);
@@ -140,6 +149,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 200)
         {
             page_size = Math.Clamp(page_size, 1, 500);
@@ -152,6 +162,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.GetSeatDetailAsync(pk, ct);
@@ -160,6 +171,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("seats/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatUpdateAsync(int pk, [FromBody] SeatCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.UpdateSeatAsync(pk, dto.Floor, dto.Row, dto.SeatNumber, dto.Status, dto.Notes, dto.IsReservedForGirls, dto.RowRefId, ct);
@@ -168,6 +180,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPatch("seats/{pk}/status")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatStatusAsync(int pk, [FromBody] SeatUpdateStatusDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.UpdateSeatStatusAsync(pk, dto.Status, dto.Reason, ct);
@@ -176,6 +189,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/{pk}/assign")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatAssignAsync(int pk, [FromBody] SeatAssignDto dto, CancellationToken ct)
         {
             if (long.TryParse(dto.StudentId?.ToString(), out var sid)) {
@@ -187,6 +201,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/{pk}/unassign")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatUnassignAsync(int pk, [FromBody] SeatUnassignDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.UnassignSeatAsync(pk, dto.Reason, ct);
@@ -195,6 +210,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/{pk}/history")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatHistoryAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.GetSeatHistoryAsync(pk, ct);
@@ -202,6 +218,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("floors")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorsListAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.GetFloorsListAsync(ct);
@@ -209,6 +226,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("floors/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.GetFloorDetailAsync(pk, ct);
@@ -217,6 +235,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("floors")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorAddAsync([FromBody] FloorCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.AddFloorAsync(dto.Name, dto.Description, dto.Order, ct);
@@ -224,6 +243,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("floors/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.DeleteFloorAsync(pk, ct);
@@ -232,6 +252,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("rows")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowsListAsync(CancellationToken ct)
         {
             var result = await _adminSeatService.GetRowsListAsync(ct);
@@ -239,6 +260,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("rows/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowDetailAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.GetRowDetailAsync(pk, ct);
@@ -247,6 +269,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("rows")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowAddAsync([FromBody] RowCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.AddRowAsync(dto.FloorId, dto.Label, dto.Order, ct);
@@ -254,6 +277,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("rows/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowDeleteAsync(int pk, CancellationToken ct)
         {
             var result = await _adminSeatService.DeleteRowAsync(pk, ct);
@@ -262,6 +286,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("floors/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorUpdateAsync(int pk, [FromBody] FloorCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.UpdateFloorAsync(pk, dto.Name, dto.Description, dto.Order, ct);
@@ -270,6 +295,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("rows/{pk}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowUpdateAsync(int pk, [FromBody] RowCreateDto dto, CancellationToken ct)
         {
             var result = await _adminSeatService.UpdateRowAsync(pk, dto.FloorId, dto.Label, dto.Order, ct);

@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Http;
 using WebApplication1.Models.Responses;
 using WebApplication1.DTOs.Admin;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [Route("api/v1/admin/sliders")]
     [ApiController]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminSlidersController : ControllerBase
     {
         private readonly IAdminSlidersService _slidersService;
@@ -22,6 +24,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("")]
+        [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> GetSliders(CancellationToken ct)
         {
             var result = await _slidersService.GetSliders(ct);
@@ -29,6 +32,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("")]
+        [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> CreateSlider([FromForm] SliderDto dto, CancellationToken ct)
         {
             var result = await _slidersService.CreateSlider(dto, ct);
@@ -36,6 +40,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("{id}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> UpdateSlider(long id, [FromForm] SliderDto dto, CancellationToken ct)
         {
             var result = await _slidersService.UpdateSlider(id, dto, ct);
@@ -44,6 +49,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> DeleteSlider(long id, CancellationToken ct)
         {
             var result = await _slidersService.DeleteSlider(id, ct);

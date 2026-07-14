@@ -6,11 +6,13 @@ using WebApplication1.Models.DTOs;
 using WebApplication1.Services;
 using WebApplication1.Models.Responses;
 
+using WebApplication1.Utils;
+
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/admin/settings")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminSettingsController : ControllerBase
     {
         private readonly IAdminSettingsService _settingsService;
@@ -21,6 +23,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet]
+        [AuthorizePermission(Permissions.AppSettings.Manage)]
         public async Task<IActionResult> GetSettings(CancellationToken ct)
         {
             var role = User.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
@@ -30,6 +33,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut]
+        [AuthorizePermission(Permissions.AppSettings.Manage)]
         public async Task<IActionResult> UpdateSettings([FromBody] SettingsPayload payload, CancellationToken ct)
         {
             var role = User.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
