@@ -12,7 +12,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/v1/admin/reviews")]
     [ApiController]
-    [Authorize(Roles = WebApplication1.Utils.Constants.Roles.SuperAdmin + "," + WebApplication1.Utils.Constants.Roles.Admin)]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class AdminReviewsController : ControllerBase
     {
         private readonly IAdminLibraryService _libraryService;

@@ -8,7 +8,7 @@ namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/v1/reports")]
-    [Authorize(Roles = "admin,super_admin")]
+    [Authorize(Roles = "admin,super_admin,sub_super_admin")]
     public class ReportsController : ControllerBase
     {
         private readonly WebApplication1.Services.IReportsService _reportsService;
