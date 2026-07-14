@@ -403,7 +403,10 @@ namespace WebApplication1.Services
         {
             pageSize = System.Math.Clamp(pageSize, 1, 100);
             
-            var query = _context.NotificationsNotifications.Where(n => n.ScheduledAt == null || n.SentAt != null).OrderByDescending(n => n.CreatedAt);
+            var query = _context.NotificationsNotifications
+                .Include(n => n.NotificationsNotificationimages)
+                .Where(n => n.ScheduledAt == null || n.SentAt != null)
+                .OrderByDescending(n => n.CreatedAt);
             var totalCount = await query.CountAsync(ct);
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
             
@@ -424,7 +427,14 @@ namespace WebApplication1.Services
                 { "total_recipients", n.TotalRecipients },
                 { "send_push", n.SendPush },
                 { "send_email", n.SendEmail },
-                { "send_sms", n.SendSms }
+                { "send_sms", n.SendSms },
+                { "background_image", n.BackgroundImage },
+                { "layout", n.Layout },
+                { "subtitle", n.Subtitle },
+                { "description", n.Description },
+                { "link_url", n.LinkUrl },
+                { "link_button_text", n.LinkButtonText },
+                { "images", n.NotificationsNotificationimages.Select(img => img.Image).ToList() }
             }).ToList();
             
             return ServiceResult<object>.Ok(new {

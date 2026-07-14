@@ -1140,7 +1140,7 @@ namespace WebApplication1.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LibraryGalleryImages");
+                    b.ToTable("LibraryGalleryImages", (string)null);
                 });
 
             modelBuilder.Entity("WebApplication1.Models.LibraryHomeslider", b =>
