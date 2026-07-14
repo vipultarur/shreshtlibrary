@@ -517,22 +517,27 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<bool>> ClearAllNotificationsAsync(CancellationToken ct = default)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
             {
-                await _context.NotificationsStudentnotifications.ExecuteDeleteAsync(ct);
-                await _context.NotificationsNotificationimages.ExecuteDeleteAsync(ct);
-                await _context.NotificationsNotifications.ExecuteDeleteAsync(ct);
-                
-                await transaction.CommitAsync(ct);
-                return ServiceResult<bool>.Ok(true);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(ct);
-                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return ServiceResult<bool>.Fail($"Failed to clear notifications: {message}");
-            }
+                using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                try
+                {
+                    await _context.NotificationsStudentnotifications.ExecuteDeleteAsync(ct);
+                    await _context.NotificationsNotificationimages.ExecuteDeleteAsync(ct);
+                    await _context.NotificationsNotifications.ExecuteDeleteAsync(ct);
+                    
+                    await transaction.CommitAsync(ct);
+                    return ServiceResult<bool>.Ok(true);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(ct);
+                    var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                    return ServiceResult<bool>.Fail($"Failed to clear notifications: {message}");
+                }
+            });
         }
     }
 }
