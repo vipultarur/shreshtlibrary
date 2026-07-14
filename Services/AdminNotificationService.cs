@@ -520,24 +520,18 @@ namespace WebApplication1.Services
             using var transaction = await _context.Database.BeginTransactionAsync(ct);
             try
             {
-                // Due to EF Core translations for bulk delete, raw SQL might be faster or we can do RemoveRange
-                var allStudentNotifications = await _context.NotificationsStudentnotifications.ToListAsync(ct);
-                _context.NotificationsStudentnotifications.RemoveRange(allStudentNotifications);
-
-                var allNotificationImages = await _context.NotificationsNotificationimages.ToListAsync(ct);
-                _context.NotificationsNotificationimages.RemoveRange(allNotificationImages);
-
-                var allNotifications = await _context.NotificationsNotifications.ToListAsync(ct);
-                _context.NotificationsNotifications.RemoveRange(allNotifications);
+                await _context.NotificationsStudentnotifications.ExecuteDeleteAsync(ct);
+                await _context.NotificationsNotificationimages.ExecuteDeleteAsync(ct);
+                await _context.NotificationsNotifications.ExecuteDeleteAsync(ct);
                 
-                await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return ServiceResult<bool>.Ok(true);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync(ct);
-                return ServiceResult<bool>.Fail($"Failed to clear notifications: {ex.Message}");
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return ServiceResult<bool>.Fail($"Failed to clear notifications: {message}");
             }
         }
     }
