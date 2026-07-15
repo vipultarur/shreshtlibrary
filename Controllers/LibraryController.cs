@@ -87,6 +87,18 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data));
         }
 
+        [HttpGet("library/reviews/my")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        public async Task<IActionResult> GetMyReviewAsync(CancellationToken ct)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.Fail("User not found"));
+
+            var result = await _libraryService.GetMyReviewAsync(userId.Value, ct);
+            return Ok(ApiResponse<object>.Ok(result.Data));
+        }
+
         [HttpPost("library/reviews/submit")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]

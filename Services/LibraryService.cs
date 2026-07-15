@@ -215,6 +215,26 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(summaryData);
         }
 
+        public async Task<ServiceResult<object>> GetMyReviewAsync(long userId, CancellationToken ct = default)
+        {
+            var review = await _context.LibraryReviews
+                .AsNoTracking()
+                .Where(r => r.StudentId == userId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
+                {
+                    id = r.Id,
+                    rating = r.Rating,
+                    comment = r.Comment,
+                    created_at = r.CreatedAt.HasValue ? r.CreatedAt.Value.ToString("O") : null,
+                    is_approved = r.IsApproved
+                })
+                .FirstOrDefaultAsync(ct);
+
+            // Return null if not found, to let frontend know the user hasn't reviewed yet
+            return ServiceResult<object>.Ok(review);
+        }
+
         public async Task<ServiceResult<object>> SubmitReviewAsync(long userId, SubmitReviewRequest request, CancellationToken ct = default)
         {
             if (request.rating < 1 || request.rating > 5)
