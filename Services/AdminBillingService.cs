@@ -1036,7 +1036,7 @@ namespace WebApplication1.Services
 
             if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
 
-            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            byte[] pdfBytes = await GenerateReceiptPdfAsync(payment, ct);
             return ServiceResult<object>.Ok(pdfBytes);
         }
 
@@ -1055,7 +1055,7 @@ namespace WebApplication1.Services
             if (payment.Student == null || string.IsNullOrEmpty(payment.Student.Email))
                 return ServiceResult<object>.Fail("Student email not found.");
 
-            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            byte[] pdfBytes = await GenerateReceiptPdfAsync(payment, ct);
             
             var subject = $"Plan Activated & Payment Receipt - {payment.PaymentId ?? $"TXN{payment.Id}"}";
             var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
@@ -1116,7 +1116,7 @@ namespace WebApplication1.Services
             if (payment.Student == null || string.IsNullOrEmpty(payment.Student.Email))
                 return ServiceResult<object>.Fail("Student email not found.");
 
-            byte[] pdfBytes = GenerateReceiptPdf(payment);
+            byte[] pdfBytes = await GenerateReceiptPdfAsync(payment, ct);
             
             var subject = $"Payment Refunded - {payment.PaymentId ?? $"TXN{payment.Id}"}";
             var studentName = string.IsNullOrWhiteSpace(payment.Student.FirstName) ? "Student" : payment.Student.FirstName;
@@ -1162,9 +1162,28 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(new { success = true });
         }
 
-        private byte[] GenerateReceiptPdf(PaymentsPayment payment)
+        private async Task<byte[]> GenerateReceiptPdfAsync(PaymentsPayment payment, CancellationToken ct)
         {
             QuestPDF.Settings.License = LicenseType.Community;
+
+            var libraryInfo = await _context.LibraryLibraryinfos.FirstOrDefaultAsync(ct);
+            byte[]? logoBytes = null;
+
+            if (libraryInfo != null && !string.IsNullOrEmpty(libraryInfo.Logo))
+            {
+                try
+                {
+                    if (libraryInfo.Logo.StartsWith("http"))
+                    {
+                        using var client = new System.Net.Http.HttpClient();
+                        logoBytes = await client.GetByteArrayAsync(libraryInfo.Logo, ct);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fetching logo for receipt: {ex}");
+                }
+            }
 
             var document = Document.Create(container =>
             {
@@ -1177,14 +1196,42 @@ namespace WebApplication1.Services
 
                     page.Content().Column(col =>
                     {
-                        // Checkmark SVG
-                        var checkmarkSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#10b981\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>";
+                        // Add Logo on top center
+                        if (logoBytes != null)
+                        {
+                            col.Item().AlignCenter().Height(50).Image(logoBytes).FitArea();
+                            col.Item().PaddingBottom(10);
+                        }
+                        else if (libraryInfo != null && !string.IsNullOrEmpty(libraryInfo.LibraryName))
+                        {
+                            col.Item().AlignCenter().Text(libraryInfo.LibraryName).FontSize(16).Bold();
+                            col.Item().PaddingBottom(10);
+                        }
+
+                        // Dynamic Status Icon and Text
+                        var isRefunded = payment.Status.ToLower() == "refunded";
+                        var isPending = payment.Status.ToLower() == "pending";
+
+                        var statusColorHex = isRefunded ? "#ef4444" : (isPending ? "#f59e0b" : "#10b981");
+                        var statusText = isRefunded ? "Refunded" : (isPending ? "Pending" : "Successful");
                         
-                        col.Item().AlignCenter().Width(40).Height(40).Svg(checkmarkSvg);
+                        var svgIcon = isRefunded 
+                            ? $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"{statusColorHex}\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/></svg>"
+                            : (isPending 
+                                ? $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"{statusColorHex}\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg>"
+                                : $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"{statusColorHex}\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>");
                         
-                        col.Item().PaddingTop(15).AlignCenter().Text("Successful").FontSize(18).Bold().FontColor(Colors.Grey.Darken4);
+                        col.Item().AlignCenter().Width(40).Height(40).Svg(svgIcon);
                         
-                        var studentName = payment.Student != null ? payment.Student.FirstName : "Student";
+                        col.Item().PaddingTop(15).AlignCenter().Text(statusText).FontSize(18).Bold().FontColor(Colors.Grey.Darken4);
+                        
+                        var studentName = "Student";
+                        if (payment.Student != null)
+                        {
+                            studentName = (payment.Student.FirstName + " " + payment.Student.LastName).Trim();
+                            if (string.IsNullOrWhiteSpace(studentName)) studentName = "Student";
+                        }
+                        
                         col.Item().PaddingTop(5).PaddingBottom(25).AlignCenter()
                             .Text($"{studentName}, your receipt has been generated.").FontSize(11).FontColor(Colors.Grey.Medium);
                         
@@ -1225,8 +1272,9 @@ namespace WebApplication1.Services
 
                         col.Item().PaddingBottom(20).Row(row =>
                         {
-                            row.RelativeItem().Text("Total charge").FontColor(Colors.Grey.Medium);
-                            row.RelativeItem().AlignRight().Text($"Rs. {payment.Amount:0.00}").FontSize(12).Bold().FontColor(Colors.Grey.Darken4);
+                            row.RelativeItem().Text(payment.Status.ToLower() == "refunded" ? "Total Refunded" : "Total charge").FontColor(Colors.Grey.Medium);
+                            var amountDisplay = (payment.Status.ToLower() == "refunded" && payment.RefundAmount.HasValue) ? payment.RefundAmount.Value : payment.Amount;
+                            row.RelativeItem().AlignRight().Text($"Rs. {amountDisplay:0.00}").FontSize(12).Bold().FontColor(Colors.Grey.Darken4);
                         });
 
                         col.Item().PaddingBottom(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
@@ -1245,6 +1293,34 @@ namespace WebApplication1.Services
                                               (payment.Status.ToLower() == "pending" ? Colors.Amber.Medium : Colors.Red.Medium);
                             row.RelativeItem().AlignRight().Text($"• {payment.Status.ToUpper()}").FontColor(statusColor).Bold();
                         });
+
+                        // Library Information at the bottom
+                        if (libraryInfo != null)
+                        {
+                            col.Item().PaddingTop(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+                            col.Item().PaddingTop(15).AlignCenter().Text("Library Information").FontSize(12).Bold().FontColor(Colors.Grey.Darken4);
+                            
+                            col.Item().PaddingTop(5).Column(libCol =>
+                            {
+                                if (!string.IsNullOrEmpty(libraryInfo.AddressLine1))
+                                {
+                                    var address = $"{libraryInfo.AddressLine1}";
+                                    if (!string.IsNullOrEmpty(libraryInfo.AddressLine2)) address += $", {libraryInfo.AddressLine2}";
+                                    address += $", {libraryInfo.City}, {libraryInfo.State} - {libraryInfo.PinCode}";
+                                    libCol.Item().AlignCenter().Text(address).FontSize(10).FontColor(Colors.Grey.Medium);
+                                }
+                                
+                                if (!string.IsNullOrEmpty(libraryInfo.ContactNumber))
+                                {
+                                    libCol.Item().AlignCenter().Text($"Phone: {libraryInfo.ContactNumber}").FontSize(10).FontColor(Colors.Grey.Medium);
+                                }
+
+                                if (!string.IsNullOrEmpty(libraryInfo.Website))
+                                {
+                                    libCol.Item().AlignCenter().Text($"Website: {libraryInfo.Website}").FontSize(10).FontColor(Colors.Grey.Medium);
+                                }
+                            });
+                        }
                     });
                 });
             });
