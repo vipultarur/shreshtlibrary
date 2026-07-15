@@ -1172,12 +1172,25 @@ namespace WebApplication1.Services
             if (libraryInfo != null)
             {
                 var imageUrl = !string.IsNullOrWhiteSpace(libraryInfo.BannerImage) ? libraryInfo.BannerImage : libraryInfo.Logo;
-                if (!string.IsNullOrWhiteSpace(imageUrl) && imageUrl.StartsWith("http"))
+                if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
                     try
                     {
-                        using var client = new System.Net.Http.HttpClient();
-                        logoBytes = await client.GetByteArrayAsync(imageUrl, ct);
+                        if (imageUrl.StartsWith("http"))
+                        {
+                            using var client = new System.Net.Http.HttpClient();
+                            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                            client.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+                            logoBytes = await client.GetByteArrayAsync(imageUrl, ct);
+                        }
+                        else
+                        {
+                            var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", imageUrl.TrimStart('/'));
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                logoBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
