@@ -1169,19 +1169,20 @@ namespace WebApplication1.Services
             var libraryInfo = await _context.LibraryLibraryinfos.FirstOrDefaultAsync(ct);
             byte[]? logoBytes = null;
 
-            if (libraryInfo != null && !string.IsNullOrEmpty(libraryInfo.Logo))
+            if (libraryInfo != null)
             {
-                try
+                var imageUrl = !string.IsNullOrWhiteSpace(libraryInfo.BannerImage) ? libraryInfo.BannerImage : libraryInfo.Logo;
+                if (!string.IsNullOrWhiteSpace(imageUrl) && imageUrl.StartsWith("http"))
                 {
-                    if (libraryInfo.Logo.StartsWith("http"))
+                    try
                     {
                         using var client = new System.Net.Http.HttpClient();
-                        logoBytes = await client.GetByteArrayAsync(libraryInfo.Logo, ct);
+                        logoBytes = await client.GetByteArrayAsync(imageUrl, ct);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error fetching logo for receipt: {ex}");
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error fetching logo for receipt: {ex}");
+                    }
                 }
             }
 
