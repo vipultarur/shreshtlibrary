@@ -13,12 +13,12 @@ namespace WebApplication1.Services
     public class AdminSlidersService : IAdminSlidersService
     {
         private readonly IRepository<LibraryHomeslider> _repository;
-        private readonly IRepository<LibraryDatabasefile> _fileRepository;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AdminSlidersService(IRepository<LibraryHomeslider> repository, IRepository<LibraryDatabasefile> fileRepository)
+        public AdminSlidersService(IRepository<LibraryHomeslider> repository, ICloudinaryService cloudinary)
         {
             _repository = repository;
-            _fileRepository = fileRepository;
+            _cloudinary = cloudinary;
         }
 
         public async Task<ServiceResult<object>> GetSliders(CancellationToken ct = default)
@@ -54,46 +54,11 @@ namespace WebApplication1.Services
 
             if (dto.Image != null)
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var mediaDir = isDev 
-                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"))
-                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "sliders");
-                if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
-
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
                 var ext = System.IO.Path.GetExtension(dto.Image.FileName).ToLowerInvariant();
                 if (!allowedExtensions.Contains(ext)) return ServiceResult<object>.Fail("Invalid image format.");
 
-                var fileName = $"slider_{Guid.NewGuid()}{ext}";
-                var relativePath = $"sliders/{fileName}";
-                var filePath = System.IO.Path.Combine(mediaDir, fileName);
-
-                using var memoryStream = new System.IO.MemoryStream();
-                await dto.Image.CopyToAsync(memoryStream, ct);
-                var fileData = memoryStream.ToArray();
-
-                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
-                {
-                    await stream.WriteAsync(fileData, 0, fileData.Length, ct);
-                }
-
-                try
-                {
-                    _fileRepository.Add(new LibraryDatabasefile
-                    {
-                        Name = relativePath,
-                        Data = fileData,
-                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _fileRepository.SaveChangesAsync(ct);
-                }
-                catch (Exception ex) 
-                {
-                    Serilog.Log.Error(ex, "Failed to insert slider database file record");
-                }
-
-                slider.Image = $"sliders/{fileName}";
+                slider.Image = await _cloudinary.UploadImageAsync(dto.Image, "sliders");
             }
 
             _repository.Add(slider);
@@ -125,46 +90,15 @@ namespace WebApplication1.Services
 
             if (dto.Image != null)
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var mediaDir = isDev 
-                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "sliders"))
-                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "sliders");
-                if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
-
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
                 var ext = System.IO.Path.GetExtension(dto.Image.FileName).ToLowerInvariant();
                 if (!allowedExtensions.Contains(ext)) return ServiceResult<object>.Fail("Invalid image format.");
 
-                var fileName = $"slider_{Guid.NewGuid()}{ext}";
-                var relativePath = $"sliders/{fileName}";
-                var filePath = System.IO.Path.Combine(mediaDir, fileName);
-
-                using var memoryStream = new System.IO.MemoryStream();
-                await dto.Image.CopyToAsync(memoryStream, ct);
-                var fileData = memoryStream.ToArray();
-
-                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
+                var newImage = await _cloudinary.UploadImageAsync(dto.Image, "sliders");
+                if (!string.IsNullOrEmpty(newImage)) 
                 {
-                    await stream.WriteAsync(fileData, 0, fileData.Length, ct);
+                    slider.Image = newImage;
                 }
-
-                try
-                {
-                    _fileRepository.Add(new LibraryDatabasefile
-                    {
-                        Name = relativePath,
-                        Data = fileData,
-                        ContentType = dto.Image.ContentType ?? "application/octet-stream",
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _fileRepository.SaveChangesAsync(ct);
-                }
-                catch (Exception ex) 
-                {
-                    Serilog.Log.Error(ex, "Failed to insert slider database file record");
-                }
-
-                slider.Image = $"sliders/{fileName}";
             }
 
             _repository.Update(slider);
