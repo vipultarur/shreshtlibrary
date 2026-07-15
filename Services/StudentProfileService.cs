@@ -132,22 +132,7 @@ namespace WebApplication1.Services
             }
             else
             {
-                var mediaPath = _env.IsDevelopment() 
-                    ? Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "shreshtlibrary", "media"))
-                    : Path.Combine(_env.ContentRootPath, "media");
-
-                var uploadsFolder = Path.Combine(mediaPath, "profiles");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                var uniqueFileName = Guid.NewGuid().ToString() + ext;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
-                {
-                    await profile_photo.CopyToAsync(fileStream, ct);
-                }
-
-                profile.ProfilePhoto = "profiles/" + uniqueFileName;
+                return ApiResponse<object>.Fail("Failed to upload profile photo to Cloudinary.");
             }
 
             await _repository.SaveChangesAsync(ct);

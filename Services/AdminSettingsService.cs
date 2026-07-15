@@ -94,6 +94,17 @@ namespace WebApplication1.Services
                 result.Add("wa_api_key", waApiKey?.Value ?? "");
             }
 
+            if (role == "super_admin" || role == "sub_super_admin")
+            {
+                var cloudinaryCloudName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_cloud_name", ct);
+                var cloudinaryApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_api_key", ct);
+                var cloudinaryApiSecret = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_api_secret", ct);
+
+                result.Add("cloudinary_cloud_name", cloudinaryCloudName?.Value ?? "");
+                result.Add("cloudinary_api_key", cloudinaryApiKey?.Value ?? "");
+                result.Add("cloudinary_api_secret", cloudinaryApiSecret?.Value ?? "");
+            }
+
             return ServiceResult<object>.Ok(result);
         }
 
@@ -153,25 +164,25 @@ namespace WebApplication1.Services
                 }
             }
 
+            async Task UpdateGlobalSetting(string key, string value, string desc, CancellationToken cancellationToken)
+            {
+                if (value == null) return;
+                var setting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == key, cancellationToken);
+                if (setting == null)
+                {
+                    _context.CoreGlobalsettings.Add(new CoreGlobalsetting { Key = key, Value = value, Description = desc });
+                }
+                else
+                {
+                    setting.Value = value;
+                }
+            }
+
             if (role == "super_admin")
             {
                 if (payload.MaintenanceMode.HasValue)
                 {
                     await UpdateGlobalSetting("MAINTENANCE_MODE", payload.MaintenanceMode.Value ? "true" : "false", "App Maintenance Mode", ct);
-                }
-
-                async Task UpdateGlobalSetting(string key, string value, string desc, CancellationToken cancellationToken)
-                {
-                    if (value == null) return;
-                    var setting = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == key, cancellationToken);
-                    if (setting == null)
-                    {
-                        _context.CoreGlobalsettings.Add(new CoreGlobalsetting { Key = key, Value = value, Description = desc });
-                    }
-                    else
-                    {
-                        setting.Value = value;
-                    }
                 }
 
                 if (!string.IsNullOrEmpty(payload.BrevoApiKey) && payload.BrevoApiKey != "******")
@@ -186,6 +197,19 @@ namespace WebApplication1.Services
                 if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
                 {
                     await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key", ct);
+                }
+            }
+
+            if (role == "super_admin" || role == "sub_super_admin")
+            {
+                await UpdateGlobalSetting("cloudinary_cloud_name", payload.CloudinaryCloudName, "Cloudinary Cloud Name", ct);
+                if (!string.IsNullOrEmpty(payload.CloudinaryApiKey) && payload.CloudinaryApiKey != "******")
+                {
+                    await UpdateGlobalSetting("cloudinary_api_key", payload.CloudinaryApiKey, "Cloudinary API Key", ct);
+                }
+                if (!string.IsNullOrEmpty(payload.CloudinaryApiSecret) && payload.CloudinaryApiSecret != "******")
+                {
+                    await UpdateGlobalSetting("cloudinary_api_secret", payload.CloudinaryApiSecret, "Cloudinary API Secret", ct);
                 }
             }
 

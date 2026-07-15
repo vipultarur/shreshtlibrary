@@ -129,29 +129,15 @@ namespace WebApplication1.Services
                 }
                 else
                 {
-                    var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                    var mediaPath = isDev 
-                        ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
-                        : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
-                    var fileName = $"notifications/bg_{Guid.NewGuid()}{System.IO.Path.GetExtension(dto.BackgroundImage.FileName)}";
-                    var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
-                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
-                    using var stream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
-                    await dto.BackgroundImage.CopyToAsync(stream, ct);
-                    notification.BackgroundImage = fileName;
+                    return ServiceResult<object>.Fail("Failed to upload background image to Cloudinary.");
                 }
             }
 
             _context.NotificationsNotifications.Add(notification);
             await _context.SaveChangesAsync(ct);
 
-            // Handle gallery images for half_image / full_image layouts
             if (dto.Images != null && dto.Images.Count > 0)
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var mediaPath = isDev 
-                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media"))
-                    : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media");
                 int sortOrder = 0;
                 foreach (var img in dto.Images)
                 {
@@ -163,12 +149,7 @@ namespace WebApplication1.Services
                     }
                     else
                     {
-                        var fileName = $"notifications/img_{Guid.NewGuid()}{System.IO.Path.GetExtension(img.FileName)}";
-                        var uploadPath = System.IO.Path.Combine(mediaPath, fileName);
-                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(uploadPath)!);
-                        using var imgStream = new System.IO.FileStream(uploadPath, System.IO.FileMode.Create);
-                        await img.CopyToAsync(imgStream, ct);
-                        imageVal = fileName;
+                        return ServiceResult<object>.Fail("Failed to upload notification gallery image to Cloudinary.");
                     }
 
                     _context.NotificationsNotificationimages.Add(new NotificationsNotificationimage

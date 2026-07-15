@@ -39,50 +39,15 @@ namespace WebApplication1.Services
     public class AdminLibraryService : IAdminLibraryService
     {
         private readonly ApplicationDbContext _context;
-        private readonly string _mediaDir;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AdminLibraryService(ApplicationDbContext context)
+        public AdminLibraryService(ApplicationDbContext context, ICloudinaryService cloudinary)
         {
             _context = context;
-            var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-            _mediaDir = isDev 
-                ? Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "library"))
-                : Path.Combine(Directory.GetCurrentDirectory(), "media", "library");
+            _cloudinary = cloudinary;
         }
 
-        private async Task<string?> SaveImageAsync(IFormFile? file)
-        {
-            if (file == null) return null;
-            if (!Directory.Exists(_mediaDir)) Directory.CreateDirectory(_mediaDir);
-            var ext = Path.GetExtension(file.FileName);
-            var fileName = $"img_{Guid.NewGuid()}{ext}";
-            var relativePath = $"library/{fileName}";
-            var filePath = Path.Combine(_mediaDir, fileName);
-            
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
-            var fileData = memoryStream.ToArray();
 
-            // Save to disk
-            using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
-            {
-                await stream.WriteAsync(fileData, 0, fileData.Length);
-            }
-
-            // Save to DB
-            try
-            {
-                var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
-                await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, file.ContentType ?? "application/octet-stream", DateTime.UtcNow);
-            }
-            catch (Exception ex)
-            {
-                // Ignore DB save errors to not break the flow if table doesn't exist
-                Serilog.Log.Error(ex, "Failed to insert library database file record");
-            }
-
-            return relativePath;
-        }
 
         public async Task<ServiceResult<object>> GetLibraryInfo(CancellationToken ct = default)
         {
@@ -98,8 +63,8 @@ namespace WebApplication1.Services
                 {
                     id = info.Id,
                     library_name = info.LibraryName,
-                    logo = !string.IsNullOrEmpty(info.Logo) ? $"/media/{info.Logo}" : null,
-                    banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"/media/{info.BannerImage}" : null,
+                    logo = !string.IsNullOrEmpty(info.Logo) ? (info.Logo.StartsWith("http") ? info.Logo : $"/media/{info.Logo}") : null,
+                    banner_image = !string.IsNullOrEmpty(info.BannerImage) ? (info.BannerImage.StartsWith("http") ? info.BannerImage : $"/media/{info.BannerImage}") : null,
                     description = info.Description,
                     established_year = info.EstablishedYear,
                     owner_name = info.OwnerName,
@@ -247,8 +212,8 @@ namespace WebApplication1.Services
                 if (dto.FooterText != null) info.FooterText = dto.FooterText;
 
 
-                if (dto.Logo != null) info.Logo = await SaveImageAsync(dto.Logo) ?? info.Logo;
-                if (dto.BannerImage != null) info.BannerImage = await SaveImageAsync(dto.BannerImage) ?? info.BannerImage;
+                if (dto.Logo != null) info.Logo = await _cloudinary.UploadImageAsync(dto.Logo, "library") ?? info.Logo;
+                if (dto.BannerImage != null) info.BannerImage = await _cloudinary.UploadImageAsync(dto.BannerImage, "library") ?? info.BannerImage;
 
                 info.UpdatedAt = DateTime.UtcNow;
 
@@ -289,7 +254,7 @@ namespace WebApplication1.Services
                 id = f.Id,
                 name = f.Name,
                 description = f.Description,
-                image = !string.IsNullOrEmpty(f.Image) ? $"/media/{f.Image}" : null,
+                image = !string.IsNullOrEmpty(f.Image) ? (f.Image.StartsWith("http") ? f.Image : $"/media/{f.Image}") : null,
                 icon_key = f.IconKey,
                 order = f.Order,
                 is_active = f.IsActive
@@ -300,7 +265,7 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> CreateFacility(AdminLibraryController.FacilityDto dto, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
-            var iconPath = await SaveImageAsync(dto.Image);
+            var iconPath = await _cloudinary.UploadImageAsync(dto.Image, "library");
             int order = 0;
             if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
 
@@ -323,7 +288,7 @@ namespace WebApplication1.Services
                 id = facility.Id,
                 name = facility.Name,
                 description = facility.Description,
-                image = !string.IsNullOrEmpty(facility.Image) ? $"/media/{facility.Image}" : null,
+                image = !string.IsNullOrEmpty(facility.Image) ? (facility.Image.StartsWith("http") ? facility.Image : $"/media/{facility.Image}") : null,
                 icon_key = facility.IconKey,
                 order = facility.Order,
                 is_active = facility.IsActive
@@ -342,7 +307,7 @@ namespace WebApplication1.Services
             if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) facility.IsActive = a;
             if (dto.Image != null)
             {
-                facility.Image = await SaveImageAsync(dto.Image) ?? facility.Image;
+                facility.Image = await _cloudinary.UploadImageAsync(dto.Image, "library") ?? facility.Image;
             }
 
             await _context.SaveChangesAsync(ct);
@@ -351,7 +316,7 @@ namespace WebApplication1.Services
                 id = facility.Id,
                 name = facility.Name,
                 description = facility.Description,
-                image = !string.IsNullOrEmpty(facility.Image) ? $"/media/{facility.Image}" : null,
+                image = !string.IsNullOrEmpty(facility.Image) ? (facility.Image.StartsWith("http") ? facility.Image : $"/media/{facility.Image}") : null,
                 icon_key = facility.IconKey,
                 order = facility.Order,
                 is_active = facility.IsActive
@@ -386,7 +351,7 @@ namespace WebApplication1.Services
                 goal = a.Goal,
                 year = a.Year,
                 is_featured = a.IsFeatured,
-                photo = !string.IsNullOrEmpty(a.Photo) ? $"/media/{a.Photo}" : null,
+                photo = !string.IsNullOrEmpty(a.Photo) ? (a.Photo.StartsWith("http") ? a.Photo : $"/media/{a.Photo}") : null,
                 order = a.Order,
                 is_active = a.IsActive
             });
@@ -396,7 +361,7 @@ namespace WebApplication1.Services
         public async Task<ServiceResult<object>> CreateAchiever(AdminLibraryController.AchieverDto dto, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
-            var imagePath = await SaveImageAsync(dto.Photo);
+            var imagePath = await _cloudinary.UploadImageAsync(dto.Photo, "library");
             int year = DateTime.Now.Year;
             if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) year = y;
 
@@ -430,7 +395,7 @@ namespace WebApplication1.Services
                 goal = achiever.Goal,
                 year = achiever.Year,
                 is_featured = achiever.IsFeatured,
-                photo = !string.IsNullOrEmpty(achiever.Photo) ? $"/media/{achiever.Photo}" : null,
+                photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
                 order = achiever.Order,
                 is_active = achiever.IsActive
             });
@@ -450,7 +415,7 @@ namespace WebApplication1.Services
             if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) achiever.IsActive = a;
             if (dto.Photo != null)
             {
-                achiever.Photo = await SaveImageAsync(dto.Photo) ?? achiever.Photo;
+                achiever.Photo = await _cloudinary.UploadImageAsync(dto.Photo, "library") ?? achiever.Photo;
             }
 
             await _context.SaveChangesAsync(ct);
@@ -462,7 +427,7 @@ namespace WebApplication1.Services
                 goal = achiever.Goal,
                 year = achiever.Year,
                 is_featured = achiever.IsFeatured,
-                photo = !string.IsNullOrEmpty(achiever.Photo) ? $"/media/{achiever.Photo}" : null,
+                photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
                 order = achiever.Order,
                 is_active = achiever.IsActive
             });
@@ -601,7 +566,7 @@ namespace WebApplication1.Services
             var images = await _context.LibraryGalleryImages.AsNoTracking().OrderBy(i => i.Order).ThenByDescending(i => i.CreatedAt).ToListAsync(ct);
             var data = images.Select(i => new {
                 id = i.Id,
-                image_url = !string.IsNullOrEmpty(i.ImageUrl) ? $"/media/{i.ImageUrl}" : null,
+                image_url = !string.IsNullOrEmpty(i.ImageUrl) ? (i.ImageUrl.StartsWith("http") ? i.ImageUrl : $"/media/{i.ImageUrl}") : null,
                 caption = i.Caption,
                 order = i.Order,
                 created_at = i.CreatedAt
@@ -611,7 +576,7 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> UploadGalleryImage(AdminLibraryController.GalleryImageDto dto, CancellationToken ct = default)
         {
-            var imagePath = await SaveImageAsync(dto.Image);
+            var imagePath = await _cloudinary.UploadImageAsync(dto.Image, "library");
             if (string.IsNullOrEmpty(imagePath)) return ServiceResult<object>.Fail("Failed to upload image.");
 
             int order = 0;
@@ -630,7 +595,7 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(new
             {
                 id = galleryImage.Id,
-                image_url = !string.IsNullOrEmpty(galleryImage.ImageUrl) ? $"/media/{galleryImage.ImageUrl}" : null,
+                image_url = !string.IsNullOrEmpty(galleryImage.ImageUrl) ? (galleryImage.ImageUrl.StartsWith("http") ? galleryImage.ImageUrl : $"/media/{galleryImage.ImageUrl}") : null,
                 caption = galleryImage.Caption,
                 order = galleryImage.Order,
                 created_at = galleryImage.CreatedAt

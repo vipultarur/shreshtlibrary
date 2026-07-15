@@ -20,14 +20,16 @@ namespace WebApplication1.Services
         private readonly IMemoryCache _cache;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ICloudinaryService _cloudinary;
 
-        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory)
+        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory, ICloudinaryService cloudinary)
         {
             _context = context;
             _emailService = emailService;
             _cache = cache;
             _dateTimeProvider = dateTimeProvider;
             _scopeFactory = scopeFactory;
+            _cloudinary = cloudinary;
         }
 
         public async Task<ServiceResult<object>> GetStudentCountsAsync(CancellationToken ct = default)
@@ -152,8 +154,8 @@ namespace WebApplication1.Services
                     gender = s.gender,
                     caste = s.caste,
                     address = s.address,
-                    profile_photo = !string.IsNullOrEmpty(s.profile_photo) ? $"{scheme}://{host}/media/{s.profile_photo}" : null,
-                    profile_image = !string.IsNullOrEmpty(s.profile_photo) ? $"{scheme}://{host}/media/{s.profile_photo}" : null,
+                    profile_photo = !string.IsNullOrEmpty(s.profile_photo) ? (s.profile_photo.StartsWith("http") ? s.profile_photo : $"{scheme}://{host}/media/{s.profile_photo}") : null,
+                    profile_image = !string.IsNullOrEmpty(s.profile_photo) ? (s.profile_photo.StartsWith("http") ? s.profile_photo : $"{scheme}://{host}/media/{s.profile_photo}") : null,
                     parent_mobile = s.parent_mobile,
                     status = s.status,
                     suspension_reason = s.suspension_reason,
@@ -227,8 +229,8 @@ namespace WebApplication1.Services
                 gender = dbStudent.gender,
                 caste = dbStudent.caste,
                 address = dbStudent.address,
-                profile_photo = !string.IsNullOrEmpty(dbStudent.profile_photo) ? $"{scheme}://{host}/media/{dbStudent.profile_photo}" : null,
-                profile_image = !string.IsNullOrEmpty(dbStudent.profile_photo) ? $"{scheme}://{host}/media/{dbStudent.profile_photo}" : null,
+                profile_photo = !string.IsNullOrEmpty(dbStudent.profile_photo) ? (dbStudent.profile_photo.StartsWith("http") ? dbStudent.profile_photo : $"{scheme}://{host}/media/{dbStudent.profile_photo}") : null,
+                profile_image = !string.IsNullOrEmpty(dbStudent.profile_photo) ? (dbStudent.profile_photo.StartsWith("http") ? dbStudent.profile_photo : $"{scheme}://{host}/media/{dbStudent.profile_photo}") : null,
                 parent_mobile = dbStudent.parent_mobile,
                 status = dbStudent.status,
                 suspension_reason = dbStudent.suspension_reason,
@@ -652,40 +654,17 @@ namespace WebApplication1.Services
             if (photo == null || photo.Length == 0)
                 return ServiceResult<object>.Fail("No file uploaded");
 
-            var uploadsFolder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "media", "student_photos");
-            if (!System.IO.Directory.Exists(uploadsFolder))
-                System.IO.Directory.CreateDirectory(uploadsFolder);
+            var cloudinaryUrl = await _cloudinary.UploadImageAsync(photo, "profiles");
+            if (string.IsNullOrEmpty(cloudinaryUrl))
+                return ServiceResult<object>.Fail("Failed to upload photo to Cloudinary");
 
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + photo.FileName;
-            var relativePath = "student_photos/" + uniqueFileName;
-            var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-
-            using var memoryStream = new System.IO.MemoryStream();
-            await photo.CopyToAsync(memoryStream, ct);
-            var fileData = memoryStream.ToArray();
-
-            using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
-            {
-                await fileStream.WriteAsync(fileData, 0, fileData.Length, ct);
-            }
-
-            try
-            {
-                var sql = "INSERT INTO library_databasefile (name, data, content_type, created_at) VALUES (@p0, @p1, @p2, @p3)";
-                await _context.Database.ExecuteSqlRawAsync(sql, relativePath, fileData, photo.ContentType ?? "application/octet-stream", DateTime.UtcNow);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Failed to insert student photo database file record");
-            }
-
-            student.StudentsStudentprofile!.ProfilePhoto = relativePath;
+            student.StudentsStudentprofile!.ProfilePhoto = cloudinaryUrl;
             student.StudentsStudentprofile.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(ct);
 
             return ServiceResult<object>.Ok(new { 
-                profile_photo = $"{scheme}://{host}/media/{relativePath}" 
+                profile_photo = cloudinaryUrl 
             });
         }
 

@@ -245,7 +245,7 @@ namespace WebApplication1.Services
                 .ToListAsync(ct);
 
             var results = students.Select(s => {
-                var photoPath = !string.IsNullOrEmpty(s.profile_photo) ? $"/media/{s.profile_photo}" : null;
+                var photoPath = !string.IsNullOrEmpty(s.profile_photo) ? (s.profile_photo.StartsWith("http") ? s.profile_photo : $"/media/{s.profile_photo}") : null;
                 return new {
                     s.id, s.user_id, s.student_id, s.username, s.first_name, s.middle_name, s.last_name, s.email, s.mobile,
                     s.is_active, s.goal, s.dob, s.gender, s.caste, s.address, 

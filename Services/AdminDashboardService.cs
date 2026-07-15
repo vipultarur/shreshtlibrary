@@ -76,34 +76,7 @@ namespace WebApplication1.Services
                 }
                 else
                 {
-                    var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                    var mediaDir = isDev 
-                        ? System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "shreshtlibrary", "media", "admins"))
-                        : System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "media", "admins");
-                    if (!System.IO.Directory.Exists(mediaDir)) System.IO.Directory.CreateDirectory(mediaDir);
-
-                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                    var ext = System.IO.Path.GetExtension(request.profile_image.FileName).ToLowerInvariant();
-                    if (!allowedExtensions.Contains(ext)) throw new InvalidOperationException("Invalid file type.");
-                    
-                    var fileName = $"admin_{userId}_{Guid.NewGuid()}{ext}";
-                    var filePath = System.IO.Path.Combine(mediaDir, fileName);
-
-                    using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None, 4096, System.IO.FileOptions.Asynchronous))
-                    {
-                        await request.profile_image.CopyToAsync(stream, ct);
-                    }
-
-                    try
-                    {
-                        user.ProfileImage = $"admins/{fileName}";
-                        await _context.SaveChangesAsync(ct);
-                    }
-                    catch
-                    {
-                        if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
-                        throw;
-                    }
+                    return null; // Return null if Cloudinary upload fails
                 }
             }
             else

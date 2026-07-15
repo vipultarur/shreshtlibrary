@@ -612,7 +612,7 @@ namespace WebApplication1.Services
             });
             await _context.SaveChangesAsync(ct);
 
-            return ServiceResult<object>.Ok(new { tokens = new { access = accessToken, refresh = refreshToken }, user = new { id = user.Id, username = user.Username, first_name = user.FirstName, last_name = user.LastName, email = user.Email, mobile = user.Mobile, role = user.Role, permissions = ParsePermissions(user.Permissions), profile_image = user.ProfileImage != null ? $"/media/{user.ProfileImage}" : null, is_active = user.IsActive, date_joined = user.DateJoined.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"), last_login = user.LastLogin?.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ") } }, "Admin login successful.");
+            return ServiceResult<object>.Ok(new { tokens = new { access = accessToken, refresh = refreshToken }, user = new { id = user.Id, username = user.Username, first_name = user.FirstName, last_name = user.LastName, email = user.Email, mobile = user.Mobile, role = user.Role, permissions = ParsePermissions(user.Permissions), profile_image = user.ProfileImage != null ? (user.ProfileImage.StartsWith("http") ? user.ProfileImage : $"/media/{user.ProfileImage}") : null, is_active = user.IsActive, date_joined = user.DateJoined.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"), last_login = user.LastLogin?.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ") } }, "Admin login successful.");
         }
 
         public async Task<ServiceResult<object>> ForgotPasswordAsync(ForgotPasswordRequest request, string ipAddress, string path, string method, CancellationToken ct = default)

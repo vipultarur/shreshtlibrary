@@ -251,7 +251,7 @@ namespace WebApplication1.Services
                         username = item.Username,
                         first_name = item.FirstName,
                         last_name = item.LastName,
-                        profile_image = !string.IsNullOrEmpty(item.ProfilePhoto) ? $"{mediaBaseUrl}/media/{item.ProfilePhoto}" : null
+                        profile_image = !string.IsNullOrEmpty(item.ProfilePhoto) ? (item.ProfilePhoto.StartsWith("http") ? item.ProfilePhoto : $"{mediaBaseUrl}/media/{item.ProfilePhoto}") : null
                     },
                     total_minutes = item.TotalMinutes,
                     hours_formatted = $"{item.TotalMinutes / 60}h {item.TotalMinutes % 60}m",

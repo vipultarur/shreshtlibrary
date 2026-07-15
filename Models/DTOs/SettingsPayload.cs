@@ -52,5 +52,14 @@ namespace WebApplication1.Models.DTOs
 
         [JsonPropertyName("maintenance_mode")]
         public bool? MaintenanceMode { get; set; }
+
+        [JsonPropertyName("cloudinary_cloud_name")]
+        public string? CloudinaryCloudName { get; set; }
+
+        [JsonPropertyName("cloudinary_api_key")]
+        public string? CloudinaryApiKey { get; set; }
+
+        [JsonPropertyName("cloudinary_api_secret")]
+        public string? CloudinaryApiSecret { get; set; }
     }
 }

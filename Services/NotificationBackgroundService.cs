@@ -92,14 +92,14 @@ namespace WebApplication1.Services
 
                         if (!string.IsNullOrEmpty(notification.BackgroundImage))
                         {
-                            data["background_image"] = $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
+                            data["background_image"] = notification.BackgroundImage.StartsWith("http") ? notification.BackgroundImage : $"{baseUrl.TrimEnd('/')}/media/{notification.BackgroundImage}";
                         }
                         
                         var firstImage = await context.NotificationsNotificationimages
                             .FirstOrDefaultAsync(i => i.NotificationId == notification.Id, stoppingToken);
                         if (firstImage != null)
                         {
-                            data["image_url"] = $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
+                            data["image_url"] = firstImage.Image.StartsWith("http") ? firstImage.Image : $"{baseUrl.TrimEnd('/')}/media/{firstImage.Image}";
                         }
                         
                         try

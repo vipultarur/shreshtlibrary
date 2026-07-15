@@ -62,10 +62,10 @@ namespace WebApplication1.Services
                     { "link_button_text", string.IsNullOrEmpty(sn.Notification.LinkButtonText) ? null : sn.Notification.LinkButtonText },
                     { "layout", sn.Notification.Layout },
                     { "display_mode", sn.Notification.DisplayMode },
-                    { "background_image", string.IsNullOrEmpty(sn.Notification.BackgroundImage) ? null : $"/media/{sn.Notification.BackgroundImage}" },
+                    { "background_image", string.IsNullOrEmpty(sn.Notification.BackgroundImage) ? null : (sn.Notification.BackgroundImage.StartsWith("http") ? sn.Notification.BackgroundImage : $"/media/{sn.Notification.BackgroundImage}") },
                     { "event_date", sn.Notification.EventDate?.ToString("yyyy-MM-dd") },
                     { "images", sn.Notification.NotificationsNotificationimages
-                        .Select(img => $"/media/{img.Image}")
+                        .Select(img => img.Image.StartsWith("http") ? img.Image : $"/media/{img.Image}")
                         .Where(path => !string.IsNullOrEmpty(path))
                         .ToList() }
                 }).ToList();

@@ -42,8 +42,8 @@ namespace WebApplication1.Services
             var responseData = new
             {
                 library_name = info.LibraryName,
-                logo = !string.IsNullOrEmpty(info.Logo) ? $"{mediaBaseUrl}/media/{info.Logo}" : null,
-                banner_image = !string.IsNullOrEmpty(info.BannerImage) ? $"{mediaBaseUrl}/media/{info.BannerImage}" : null,
+                logo = !string.IsNullOrEmpty(info.Logo) ? (info.Logo.StartsWith("http") ? info.Logo : $"{mediaBaseUrl}/media/{info.Logo}") : null,
+                banner_image = !string.IsNullOrEmpty(info.BannerImage) ? (info.BannerImage.StartsWith("http") ? info.BannerImage : $"{mediaBaseUrl}/media/{info.BannerImage}") : null,
                 description = info.Description,
                 established_year = info.EstablishedYear,
                 owner_name = info.OwnerName,
@@ -123,7 +123,7 @@ namespace WebApplication1.Services
                     name = f.Name,
                     description = f.Description,
                     icon_key = f.IconKey,
-                    image = !string.IsNullOrEmpty(f.Image) ? $"{mediaBaseUrl}/media/{f.Image}" : null
+                    image = !string.IsNullOrEmpty(f.Image) ? (f.Image.StartsWith("http") ? f.Image : $"{mediaBaseUrl}/media/{f.Image}") : null
                 })
                 .ToListAsync(ct);
 
@@ -147,7 +147,7 @@ namespace WebApplication1.Services
                     name = a.Name,
                     achievement = a.Achievement,
                     goal = a.Goal,
-                    photo = !string.IsNullOrEmpty(a.Photo) ? $"{mediaBaseUrl}/media/{a.Photo}" : null,
+                    photo = !string.IsNullOrEmpty(a.Photo) ? (a.Photo.StartsWith("http") ? a.Photo : $"{mediaBaseUrl}/media/{a.Photo}") : null,
                     year = a.Year
                 })
                 .ToListAsync(ct);
@@ -273,7 +273,7 @@ namespace WebApplication1.Services
                     id = s.Id,
                     title = s.Title,
                     description = s.Subtitle,
-                    image = !string.IsNullOrEmpty(s.Image) ? $"{mediaBaseUrl}/media/{s.Image}" : null,
+                    image = !string.IsNullOrEmpty(s.Image) ? (s.Image.StartsWith("http") ? s.Image : $"{mediaBaseUrl}/media/{s.Image}") : null,
                     link = s.LinkUrl,
                     order = s.SortOrder,
                     is_active = s.IsActive
@@ -292,7 +292,7 @@ namespace WebApplication1.Services
                 .Select(i => new
                 {
                     id = i.Id,
-                    image_url = !string.IsNullOrEmpty(i.ImageUrl) ? $"{mediaBaseUrl}/media/{i.ImageUrl}" : null,
+                    image_url = !string.IsNullOrEmpty(i.ImageUrl) ? (i.ImageUrl.StartsWith("http") ? i.ImageUrl : $"{mediaBaseUrl}/media/{i.ImageUrl}") : null,
                     caption = i.Caption,
                     order = i.Order,
                     created_at = i.CreatedAt

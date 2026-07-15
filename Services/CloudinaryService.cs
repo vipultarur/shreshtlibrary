@@ -7,22 +7,37 @@ namespace WebApplication1.Services
 {
     public class CloudinaryService : ICloudinaryService
     {
-        private readonly Cloudinary _cloudinary;
+        private readonly IAdminSettingsService _settingsService;
 
-        public CloudinaryService()
+        public CloudinaryService(IAdminSettingsService settingsService)
         {
-            var account = new Account(
-                "diqve4wj",
-                "615684233812174",
-                "IKRgzS7K3OPOP0VAnNN6u-nCw8Q"
-            );
-
-            _cloudinary = new Cloudinary(account);
+            _settingsService = settingsService;
         }
 
         public async Task<string?> UploadImageAsync(IFormFile file, string folderName = "")
         {
             if (file == null || file.Length == 0) return null;
+
+            var settingsResult = await _settingsService.GetSettingsAsync("super_admin");
+            if (!settingsResult.Success) return null;
+
+            var settings = settingsResult.Data as System.Collections.Generic.Dictionary<string, object>;
+            if (settings == null) return null;
+
+            var cloudName = settings.ContainsKey("cloudinary_cloud_name") ? settings["cloudinary_cloud_name"]?.ToString() : null;
+            var apiKey = settings.ContainsKey("cloudinary_api_key") ? settings["cloudinary_api_key"]?.ToString() : null;
+            var apiSecret = settings.ContainsKey("cloudinary_api_secret") ? settings["cloudinary_api_secret"]?.ToString() : null;
+
+            if (string.IsNullOrEmpty(cloudName) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
+            {
+                // Fallback to hardcoded for local dev if empty, or just return null
+                cloudName = "diqve4wj";
+                apiKey = "615684233812174";
+                apiSecret = "IKRgzS7K3OPOP0VAnNN6u-nCw8Q";
+            }
+
+            var account = new Account(cloudName, apiKey, apiSecret);
+            var cloudinary = new Cloudinary(account);
 
             using var stream = file.OpenReadStream();
             var uploadParams = new ImageUploadParams
@@ -31,7 +46,7 @@ namespace WebApplication1.Services
                 Folder = string.IsNullOrEmpty(folderName) ? "shresht" : $"shresht/{folderName}"
             };
 
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            var uploadResult = await cloudinary.UploadAsync(uploadParams);
             
             if (uploadResult.Error != null)
                 return null;

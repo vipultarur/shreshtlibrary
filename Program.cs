@@ -368,8 +368,12 @@ if (!Directory.Exists(mediaPath))
 {
     Directory.CreateDirectory(mediaPath);
 }
-// Static files removed to prevent serving dummy files on disk
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(mediaPath),
+    RequestPath = "/media"
+});
 app.MapGet("/media/{*path}", async (string path, WebApplication1.Data.ApplicationDbContext context, ILogger<Program> logger, HttpResponse response) =>
 {
     try
