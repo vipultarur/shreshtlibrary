@@ -57,8 +57,8 @@ namespace WebApplication1.Services
                         Layout = "text_only",
                         Subtitle = "",
                         Description = "",
-                        LinkUrl = "",          // Required NOT NULL — updated later if PDF is attached
-                        LinkButtonText = "",
+                        LinkUrl = data != null && data.ContainsKey("link_url") ? data["link_url"] : "",
+                        LinkButtonText = data != null && data.ContainsKey("link_button_text") ? data["link_button_text"] : "",
                         CreatedAt = now,
                         ScheduledAt = now,
                         SendPush = true,

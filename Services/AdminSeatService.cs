@@ -82,12 +82,14 @@ namespace WebApplication1.Services
             {
                 string? email = seat.Student?.Email;
                 var seatNumber = seat.SeatNumber;
+                var mobile = seat.Student?.Mobile;
+                long? studentId = seat.StudentId;
 
                 seat.Status = "AVAILABLE";
                 seat.StudentId = null;
                 seat.AssignedAt = null;
                 
-                if (!string.IsNullOrWhiteSpace(email))
+                if (studentId.HasValue || !string.IsNullOrWhiteSpace(email))
                 {
                     var task = Task.Run(async () => 
                     {
@@ -95,14 +97,25 @@ namespace WebApplication1.Services
                         {
                             using var scope = _scopeFactory.CreateScope();
                             var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                            await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, "All seats have been administratively released.");
+                            if (!string.IsNullOrWhiteSpace(email)) {
+                                await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, "All seats have been administratively released.");
+                            }
                             
-                            var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                            var mobile = seat.Student?.Mobile;
-                            if (!string.IsNullOrWhiteSpace(mobile))
-                            {
+                            if (studentId.HasValue) {
+                                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
                                 string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been administratively released.\nReason: All seats have been administratively released.";
-                                await whatsapp.SendTextMessageAsync(mobile, msg);
+                                
+                                await dispatcher.SendToStudentAsync(
+                                    studentId: studentId.Value,
+                                    title: "Seat Released",
+                                    body: $"Your seat {seatNumber} has been administratively released.",
+                                    type: "SEAT_RELEASED",
+                                    data: new Dictionary<string, string> { 
+                                        { "link_url", "/profile/id-card" },
+                                        { "link_button_text", "View ID Card" }
+                                    },
+                                    whatsappMessage: string.IsNullOrWhiteSpace(mobile) ? null : msg
+                                );
                             }
                         } 
                         catch (Exception ex)
@@ -298,6 +311,8 @@ namespace WebApplication1.Services
             {
                 string? email = seat.Student?.Email;
                 var seatNumber = seat.SeatNumber;
+                var mobile = seat.Student?.Mobile;
+                long? studentId = seat.StudentId;
 
                 seat.StudentId = null;
                 seat.AssignedAt = null;
@@ -313,12 +328,21 @@ namespace WebApplication1.Services
                             await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Seat status updated to Available.");
                         }
                         
-                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                        var mobile = seat.Student?.Mobile;
-                        if (!string.IsNullOrWhiteSpace(mobile))
-                        {
+                        if (studentId.HasValue) {
+                            var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
                             string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been released.\nReason: {reason ?? "Seat status updated to Available."}";
-                            await whatsapp.SendTextMessageAsync(mobile, msg);
+                            
+                            await dispatcher.SendToStudentAsync(
+                                studentId: studentId.Value,
+                                title: "Seat Released",
+                                body: $"Your seat {seatNumber} has been released.",
+                                type: "SEAT_RELEASED",
+                                data: new Dictionary<string, string> { 
+                                    { "link_url", "/profile/id-card" },
+                                    { "link_button_text", "View ID Card" }
+                                },
+                                whatsappMessage: string.IsNullOrWhiteSpace(mobile) ? null : msg
+                            );
                         }
                     }
                     catch { }
@@ -363,12 +387,20 @@ namespace WebApplication1.Services
                             await emailSvc.SendSeatAllocatedEmailAsync(email, seatNumber, zone, timing);
                         }
                         
-                        var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                        if (!string.IsNullOrWhiteSpace(mobile))
-                        {
-                            string msg = $"🎉 *Seat Allocated*\n\nYour seat has been assigned!\nSeat: {seatNumber}\nZone: {zone}\nTiming: {timing}\n\nHappy studying!";
-                            await whatsapp.SendTextMessageAsync(mobile, msg);
-                        }
+                        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                        string msg = $"🎉 *Seat Allocated*\n\nYour seat has been assigned!\nSeat: {seatNumber}\nZone: {zone}\nTiming: {timing}\n\nHappy studying!";
+                        
+                        await dispatcher.SendToStudentAsync(
+                            studentId: studentId,
+                            title: "Seat Allocated",
+                            body: $"Your seat {seatNumber} has been assigned!",
+                            type: "SEAT_ASSIGNED",
+                            data: new Dictionary<string, string> { 
+                                { "link_url", "/profile/id-card" },
+                                { "link_button_text", "View ID Card" }
+                            },
+                            whatsappMessage: string.IsNullOrWhiteSpace(mobile) ? null : msg
+                        );
                     }
                     catch (Exception ex)
                     {
@@ -392,6 +424,8 @@ namespace WebApplication1.Services
 
             string? email = seat.Student?.Email;
             var seatNumber = seat.SeatNumber;
+            var mobile = seat.Student?.Mobile;
+            long? studentId = seat.StudentId;
 
             seat.StudentId = null;
             seat.Status = "AVAILABLE";
@@ -409,12 +443,21 @@ namespace WebApplication1.Services
                         await emailSvc.SendSeatReleasedEmailAsync(email, seatNumber, reason ?? "Administrative reassignment.");
                     }
                     
-                    var whatsapp = scope.ServiceProvider.GetRequiredService<WhatsAppNotificationService>();
-                    var mobile = seat.Student?.Mobile;
-                    if (!string.IsNullOrWhiteSpace(mobile))
-                    {
+                    if (studentId.HasValue) {
+                        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
                         string msg = $"💺 *Seat Released*\n\nYour seat {seatNumber} has been released.\nReason: {reason ?? "Administrative reassignment."}";
-                        await whatsapp.SendTextMessageAsync(mobile, msg);
+                        
+                        await dispatcher.SendToStudentAsync(
+                            studentId: studentId.Value,
+                            title: "Seat Released",
+                            body: $"Your seat {seatNumber} has been released.",
+                            type: "SEAT_RELEASED",
+                            data: new Dictionary<string, string> { 
+                                { "link_url", "/profile/id-card" },
+                                { "link_button_text", "View ID Card" }
+                            },
+                            whatsappMessage: string.IsNullOrWhiteSpace(mobile) ? null : msg
+                        );
                     }
                 }
                 catch (Exception ex)
