@@ -521,7 +521,7 @@ namespace WebApplication1.Services
                     .Select(g => new
                     {
                         Student = g.Select(s => s.Student).FirstOrDefault(),
-                        TotalHours = g.Sum(s => (s.EndTime!.Value - s.StartTime).TotalHours)
+                        TotalHours = g.Sum(s => s.DurationMinutes) / 60.0
                     })
                     .OrderByDescending(x => x.TotalHours)
                     .Take(3)
