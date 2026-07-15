@@ -348,15 +348,12 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
-        c.RoutePrefix = "api-docs";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
+    c.RoutePrefix = "api-docs";
+});
 
 if (app.Environment.IsDevelopment())
 {
