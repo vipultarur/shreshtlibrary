@@ -700,8 +700,8 @@ namespace WebApplication1.Services
                             pdfBytes = b;
                         }
                         
-                        string msg = $"🧾 *Payment Confirmed*\n\nYour payment of ₹{payment.Amount} has been recorded successfully. Please find your receipt attached.";
-                        await dispatcher.SendToStudentAsync(payload.student_id, "Payment Confirmed ✅", $"Payment of ₹{payment.Amount} recorded.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
+                        string msg = $"🧾 *Payment Confirmed*\n\nYour payment of ₹{payment.Amount:0.00} has been recorded successfully. Please find your receipt attached.";
+                        await dispatcher.SendToStudentAsync(payload.student_id, "Payment Confirmed ✅", $"Payment of ₹{payment.Amount:0.00} recorded.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
                     }
                     catch (Exception ex)
                     {
@@ -815,8 +815,8 @@ namespace WebApplication1.Services
                         var studentId = payment.StudentId;
                         if (studentId > 0)
                         {
-                            string msg = $"🧾 *Payment Verified*\n\nYour payment of ₹{payment.Amount} has been verified successfully. Please find your receipt attached.";
-                            await dispatcher.SendToStudentAsync(studentId, "Payment Verified ✅", $"Payment of ₹{payment.Amount} verified.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
+                            string msg = $"🧾 *Payment Verified*\n\nYour payment of ₹{payment.Amount:0.00} has been verified successfully. Please find your receipt attached.";
+                            await dispatcher.SendToStudentAsync(studentId, "Payment Verified ✅", $"Payment of ₹{payment.Amount:0.00} verified.", WebApplication1.Utils.NotificationTypes.Billing, whatsappMessage: msg, pdfBytes: pdfBytes, pdfFileName: $"Receipt_{payment.PaymentId}.pdf");
                         }
                     }
                     catch (Exception ex)
