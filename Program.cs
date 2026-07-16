@@ -114,6 +114,7 @@ builder.Services.AddScoped<WebApplication1.Services.IReportsService, WebApplicat
 builder.Services.AddScoped<WebApplication1.Services.ISuperAdminService, WebApplication1.Services.SuperAdminService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminSlidersService, WebApplication1.Services.AdminSlidersService>();
 builder.Services.AddScoped<WebApplication1.Services.ICloudinaryService, WebApplication1.Services.CloudinaryService>();
+builder.Services.AddScoped<WebApplication1.Services.IAdminLicensingService, WebApplication1.Services.AdminLicensingService>();
 
 // Add Foundation Services
 builder.Services.AddHttpContextAccessor();
@@ -415,6 +416,8 @@ app.UseAuthentication();
 // §1.4 — Reject tokens that were revoked server-side (logout, password change)
 app.UseMiddleware<WebApplication1.Middleware.TokenRevocationMiddleware>();
 app.UseAuthorization();
+
+app.UseMiddleware<WebApplication1.Middleware.SubscriptionCheckMiddleware>();
 
 app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
 app.MapGet("/", (IWebHostEnvironment env) =>

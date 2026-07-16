@@ -1,0 +1,162 @@
+2026-07-16 19:48:05.091 +05:30 [INF] Executed DbCommand (145ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-07-16 19:48:07.034 +05:30 [INF] Executed DbCommand (196ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+2026-07-16 19:48:07.047 +05:30 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2026-07-16 19:48:07.210 +05:30 [INF] Executed DbCommand (161ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2026-07-16 19:48:07.410 +05:30 [INF] Executed DbCommand (199ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-07-16 19:48:07.419 +05:30 [INF] Applying migration '20260716141740_AddSubscriptionLicensing'.
+2026-07-16 19:48:07.840 +05:30 [INF] Executed DbCommand (290ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE accounts_customuser_groups DROP CONSTRAINT accounts_customuser__customuser_id_bc55088e_fk_accounts_;
+2026-07-16 19:48:08.024 +05:30 [INF] Executed DbCommand (184ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE accounts_customuser_groups DROP CONSTRAINT accounts_customuser_groups_group_id_86ba5f9e_fk_auth_group_id;
+2026-07-16 19:48:08.229 +05:30 [INF] Executed DbCommand (205ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE accounts_customuser_user_permissions DROP CONSTRAINT accounts_customuser__customuser_id_0deaefae_fk_accounts_;
+2026-07-16 19:48:08.434 +05:30 [INF] Executed DbCommand (205ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE accounts_customuser_user_permissions DROP CONSTRAINT accounts_customuser__permission_id_aea3d0e5_fk_auth_perm;
+2026-07-16 19:48:08.649 +05:30 [INF] Executed DbCommand (215ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE attendance_attendance DROP CONSTRAINT attendance_attendanc_student_id_94863613_fk_accounts_;
+2026-07-16 19:48:08.843 +05:30 [INF] Executed DbCommand (194ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE auth_group_permissions DROP CONSTRAINT auth_group_permissio_permission_id_84c5c92e_fk_auth_perm;
+2026-07-16 19:48:09.048 +05:30 [INF] Executed DbCommand (204ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE auth_group_permissions DROP CONSTRAINT auth_group_permissions_group_id_b120cbf9_fk_auth_group_id;
+2026-07-16 19:48:09.291 +05:30 [INF] Executed DbCommand (242ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE auth_permission DROP CONSTRAINT auth_permission_content_type_id_2f476e4b_fk_django_co;
+2026-07-16 19:48:09.459 +05:30 [INF] Executed DbCommand (168ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE django_admin_log DROP CONSTRAINT django_admin_log_user_id_c564eba6_fk_accounts_customuser_id;
+2026-07-16 19:48:09.649 +05:30 [INF] Executed DbCommand (190ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE library_review DROP CONSTRAINT library_review_student_id_b855301a_fk_accounts_customuser_id;
+2026-07-16 19:48:09.867 +05:30 [INF] Executed DbCommand (217ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE memberships_membership DROP CONSTRAINT memberships_membersh_plan_id_a999e2c0_fk_membershi;
+2026-07-16 19:48:10.012 +05:30 [INF] Executed DbCommand (145ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE memberships_membership DROP CONSTRAINT memberships_membersh_student_id_aa07aea9_fk_accounts_;
+2026-07-16 19:48:10.179 +05:30 [INF] Executed DbCommand (167ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE notifications_devicetoken DROP CONSTRAINT notifications_device_student_id_206fe9a0_fk_accounts_;
+2026-07-16 19:48:10.379 +05:30 [INF] Executed DbCommand (199ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE notifications_notificationimage DROP CONSTRAINT notifications_notifi_notification_id_433e3be0_fk_notificat;
+2026-07-16 19:48:10.584 +05:30 [INF] Executed DbCommand (205ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE notifications_studentnotification DROP CONSTRAINT notifications_studen_notification_id_c183c280_fk_notificat;
+2026-07-16 19:48:10.730 +05:30 [INF] Executed DbCommand (145ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE notifications_studentnotification DROP CONSTRAINT notifications_studen_student_id_269c68ed_fk_accounts_;
+2026-07-16 19:48:10.899 +05:30 [INF] Executed DbCommand (169ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE payments_payment DROP CONSTRAINT payments_payment_student_id_b5fab56a_fk_accounts_customuser_id;
+2026-07-16 19:48:11.095 +05:30 [INF] Executed DbCommand (196ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE seats_seatassignment DROP CONSTRAINT seats_seatassignment_seat_id_d5ddd646_fk_seats_seat_id;
+2026-07-16 19:48:11.259 +05:30 [INF] Executed DbCommand (164ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE seats_seatassignment DROP CONSTRAINT seats_seatassignment_student_id_cab95c5c_fk_accounts_;
+2026-07-16 19:48:11.529 +05:30 [INF] Executed DbCommand (270ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE seats_seatchangelog DROP CONSTRAINT seats_seatchangelog_seat_id_d31cdd48_fk_seats_seat_id;
+2026-07-16 19:48:11.711 +05:30 [INF] Executed DbCommand (181ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE seats_seatrow DROP CONSTRAINT seats_seatrow_floor_id_d4f49e54_fk_seats_floor_id;
+2026-07-16 19:48:11.915 +05:30 [INF] Executed DbCommand (204ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_referralcode DROP CONSTRAINT students_referralcod_student_id_ca5fc2fe_fk_accounts_;
+2026-07-16 19:48:12.090 +05:30 [INF] Executed DbCommand (175ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_referralhistory DROP CONSTRAINT students_referralhis_referred_student_id_9f6f3db5_fk_accounts_;
+2026-07-16 19:48:12.250 +05:30 [INF] Executed DbCommand (159ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_referralhistory DROP CONSTRAINT students_referralhis_referrer_id_bb28ff49_fk_accounts_;
+2026-07-16 19:48:12.429 +05:30 [INF] Executed DbCommand (180ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_studentprofile DROP CONSTRAINT students_studentprof_user_id_43a83eee_fk_accounts_;
+2026-07-16 19:48:12.609 +05:30 [INF] Executed DbCommand (179ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE study_studysession DROP CONSTRAINT study_studysession_student_id_4613795f_fk_accounts_;
+2026-07-16 19:48:12.843 +05:30 [INF] Executed DbCommand (233ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE token_blacklist_blacklistedtoken DROP CONSTRAINT token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk;
+2026-07-16 19:48:13.059 +05:30 [INF] Executed DbCommand (216ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_studentprofile ALTER COLUMN profile_photo TYPE character varying(500);
+2026-07-16 19:48:13.254 +05:30 [ERR] Failed executing DbCommand (193ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+ALTER TABLE students_studentprofile ADD is_deleted boolean NOT NULL DEFAULT FALSE;
+2026-07-16 19:49:17.803 +05:30 [INF] Executed DbCommand (306ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-07-16 19:49:20.761 +05:30 [INF] Executed DbCommand (212ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+2026-07-16 19:49:20.774 +05:30 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2026-07-16 19:49:20.938 +05:30 [INF] Executed DbCommand (163ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2026-07-16 19:49:21.117 +05:30 [INF] Executed DbCommand (178ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-07-16 19:49:21.126 +05:30 [INF] Applying migration '20260716141740_AddSubscriptionLicensing'.
+2026-07-16 19:49:21.478 +05:30 [INF] Executed DbCommand (260ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE platform_payment_settings (
+    id bigint GENERATED BY DEFAULT AS IDENTITY,
+    merchant_name character varying(150) NOT NULL,
+    upi_id character varying(150) NOT NULL,
+    qr_code_path character varying(500),
+    bank_account character varying(150),
+    account_holder character varying(150),
+    ifsc character varying(50),
+    payment_instructions text,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT "PK_platform_payment_settings" PRIMARY KEY (id)
+);
+2026-07-16 19:49:21.758 +05:30 [INF] Executed DbCommand (279ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE platform_subscription_plans (
+    id bigint GENERATED BY DEFAULT AS IDENTITY,
+    plan_name character varying(150) NOT NULL,
+    monthly_price numeric(10,2) NOT NULL,
+    quarterly_price numeric(10,2) NOT NULL,
+    half_yearly_price numeric(10,2) NOT NULL,
+    yearly_price numeric(10,2) NOT NULL,
+    max_students integer NOT NULL,
+    max_staff integer NOT NULL,
+    features jsonb NOT NULL,
+    is_active boolean NOT NULL,
+    is_recommended boolean NOT NULL,
+    display_order integer NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT "PK_platform_subscription_plans" PRIMARY KEY (id)
+);
+2026-07-16 19:49:21.927 +05:30 [INF] Executed DbCommand (169ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE library_subscriptions (
+    id bigint GENERATED BY DEFAULT AS IDENTITY,
+    plan_id bigint NOT NULL,
+    start_date timestamp with time zone NOT NULL,
+    expiry_date timestamp with time zone NOT NULL,
+    status character varying(50) NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT "PK_library_subscriptions" PRIMARY KEY (id),
+    CONSTRAINT "FK_library_subscriptions_platform_subscription_plans_plan_id" FOREIGN KEY (plan_id) REFERENCES platform_subscription_plans (id) ON DELETE RESTRICT
+);
+2026-07-16 19:49:22.164 +05:30 [INF] Executed DbCommand (237ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE TABLE library_payments (
+    id bigint GENERATED BY DEFAULT AS IDENTITY,
+    plan_id bigint NOT NULL,
+    amount numeric(10,2) NOT NULL,
+    duration_days integer NOT NULL,
+    utr_number character varying(150) NOT NULL,
+    screenshot_path character varying(500),
+    status character varying(50) NOT NULL,
+    approved_by_id bigint,
+    submitted_at timestamp with time zone NOT NULL,
+    approved_at timestamp with time zone,
+    CONSTRAINT "PK_library_payments" PRIMARY KEY (id),
+    CONSTRAINT "FK_library_payments_accounts_adminuser_approved_by_id" FOREIGN KEY (approved_by_id) REFERENCES accounts_adminuser (id) ON DELETE SET NULL,
+    CONSTRAINT "FK_library_payments_platform_subscription_plans_plan_id" FOREIGN KEY (plan_id) REFERENCES platform_subscription_plans (id) ON DELETE RESTRICT
+);
+2026-07-16 19:49:22.377 +05:30 [INF] Executed DbCommand (212ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE INDEX "IX_library_payments_approved_by_id" ON library_payments (approved_by_id);
+2026-07-16 19:49:22.573 +05:30 [INF] Executed DbCommand (195ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE INDEX "IX_library_payments_plan_id" ON library_payments (plan_id);
+2026-07-16 19:49:22.777 +05:30 [INF] Executed DbCommand (204ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+CREATE INDEX "IX_library_subscriptions_plan_id" ON library_subscriptions (plan_id);
+2026-07-16 19:49:23.007 +05:30 [INF] Executed DbCommand (229ms) [Parameters=[], CommandType='"Text"', CommandTimeout='60']
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('20260716141740_AddSubscriptionLicensing', '9.0.2');

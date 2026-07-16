@@ -66,6 +66,11 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<LibraryReview> LibraryReviews { get; set; }
 
+    public virtual DbSet<PlatformSubscriptionPlan> PlatformSubscriptionPlans { get; set; }
+    public virtual DbSet<LibrarySubscription> LibrarySubscriptions { get; set; }
+    public virtual DbSet<LibraryPayment> LibraryPayments { get; set; }
+    public virtual DbSet<PlatformPaymentSetting> PlatformPaymentSettings { get; set; }
+
     public virtual DbSet<MembershipsMembership> MembershipsMemberships { get; set; }
 
     public virtual DbSet<MembershipsMembershipplan> MembershipsMembershipplans { get; set; }
@@ -132,6 +137,83 @@ public partial class ApplicationDbContext : DbContext
             .HasPostgresExtension("extensions", "pgcrypto")
             .HasPostgresExtension("extensions", "uuid-ossp")
             .HasPostgresExtension("vault", "supabase_vault");
+
+        modelBuilder.Entity<PlatformSubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("platform_subscription_plans");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlanName).HasColumnName("plan_name").HasMaxLength(150);
+            entity.Property(e => e.MonthlyPrice).HasColumnName("monthly_price").HasColumnType("numeric(10,2)");
+            entity.Property(e => e.QuarterlyPrice).HasColumnName("quarterly_price").HasColumnType("numeric(10,2)");
+            entity.Property(e => e.HalfYearlyPrice).HasColumnName("half_yearly_price").HasColumnType("numeric(10,2)");
+            entity.Property(e => e.YearlyPrice).HasColumnName("yearly_price").HasColumnType("numeric(10,2)");
+            entity.Property(e => e.MaxStudents).HasColumnName("max_students");
+            entity.Property(e => e.MaxStaff).HasColumnName("max_staff");
+            entity.Property(e => e.Features).HasColumnName("features").HasColumnType("jsonb");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.IsRecommended).HasColumnName("is_recommended");
+            entity.Property(e => e.DisplayOrder).HasColumnName("display_order");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<LibrarySubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("library_subscriptions");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
+            entity.Property(e => e.StartDate).HasColumnName("start_date");
+            entity.Property(e => e.ExpiryDate).HasColumnName("expiry_date");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasOne(d => d.Plan)
+                .WithMany(p => p.LibrarySubscriptions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<LibraryPayment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("library_payments");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("numeric(10,2)");
+            entity.Property(e => e.DurationDays).HasColumnName("duration_days");
+            entity.Property(e => e.UtrNumber).HasColumnName("utr_number").HasMaxLength(150);
+            entity.Property(e => e.ScreenshotPath).HasColumnName("screenshot_path").HasMaxLength(500);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
+            entity.Property(e => e.ApprovedById).HasColumnName("approved_by_id");
+            entity.Property(e => e.SubmittedAt).HasColumnName("submitted_at");
+            entity.Property(e => e.ApprovedAt).HasColumnName("approved_at");
+            
+            entity.HasOne(d => d.Plan)
+                .WithMany(p => p.LibraryPayments)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.ApprovedBy)
+                .WithMany()
+                .HasForeignKey(d => d.ApprovedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PlatformPaymentSetting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("platform_payment_settings");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MerchantName).HasColumnName("merchant_name").HasMaxLength(150);
+            entity.Property(e => e.UpiId).HasColumnName("upi_id").HasMaxLength(150);
+            entity.Property(e => e.QrCodePath).HasColumnName("qr_code_path").HasMaxLength(500);
+            entity.Property(e => e.BankAccount).HasColumnName("bank_account").HasMaxLength(150);
+            entity.Property(e => e.AccountHolder).HasColumnName("account_holder").HasMaxLength(150);
+            entity.Property(e => e.Ifsc).HasColumnName("ifsc").HasMaxLength(50);
+            entity.Property(e => e.PaymentInstructions).HasColumnName("payment_instructions");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
 
         modelBuilder.Entity<AccountsAdminuser>(entity =>
         {
