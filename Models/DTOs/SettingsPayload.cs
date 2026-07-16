@@ -61,5 +61,8 @@ namespace WebApplication1.Models.DTOs
 
         [JsonPropertyName("cloudinary_api_secret")]
         public string? CloudinaryApiSecret { get; set; }
+
+        [JsonPropertyName("enable_email_system")]
+        public bool? EnableEmailSystem { get; set; }
     }
 }

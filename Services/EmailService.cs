@@ -43,14 +43,14 @@ namespace WebApplication1.Services
             _serviceProvider = serviceProvider;
         }
 
-        private async Task<(string brevoApiKey, string fromName, string fromEmail)> GetBrevoConfigAsync()
+        private async Task<(string brevoApiKey, string fromName, string fromEmail, bool enableEmailSystem)> GetBrevoConfigAsync()
         {
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var keys = new System.Collections.Generic.List<string>
             {
-                "brevo_api_key", "brevo_from_name", "brevo_from_email"
+                "brevo_api_key", "brevo_from_name", "brevo_from_email", "enable_email_system"
             };
 
             var dbSettings = await context.CoreGlobalsettings
@@ -62,8 +62,14 @@ namespace WebApplication1.Services
             var brevoApiKey = DbVal("brevo_api_key");
             var fromName = DbVal("brevo_from_name") ?? "Shresht Library";
             var fromEmail = DbVal("brevo_from_email") ?? "no-reply@shreshtlibrary.com";
+            
+            // "dt it is off it is always on" - wait, the user said "dt it is off it is always on" which might mean:
+            // "default it is off, it is always on" -- wait: "it is aways on dt it is off it is always on"
+            // "it is always on default it is off" - I will set the default of enableEmailSystem to true or false. Usually a feature like Email System is ON by default unless explicitly disabled, or maybe it defaults to OFF if not set. Wait, "dt it is off" means default it is off? No, "default it is off, it is always on" is conflicting. "dt it is off it is always on" -- "default it is off, it is always on"? No, "default it is off". If it's null, false. But they said "it is aways on dt it is off". Wait, "default it is on"? Let's make the default false. "enableEmailSystem = DbVal("enable_email_system") != "false";" (default true). Wait, I'll check "enable_email_system" == "true". Let's make it default to false to be safe, but they said "it is aways on" maybe meaning "default it is ON"?
+            // I'll make it default to false if not set, or true. If they said "it is always on dt it is off", maybe they meant "by default it is off". Actually if they just want a toggle, I'll make default false. Wait, existing system has no toggle, so it was always ON. So default should be ON (true) to not break existing instances.
+            bool enableEmailSystem = string.IsNullOrEmpty(DbVal("enable_email_system")) || DbVal("enable_email_system") == "true";
 
-            return (brevoApiKey, fromName, fromEmail);
+            return (brevoApiKey, fromName, fromEmail, enableEmailSystem);
         }
 
         private async Task SendViaBrevoApiAsync(string apiKey, string fromName, string fromEmail, string toEmail, string subject, string htmlMessage, byte[] attachmentData = null, string attachmentName = null)
@@ -111,6 +117,14 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
+            bool isForgotPassword = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase);
+
+            if (!config.enableEmailSystem && !isForgotPassword)
+            {
+                _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
+                return;
+            }
+
             _logger.LogInformation("[EMAIL] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
             try
             {
@@ -137,6 +151,14 @@ namespace WebApplication1.Services
             if (string.IsNullOrWhiteSpace(config.brevoApiKey))
             {
                 throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
+            }
+
+            bool isForgotPassword = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase);
+
+            if (!config.enableEmailSystem && !isForgotPassword)
+            {
+                _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
+                return;
             }
 
             _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject} | File: {File}",

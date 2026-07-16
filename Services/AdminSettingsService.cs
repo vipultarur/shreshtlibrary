@@ -99,6 +99,9 @@ namespace WebApplication1.Services
                 result.Add("wa_base_url", waBaseUrl?.Value ?? "");
                 result.Add("wa_session_id", waSessionId?.Value ?? "");
                 result.Add("wa_api_key", waApiKey?.Value ?? "");
+
+                var enableEmailSystemStr = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "enable_email_system", ct);
+                result.Add("enable_email_system", enableEmailSystemStr?.Value == "true");
             }
 
             if (role == "super_admin" || role == "sub_super_admin")
@@ -205,6 +208,11 @@ namespace WebApplication1.Services
                 if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
                 {
                     await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key", ct);
+                }
+
+                if (payload.EnableEmailSystem.HasValue)
+                {
+                    await UpdateGlobalSetting("enable_email_system", payload.EnableEmailSystem.Value ? "true" : "false", "Enable Email System", ct);
                 }
             }
 
