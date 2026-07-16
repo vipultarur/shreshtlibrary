@@ -61,15 +61,8 @@ namespace WebApplication1.Utils
 
             var dbRole = adminUser.Role;
 
-            // super_admin has all permissions (verified from DB, not token)
-            if (dbRole == "super_admin")
-            {
-                context.Succeed(requirement);
-                return;
-            }
-
-            // sub_super_admin has broad permissions (verified from DB)
-            if (dbRole == "sub_super_admin")
+            // super_admin and sub_super_admin have all permissions implicitly
+            if (dbRole == "super_admin" || dbRole == "sub_super_admin")
             {
                 context.Succeed(requirement);
                 return;
@@ -84,7 +77,7 @@ namespace WebApplication1.Utils
                     try
                     {
                         var permissions = System.Text.Json.JsonSerializer.Deserialize<string[]>(permissionsJson);
-                        if (permissions != null && permissions.Contains(requirement.Permission))
+                        if (permissions != null && (permissions.Contains(requirement.Permission) || permissions.Contains("all")))
                         {
                             context.Succeed(requirement);
                             return;
