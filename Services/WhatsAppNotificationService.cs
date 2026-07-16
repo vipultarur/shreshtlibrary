@@ -1,10 +1,12 @@
 using System;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Services
 {
@@ -36,16 +38,13 @@ namespace WebApplication1.Services
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
             
-            var dbBaseUrl = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-                context.CoreGlobalsettings, s => s.Key == "wa_base_url");
+            var dbBaseUrl = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_base_url");
             if (dbBaseUrl != null && !string.IsNullOrEmpty(dbBaseUrl.Value)) baseUrl = dbBaseUrl.Value;
 
-            var dbSessionId = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-                context.CoreGlobalsettings, s => s.Key == "wa_session_id");
+            var dbSessionId = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_session_id");
             if (dbSessionId != null && !string.IsNullOrEmpty(dbSessionId.Value)) sessionId = dbSessionId.Value;
 
-            var dbApiKey = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-                context.CoreGlobalsettings, s => s.Key == "wa_api_key");
+            var dbApiKey = await context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_api_key");
             if (dbApiKey != null && !string.IsNullOrEmpty(dbApiKey.Value)) apiKey = dbApiKey.Value;
 
             return (baseUrl, sessionId, apiKey);
@@ -55,8 +54,7 @@ namespace WebApplication1.Services
         {
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
-            var appConfig = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-                context.LibraryAppconfigs, c => true);
+            var appConfig = await context.LibraryAppconfigs.OrderBy(c => c.Id).FirstOrDefaultAsync();
             return appConfig?.EnableWhatsappService ?? false;
         }
 
