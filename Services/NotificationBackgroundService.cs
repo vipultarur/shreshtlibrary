@@ -104,8 +104,19 @@ namespace WebApplication1.Services
                         
                         try
                         {
-                            successCount = await notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
-                        }
+                            var (success, failed) = await notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                            successCount = success;
+                            
+                            if (failed.Any())
+                            {
+                                var tokensToDelete = await context.NotificationsDevicetokens
+                                    .Where(t => failed.Contains(t.Token))
+                                    .ToListAsync(stoppingToken);
+                                if (tokensToDelete.Any())
+                                {
+                                    context.NotificationsDevicetokens.RemoveRange(tokensToDelete);
+                                }
+                            }                        }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, $"Failed to send push notification for scheduled notification ID {notification.Id}");

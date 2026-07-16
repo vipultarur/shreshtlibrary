@@ -284,8 +284,19 @@ namespace WebApplication1.Services
                     try
                     {
                         _logger.LogInformation("[FCM DEBUG] Sending multicast to {Count} tokens. Title={Title}", tokens.Count, notification.Title);
-                        successCount = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                        var (success, failed) = await _notificationService.SendMulticastPushNotificationAsync(tokens, notification.Title, notification.Body, data);
+                        successCount = success;
                         _logger.LogInformation("[FCM DEBUG] Multicast result: {SuccessCount}/{Total} delivered", successCount, tokens.Count);
+                        if (failed.Any())
+                        {
+                            var tokensToDelete = await _context.NotificationsDevicetokens
+                                .Where(t => failed.Contains(t.Token))
+                                .ToListAsync(ct);
+                            if (tokensToDelete.Any())
+                            {
+                                _context.NotificationsDevicetokens.RemoveRange(tokensToDelete);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {

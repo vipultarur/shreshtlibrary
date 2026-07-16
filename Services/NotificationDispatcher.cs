@@ -133,7 +133,18 @@ namespace WebApplication1.Services
                             }
                             else
                             {
-                                await firebaseService.SendMulticastPushNotificationAsync(tokens, title, body, mergedData);
+                                var (successCount, failedTokens) = await firebaseService.SendMulticastPushNotificationAsync(tokens, title, body, mergedData);
+                                if (failedTokens.Any())
+                                {
+                                    var tokensToDelete = await context.NotificationsDevicetokens
+                                        .Where(t => failedTokens.Contains(t.Token))
+                                        .ToListAsync();
+                                    if (tokensToDelete.Any())
+                                    {
+                                        context.NotificationsDevicetokens.RemoveRange(tokensToDelete);
+                                        await context.SaveChangesAsync();
+                                    }
+                                }
                             }
                         }
                     }
@@ -143,6 +154,7 @@ namespace WebApplication1.Services
                     {
                         var student = await context.AccountsCustomusers
                             .Where(u => u.Id == studentId)
+                            .OrderBy(u => u.Id)
                             .Select(u => new { u.Mobile })
                             .FirstOrDefaultAsync();
 
