@@ -106,7 +106,7 @@ namespace WebApplication1.Services
             };
         }
 
-        public async Task<ServiceResult<object>> GenerateQrAsync(string? expiryDuration, CancellationToken ct = default)
+        private async Task<ServiceResult<object>> CreateQrInternalAsync(string? expiryDuration, string generationMethod, CancellationToken ct)
         {
             var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             
@@ -127,7 +127,7 @@ namespace WebApplication1.Services
                 ValidDate = today,
                 IsExpired = false,
                 IsActive = true,
-                GenerationMethod = "manual",
+                GenerationMethod = generationMethod,
                 CreatedAt = DateTime.UtcNow,
                 ExpiryTimestamp = expiresAt,
                 ExpiresAt = expiresAt,
@@ -152,50 +152,14 @@ namespace WebApplication1.Services
             });
         }
 
+        public async Task<ServiceResult<object>> GenerateQrAsync(string? expiryDuration, CancellationToken ct = default)
+        {
+            return await CreateQrInternalAsync(expiryDuration, "manual", ct);
+        }
+
         public async Task<ServiceResult<object>> RegenerateQrAsync(string? expiryDuration, CancellationToken ct = default)
         {
-            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
-            
-            var existing = await _context.AttendanceQrcodes
-                .Where(q => !q.IsExpired && q.IsActive)
-                .ToListAsync(ct);
-                
-            foreach(var ex in existing) {
-                ex.IsExpired = true;
-                ex.IsActive = false;
-            }
-
-            var expiresAt = CalculateQrExpiry(expiryDuration);
-            
-            var qr = new AttendanceQrcode {
-                Code = Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
-                Token = Guid.NewGuid(),
-                ValidDate = today,
-                IsExpired = false,
-                IsActive = true,
-                GenerationMethod = "manual_regen",
-                CreatedAt = DateTime.UtcNow,
-                ExpiryTimestamp = expiresAt,
-                ExpiresAt = expiresAt,
-                QrHash = Guid.NewGuid().ToString()
-            };
-            
-            _context.AttendanceQrcodes.Add(qr);
-            await _context.SaveChangesAsync(ct);
-            
-            return ServiceResult<object>.Ok(new {
-                id = qr.Id,
-                token = qr.Token,
-                code = qr.Code,
-                qr_hash = qr.QrHash,
-                valid_date = qr.ValidDate.ToString("yyyy-MM-dd"),
-                is_active = qr.IsActive,
-                is_expired = qr.IsExpired,
-                generation_method = qr.GenerationMethod,
-                expiry_timestamp = qr.ExpiryTimestamp,
-                expires_at = qr.ExpiresAt,
-                created_at = qr.CreatedAt
-            });
+            return await CreateQrInternalAsync(expiryDuration, "manual_regen", ct);
         }
 
         public async Task<ServiceResult<bool>> ExpireAllQrAsync(CancellationToken ct = default)

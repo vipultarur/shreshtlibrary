@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Controllers;
 using WebApplication1.Models.DTOs.Billing;
 using WebApplication1.Data;
@@ -13,14 +14,22 @@ namespace WebApplication1.Services
     public class PaymentService : IPaymentService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public PaymentService(ApplicationDbContext context)
+        public PaymentService(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> GetPublicPlansAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "PublicBillingPlans";
+            if (_cache.TryGetValue(cacheKey, out object? cachedPlans) && cachedPlans != null)
+            {
+                return ServiceResult<object>.Ok(cachedPlans);
+            }
+
             var plans = await _context.MembershipsMembershipplans
                 .AsNoTracking()
                 .Where(p => p.IsActive)
@@ -50,6 +59,7 @@ namespace WebApplication1.Services
                 sort_order = p.sort_order
             });
 
+            _cache.Set(cacheKey, results, TimeSpan.FromMinutes(15));
             return ServiceResult<object>.Ok(results);
         }
 
@@ -60,6 +70,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetMembershipHistoryAsync(long studentId, CancellationToken ct = default)
         {
+            var cacheKey = $"StudentMembershipHistory_{studentId}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedHistory) && cachedHistory != null)
+            {
+                return ServiceResult<object>.Ok(cachedHistory);
+            }
+
             var memberships = await _context.MembershipsMemberships
                 .AsNoTracking()
                 .Include(m => m.Plan)
@@ -77,6 +93,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, memberships, TimeSpan.FromMinutes(30));
             return ServiceResult<object>.Ok(memberships);
         }
 
@@ -132,6 +149,9 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 
                 await transaction.CommitAsync(ct);
+                
+                _cache.Remove($"StudentMembershipHistory_{studentId}");
+                _cache.Remove($"StudentPaymentHistory_{studentId}");
             }
             catch
             {
@@ -148,6 +168,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetPaymentHistoryAsync(long studentId, CancellationToken ct = default)
         {
+            var cacheKey = $"StudentPaymentHistory_{studentId}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedHistory) && cachedHistory != null)
+            {
+                return ServiceResult<object>.Ok(cachedHistory);
+            }
+
             var payments = await _context.PaymentsPayments
                 .AsNoTracking()
                 .Include(p => p.Membership)
@@ -166,6 +192,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, payments, TimeSpan.FromMinutes(30));
             return ServiceResult<object>.Ok(payments);
         }
     }

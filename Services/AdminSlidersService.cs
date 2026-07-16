@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Data;
 using WebApplication1.DTOs.Admin;
 using WebApplication1.Models;
@@ -14,15 +15,23 @@ namespace WebApplication1.Services
     {
         private readonly IRepository<LibraryHomeslider> _repository;
         private readonly ICloudinaryService _cloudinary;
+        private readonly IMemoryCache _cache;
 
-        public AdminSlidersService(IRepository<LibraryHomeslider> repository, ICloudinaryService cloudinary)
+        public AdminSlidersService(IRepository<LibraryHomeslider> repository, ICloudinaryService cloudinary, IMemoryCache cache)
         {
             _repository = repository;
             _cloudinary = cloudinary;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> GetSliders(CancellationToken ct = default)
         {
+            const string cacheKey = "LibrarySliders";
+            if (_cache.TryGetValue(cacheKey, out object? cachedSliders) && cachedSliders != null)
+            {
+                return ServiceResult<object>.Ok(cachedSliders);
+            }
+
             var sliders = await _repository.Query(trackChanges: false)
                 .OrderBy(s => s.SortOrder)
                 .Select(s => new
@@ -37,6 +46,7 @@ namespace WebApplication1.Services
                     created_at = s.CreatedAt
                 })
                 .ToListAsync(ct);
+            _cache.Set(cacheKey, sliders, TimeSpan.FromMinutes(30));
             return ServiceResult<object>.Ok(sliders);
         }
 
@@ -63,6 +73,7 @@ namespace WebApplication1.Services
 
             _repository.Add(slider);
             await _repository.SaveChangesAsync(ct);
+            _cache.Remove("LibrarySliders");
 
             return ServiceResult<object>.Ok(new
             {
@@ -103,6 +114,7 @@ namespace WebApplication1.Services
 
             _repository.Update(slider);
             await _repository.SaveChangesAsync(ct);
+            _cache.Remove("LibrarySliders");
 
             return ServiceResult<object>.Ok(new
             {
@@ -124,6 +136,7 @@ namespace WebApplication1.Services
 
             _repository.Remove(slider);
             await _repository.SaveChangesAsync(ct);
+            _cache.Remove("LibrarySliders");
 
             return ServiceResult<object>.Ok(new { message = "Slider deleted successfully." });
         }

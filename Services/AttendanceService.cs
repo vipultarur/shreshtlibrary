@@ -166,6 +166,9 @@ namespace WebApplication1.Services
                         });
                     }
 
+                    _cache.Remove($"AttendanceLogs_{userId}");
+                    _cache.Remove($"StudentDashboard_{userId}");
+
                     return new
                     {
                         id = existing.Id,
@@ -229,6 +232,9 @@ namespace WebApplication1.Services
                     } catch { }
                 });
             }
+
+            _cache.Remove($"AttendanceLogs_{userId}");
+            _cache.Remove($"StudentDashboard_{userId}");
 
             return new
             {
@@ -320,6 +326,10 @@ namespace WebApplication1.Services
                     } catch { }
                 });
             }
+
+            _cache.Remove($"AttendanceLogs_{userId}");
+            _cache.Remove($"SessionHistory_{userId}");
+            _cache.Remove($"StudentDashboard_{userId}");
 
             return new
             {

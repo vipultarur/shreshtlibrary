@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
 using WebApplication1.Models.Responses;
 using System.Threading;
@@ -10,14 +11,22 @@ namespace WebApplication1.Services
     public class StudentReferralService : IStudentReferralService
     {
         private readonly IStudentRepository _repository;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public StudentReferralService(IStudentRepository repository)
+        public StudentReferralService(IStudentRepository repository, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _repository = repository;
+            _cache = cache;
         }
 
         public async Task<ApiResponse<object>> GetReferralCodeAsync(long userId, CancellationToken ct = default)
         {
+            var cacheKey = $"StudentReferralCode_{userId}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedCode) && cachedCode != null)
+            {
+                return ApiResponse<object>.Ok(cachedCode);
+            }
+
             var refCode = await _repository.GetReferralCodeAsync(userId, ct);
             
             if (refCode == null)
@@ -25,13 +34,16 @@ namespace WebApplication1.Services
                 return ApiResponse<object>.Fail("No referral code found. Please generate one.");
             }
 
-            return ApiResponse<object>.Ok(new
+            var result = new
             {
                 id = refCode.Id,
                 code = refCode.Code,
                 used_by_count = refCode.UsedByCount,
                 benefit_given = refCode.BenefitGiven
-            });
+            };
+
+            _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+            return ApiResponse<object>.Ok(result);
         }
 
         public async Task<ApiResponse<object>> GenerateReferralCodeAsync(long userId, CancellationToken ct = default)
@@ -57,13 +69,17 @@ namespace WebApplication1.Services
             _repository.AddReferralCode(refCode, ct);
             await _repository.SaveChangesAsync(ct);
 
-            return ApiResponse<object>.Ok(new
+            var result = new
             {
                 id = refCode.Id,
                 code = refCode.Code,
                 used_by_count = refCode.UsedByCount,
                 benefit_given = refCode.BenefitGiven
-            });
+            };
+
+            _cache.Remove($"StudentReferralCode_{userId}");
+            
+            return ApiResponse<object>.Ok(result);
         }
 
         public async Task<ApiResponse<object>> ApplyReferralAsync(long userId, string code, CancellationToken ct = default)
@@ -94,6 +110,9 @@ namespace WebApplication1.Services
             _repository.AddReferralHistory(history, ct);
             await _repository.SaveChangesAsync(ct);
 
+            _cache.Remove($"StudentReferralCode_{refCode.StudentId}");
+            _cache.Remove($"StudentReferralHistory_{userId}_1_20");
+
             return ApiResponse<object>.Ok(new { message = "Referral code applied successfully" });
         }
 
@@ -103,7 +122,15 @@ namespace WebApplication1.Services
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 50) pageSize = 50;
 
+            var cacheKey = $"StudentReferralHistory_{userId}_{page}_{pageSize}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedHistory) && cachedHistory != null)
+            {
+                return ApiResponse<object>.Ok(cachedHistory);
+            }
+
             var history = await _repository.GetReferralHistoryAsync(userId, page, pageSize, ct);
+            
+            _cache.Set(cacheKey, history, TimeSpan.FromHours(1));
             return ApiResponse<object>.Ok(history);
         }
     }

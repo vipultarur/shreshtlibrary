@@ -51,7 +51,12 @@ namespace WebApplication1.Services
             if (uploadResult.Error != null)
                 return null;
                 
-            return uploadResult.SecureUrl?.ToString();
+            var rawUrl = uploadResult.SecureUrl?.ToString();
+            if (rawUrl != null && rawUrl.Contains("/upload/"))
+            {
+                return rawUrl.Replace("/upload/", "/upload/f_auto,q_auto/");
+            }
+            return rawUrl;
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -20,17 +21,25 @@ namespace WebApplication1.Services
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly WhatsAppNotificationService _whatsappService;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, WhatsAppNotificationService whatsappService)
+        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, WhatsAppNotificationService whatsappService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _context = context;
             _emailService = emailService;
             _scopeFactory = scopeFactory;
             _whatsappService = whatsappService;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> GetPlanStatsAsync(CancellationToken ct = default)
         {
+            var cacheKey = "AdminPlanStats";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return ServiceResult<object>.Ok(cachedResult);
+            }
+
             var planStats = await _context.MembershipsMembershipplans
                 .GroupBy(p => 1)
                 .Select(g => new {
@@ -50,11 +59,19 @@ namespace WebApplication1.Services
             var activeMemberships = membershipStats?.Active ?? 0;
             var totalMemberships = membershipStats?.Total ?? 0;
 
-            return ServiceResult<object>.Ok(new { total_plans = totalPlans, active_plans = activePlans, total_memberships = totalMemberships, active_memberships = activeMemberships });
+            var result = new { total_plans = totalPlans, active_plans = activePlans, total_memberships = totalMemberships, active_memberships = activeMemberships };
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(15));
+            return ServiceResult<object>.Ok(result);
         }
 
         public async Task<ServiceResult<object>> GetAllPlansAsync(CancellationToken ct = default)
         {
+            var cacheKey = "AdminAllPlans";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return ServiceResult<object>.Ok(cachedResult);
+            }
+
             var plans = await _context.MembershipsMembershipplans
                 .AsNoTracking()
                 .OrderBy(p => p.SortOrder)
@@ -83,6 +100,7 @@ namespace WebApplication1.Services
                 sort_order = p.sort_order
             });
 
+            _cache.Set(cacheKey, results, TimeSpan.FromMinutes(15));
             return ServiceResult<object>.Ok(results);
         }
 
@@ -104,6 +122,8 @@ namespace WebApplication1.Services
 
             _context.MembershipsMembershipplans.Add(plan);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("AdminAllPlans");
+            _cache.Remove("AdminPlanStats");
 
             return ServiceResult<object>.Ok(new {
                 id = plan.Id,
@@ -152,6 +172,8 @@ namespace WebApplication1.Services
 
             plan.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("AdminAllPlans");
+            _cache.Remove("AdminPlanStats");
 
             return ServiceResult<object>.Ok(new {
                 id = plan.Id,
@@ -178,6 +200,8 @@ namespace WebApplication1.Services
 
             plan.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("AdminAllPlans");
+            _cache.Remove("AdminPlanStats");
 
             return ServiceResult<object>.Ok(new {
                 id = plan.Id,
@@ -200,6 +224,8 @@ namespace WebApplication1.Services
 
                 _context.MembershipsMembershipplans.Remove(plan);
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("AdminAllPlans");
+                _cache.Remove("AdminPlanStats");
 
                 return ServiceResult<object>.Ok(new { });
             }
@@ -307,6 +333,9 @@ namespace WebApplication1.Services
 
                 await _context.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
+
+                _cache.Remove($"StudentMembershipHistory_{payload.student_id}");
+                _cache.Remove($"StudentDashboard_{payload.student_id}");
 
                 if (!string.IsNullOrWhiteSpace(student.Email) || !string.IsNullOrWhiteSpace(student.Mobile))
                 {
@@ -684,6 +713,10 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
+                _cache.Remove($"StudentMembershipHistory_{payload.student_id}");
+                _cache.Remove($"StudentPaymentHistory_{payload.student_id}");
+                _cache.Remove($"StudentDashboard_{payload.student_id}");
+
                 _ = Task.Run(async () =>
                 {
                     try 
@@ -796,6 +829,10 @@ namespace WebApplication1.Services
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
+                _cache.Remove($"StudentMembershipHistory_{payment.StudentId}");
+                _cache.Remove($"StudentPaymentHistory_{payment.StudentId}");
+                _cache.Remove($"StudentDashboard_{payment.StudentId}");
+
                 _ = Task.Run(async () =>
                 {
                     try 
@@ -881,6 +918,10 @@ namespace WebApplication1.Services
 
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
+
+                _cache.Remove($"StudentMembershipHistory_{payment.StudentId}");
+                _cache.Remove($"StudentPaymentHistory_{payment.StudentId}");
+                _cache.Remove($"StudentDashboard_{payment.StudentId}");
 
                 _ = Task.Run(async () =>
                 {

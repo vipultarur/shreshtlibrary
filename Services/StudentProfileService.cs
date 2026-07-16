@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
 using WebApplication1.Models.Responses;
 using WebApplication1.Models.DTOs.Student;
@@ -17,21 +18,29 @@ namespace WebApplication1.Services
         private readonly IStudentRepository _repository;
         private readonly IWebHostEnvironment _env;
         private readonly ICloudinaryService _cloudinary;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public StudentProfileService(IStudentRepository repository, IWebHostEnvironment env, ICloudinaryService cloudinary)
+        public StudentProfileService(IStudentRepository repository, IWebHostEnvironment env, ICloudinaryService cloudinary, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _repository = repository;
             _env = env;
             _cloudinary = cloudinary;
+            _cache = cache;
         }
 
         public async Task<ApiResponse<object>?> GetProfileAsync(long userId, string scheme, string host, CancellationToken ct = default)
         {
+            var cacheKey = $"StudentProfile_{userId}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedProfile) && cachedProfile != null)
+            {
+                return ApiResponse<object>.Ok(cachedProfile);
+            }
+
             var profile = await _repository.GetProfileWithUserAsync(userId, ct);
 
             if (profile == null) return null;
 
-            return ApiResponse<object>.Ok(new
+            var result = new
             {
                 username = profile.User.Username,
                 first_name = profile.User.FirstName,
@@ -44,7 +53,10 @@ namespace WebApplication1.Services
                 address = profile.Address,
                 profile_photo = !string.IsNullOrEmpty(profile.ProfilePhoto) ? (profile.ProfilePhoto.StartsWith("http") ? profile.ProfilePhoto : $"{scheme}://{host}/media/{profile.ProfilePhoto}") : (string?)null,
                 parent_mobile = profile.ParentMobile
-            });
+            };
+
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(30));
+            return ApiResponse<object>.Ok(result);
         }
 
         public async Task<ApiResponse<object>?> UpdateProfileAsync(long userId, UpdateProfileDto dto, string scheme, string host, CancellationToken ct = default)
@@ -74,7 +86,7 @@ namespace WebApplication1.Services
             user.StudentsStudentprofile.UpdatedAt = System.DateTime.UtcNow;
             await _repository.SaveChangesAsync(ct);
 
-            return ApiResponse<object>.Ok(new
+            var result = new
             {
                 username = user.Username,
                 first_name = user.FirstName,
@@ -87,16 +99,28 @@ namespace WebApplication1.Services
                 address = user.StudentsStudentprofile.Address,
                 profile_photo = !string.IsNullOrEmpty(user.StudentsStudentprofile.ProfilePhoto) ? (user.StudentsStudentprofile.ProfilePhoto.StartsWith("http") ? user.StudentsStudentprofile.ProfilePhoto : $"{scheme}://{host}/media/{user.StudentsStudentprofile.ProfilePhoto}") : (string?)null,
                 parent_mobile = user.StudentsStudentprofile.ParentMobile
-            });
+            };
+
+            _cache.Remove($"StudentProfile_{userId}");
+            _cache.Remove($"StudentIdCard_{userId}");
+            _cache.Remove($"StudentDashboard_{userId}");
+
+            return ApiResponse<object>.Ok(result);
         }
 
         public async Task<ApiResponse<object>?> GetIdCardAsync(long userId, string scheme, string host, CancellationToken ct = default)
         {
+            var cacheKey = $"StudentIdCard_{userId}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedIdCard) && cachedIdCard != null)
+            {
+                return ApiResponse<object>.Ok(cachedIdCard);
+            }
+
             var profile = await _repository.GetProfileWithUserAsync(userId, ct);
 
             if (profile == null) return null;
 
-            return ApiResponse<object>.Ok(new
+            var result = new
             {
                 student_id = profile.UserId,
                 full_name = $"{profile.User.FirstName} {profile.User.LastName}".Trim(),
@@ -106,7 +130,10 @@ namespace WebApplication1.Services
                 dob = profile.Dob?.ToString("yyyy-MM-dd"),
                 photo_url = !string.IsNullOrEmpty(profile.ProfilePhoto) ? (profile.ProfilePhoto.StartsWith("http") ? profile.ProfilePhoto : $"{scheme}://{host}/media/{profile.ProfilePhoto}") : (string?)null,
                 qr_data = $"SHR-{profile.UserId}"
-            });
+            };
+
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(30));
+            return ApiResponse<object>.Ok(result);
         }
 
         public async Task<ApiResponse<object>> UploadPhotoAsync(long userId, IFormFile profile_photo, string scheme, string host, CancellationToken ct = default)
@@ -136,6 +163,10 @@ namespace WebApplication1.Services
             }
 
             await _repository.SaveChangesAsync(ct);
+
+            _cache.Remove($"StudentProfile_{userId}");
+            _cache.Remove($"StudentIdCard_{userId}");
+            _cache.Remove($"StudentDashboard_{userId}");
 
             var photoUrl = profile.ProfilePhoto.StartsWith("http") ? profile.ProfilePhoto : $"{scheme}://{host}/media/{profile.ProfilePhoto}";
             return ApiResponse<object>.Ok(new { photo_url = photoUrl });

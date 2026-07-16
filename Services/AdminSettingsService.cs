@@ -1,8 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Models.DTOs;
@@ -13,9 +14,9 @@ namespace WebApplication1.Services
     public class AdminSettingsService : IAdminSettingsService
     {
         private readonly ApplicationDbContext _context;
-        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly IMemoryCache _cache;
 
-        public AdminSettingsService(ApplicationDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        public AdminSettingsService(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
             _cache = cache;
@@ -23,6 +24,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetSettingsAsync(string role, CancellationToken ct = default)
         {
+            var cacheKey = $"AdminSettings_{role}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedObj) && cachedObj is System.Collections.Generic.Dictionary<string, object> cachedSettings)
+            {
+                return ServiceResult<object>.Ok(cachedSettings);
+            }
+
             var appConfig = await _context.LibraryAppconfigs.OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
             if (appConfig == null)
             {
@@ -105,6 +112,7 @@ namespace WebApplication1.Services
                 result.Add("cloudinary_api_secret", cloudinaryApiSecret?.Value ?? "");
             }
 
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(15));
             return ServiceResult<object>.Ok(result);
         }
 
@@ -217,6 +225,10 @@ namespace WebApplication1.Services
 
             await _context.SaveChangesAsync(ct);
             _cache.Remove("LibraryInfo");
+            _cache.Remove("AdminSettings_super_admin");
+            _cache.Remove("AdminSettings_sub_super_admin");
+            _cache.Remove("AdminSettings_admin");
+            _cache.Remove("AdminSettings_");
 
             return await GetSettingsAsync(role, ct);
         }

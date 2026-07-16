@@ -100,23 +100,37 @@ namespace WebApplication1.Services
                 .OrderByDescending(s => s.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(s => new {
+                .Include(s => s.User)
+                .ToListAsync(ct);
+
+            var userIds = dbStudents.Select(s => s.UserId).ToList();
+
+            var activeMemberships = await _context.MembershipsMemberships
+                .Where(m => userIds.Contains(m.StudentId) && m.Status == "active")
+                .ToListAsync(ct);
+
+            var students = dbStudents.Select(s => {
+                var studentMemberships = activeMemberships.Where(m => m.StudentId == s.UserId).ToList();
+                var activeMembership = studentMemberships.OrderByDescending(m => m.EndDate).FirstOrDefault();
+                
+                return new {
                     id = s.Id,
                     user_id = s.UserId,
                     student_id = s.StudentId,
-                    username = s.User.Username,
-                    first_name = s.User.FirstName,
+                    username = s.User?.Username,
+                    first_name = s.User?.FirstName,
                     middle_name = s.MiddleName,
-                    last_name = s.User.LastName,
-                    email = s.User.Email,
-                    mobile = s.User.Mobile,
-                    is_active = s.User.IsActive,
+                    last_name = s.User?.LastName,
+                    email = s.User?.Email,
+                    mobile = s.User?.Mobile,
+                    is_active = s.User?.IsActive ?? false,
                     goal = s.Goal,
                     dob = s.Dob,
                     gender = s.Gender,
                     caste = s.Caste,
                     address = s.Address,
-                    profile_photo = s.ProfilePhoto,
+                    profile_photo = !string.IsNullOrEmpty(s.ProfilePhoto) ? (s.ProfilePhoto.StartsWith("http") ? s.ProfilePhoto : $"{scheme}://{host}/media/{s.ProfilePhoto}") : null,
+                    profile_image = !string.IsNullOrEmpty(s.ProfilePhoto) ? (s.ProfilePhoto.StartsWith("http") ? s.ProfilePhoto : $"{scheme}://{host}/media/{s.ProfilePhoto}") : null,
                     parent_mobile = s.ParentMobile,
                     status = s.Status,
                     suspension_reason = s.SuspensionReason,
@@ -125,48 +139,11 @@ namespace WebApplication1.Services
                     created_at = s.CreatedAt,
                     updated_at = s.UpdatedAt,
                     joining_date = s.JoiningDate,
-                    membership_start_date = _context.MembershipsMemberships
-                        .Where(m => m.StudentId == s.UserId && m.Status == "active")
-                        .OrderByDescending(m => m.EndDate)
-                        .Select(m => (DateOnly?)m.StartDate)
-                        .FirstOrDefault(),
-                    membership_end_date = _context.MembershipsMemberships
-                        .Where(m => m.StudentId == s.UserId && m.Status == "active")
-                        .OrderByDescending(m => m.EndDate)
-                        .Select(m => (DateOnly?)m.EndDate)
-                        .FirstOrDefault()
-                })
-                .ToListAsync(ct);
-
-            var students = dbStudents.Select(s => new {
-                    id = s.id,
-                    user_id = s.user_id,
-                    student_id = s.student_id,
-                    username = s.username,
-                    first_name = s.first_name,
-                    middle_name = s.middle_name,
-                    last_name = s.last_name,
-                    email = s.email,
-                    mobile = s.mobile,
-                    is_active = s.is_active,
-                    goal = s.goal,
-                    dob = s.dob,
-                    gender = s.gender,
-                    caste = s.caste,
-                    address = s.address,
-                    profile_photo = !string.IsNullOrEmpty(s.profile_photo) ? (s.profile_photo.StartsWith("http") ? s.profile_photo : $"{scheme}://{host}/media/{s.profile_photo}") : null,
-                    profile_image = !string.IsNullOrEmpty(s.profile_photo) ? (s.profile_photo.StartsWith("http") ? s.profile_photo : $"{scheme}://{host}/media/{s.profile_photo}") : null,
-                    parent_mobile = s.parent_mobile,
-                    status = s.status,
-                    suspension_reason = s.suspension_reason,
-                    suspended_at = s.suspended_at,
-                    preferred_language = s.preferred_language,
-                    created_at = s.created_at,
-                    updated_at = s.updated_at,
-                    joining_date = s.joining_date,
-                    membership_start_date = s.membership_start_date?.ToString("yyyy-MM-dd"),
-                    membership_end_date = s.membership_end_date?.ToString("yyyy-MM-dd")
+                    membership_start_date = activeMembership?.StartDate.ToString("yyyy-MM-dd"),
+                    membership_end_date = activeMembership?.EndDate.ToString("yyyy-MM-dd")
+            };
             }).ToList();
+
 
             return ServiceResult<object>.Ok(new {
                 count = totalCount, 
@@ -428,6 +405,8 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"StudentProfile_{student.Id}");
+            _cache.Remove($"StudentDashboard_{student.Id}");
             return ServiceResult<object>.Ok(new { id = student.StudentsStudentprofile?.Id });
         }
 
@@ -544,6 +523,8 @@ namespace WebApplication1.Services
                 student.StudentsStudentprofile.SuspensionReason = reason;
             }
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"StudentProfile_{student.Id}");
+            _cache.Remove($"StudentDashboard_{student.Id}");
 
             var email = student.Email;
             var suspensionReason = student.StudentsStudentprofile?.SuspensionReason ?? "";
@@ -581,6 +562,8 @@ namespace WebApplication1.Services
             student.StudentsStudentprofile.SuspendedAt = null;
             student.StudentsStudentprofile.SuspensionReason = null;
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"StudentProfile_{student.Id}");
+            _cache.Remove($"StudentDashboard_{student.Id}");
 
             _ = Task.Run(async () => 
             {
@@ -662,6 +645,8 @@ namespace WebApplication1.Services
             student.StudentsStudentprofile.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"StudentProfile_{student.Id}");
+            _cache.Remove($"StudentDashboard_{student.Id}");
 
             return ServiceResult<object>.Ok(new { 
                 profile_photo = cloudinaryUrl 

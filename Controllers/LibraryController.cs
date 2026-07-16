@@ -24,6 +24,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/info")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetLibraryInfoAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -52,6 +53,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/facilities")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetFacilitiesAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -62,6 +64,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/achievers")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetAchieversAsync([FromQuery] bool? featured, CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -81,6 +84,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/reviews/summary")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetReviewsSummaryAsync(CancellationToken ct)
         {
             var result = await _libraryService.GetReviewsSummaryAsync(ct);
@@ -115,6 +119,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("sliders")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetSlidersAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -125,6 +130,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/gallery")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetGalleryImagesAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";

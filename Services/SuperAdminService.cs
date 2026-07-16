@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Models.DTOs.Admin;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
@@ -15,13 +16,15 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
         private const string SuperAdminEmail = "vipultarur@gmail.com";
 
-        public SuperAdminService(ApplicationDbContext context, ICurrentUserService currentUserService)
+        public SuperAdminService(ApplicationDbContext context, ICurrentUserService currentUserService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _context = context;
             _currentUserService = currentUserService;
+            _cache = cache;
         }
 
         private ServiceResult<object>? ValidateAdminPayload(AdminPayload payload)
@@ -250,6 +253,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetPermissionsListAsync(CancellationToken ct = default)
         {
+            var cacheKey = "AdminPermissionsList";
+            if (_cache.TryGetValue(cacheKey, out object? cachedPermissions) && cachedPermissions != null)
+            {
+                return ServiceResult<object>.Ok(cachedPermissions);
+            }
+
             var permissions = new[] 
             { 
                 new { category = "Dashboard", permissions = new[] { "Dashboard.View", "Dashboard.Analytics", "Dashboard.Export" } },
@@ -279,6 +288,7 @@ namespace WebApplication1.Services
                 new { category = "Audit Logs", permissions = new[] { "AuditLogs.View", "AuditLogs.Export", "AuditLogs.Delete" } },
                 new { category = "App Settings", permissions = new[] { "AppSettings.Manage" } }
             };
+            _cache.Set(cacheKey, permissions, TimeSpan.FromMinutes(30));
             return ServiceResult<object>.Ok(permissions);
         }
 

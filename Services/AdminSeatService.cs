@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -16,16 +17,34 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IMemoryCache _cache;
 
-        public AdminSeatService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory)
+        public AdminSeatService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, IMemoryCache cache)
         {
             _context = context;
             _emailService = emailService;
             _scopeFactory = scopeFactory;
+            _cache = cache;
+        }
+
+        private void InvalidateSeatCaches()
+        {
+            _cache.Remove("StudentSeatLayout");
+            _cache.Remove("AdminSeatsLayout");
+            _cache.Remove("AdminAvailableSeats");
+            _cache.Remove("AdminSeatsStats");
+            _cache.Remove("AdminFloorsList");
+            _cache.Remove("AdminRowsList");
         }
 
         public async Task<ServiceResult<object>> GetSeatsLayoutAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "AdminSeatsLayout";
+            if (_cache.TryGetValue(cacheKey, out object? cachedLayout) && cachedLayout != null)
+            {
+                return ServiceResult<object>.Ok(cachedLayout);
+            }
+
             var floors = await _context.SeatsFloors
                 .AsNoTracking()
                 .Include(f => f.SeatsSeatrows)
@@ -66,6 +85,7 @@ namespace WebApplication1.Services
                 }).ToList()
             });
 
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(result);
         }
 
@@ -117,6 +137,8 @@ namespace WebApplication1.Services
                                     whatsappMessage: string.IsNullOrWhiteSpace(mobile) ? null : msg
                                 );
                             }
+                            _cache.Remove($"StudentDashboard_{studentId.Value}");
+                            _cache.Remove($"StudentSeatHistory_{studentId.Value}");
                         } 
                         catch (Exception ex)
                         {
@@ -133,6 +155,7 @@ namespace WebApplication1.Services
                 await Task.WhenAll(emailTasks);
             }
             
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(new { message = $"{seats.Count} seats released." });
         }
 
@@ -148,11 +171,18 @@ namespace WebApplication1.Services
                 seat.IsReservedForGirls = isReservedForGirls;
             }
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(new { message = $"{seats.Count} seats updated." });
         }
 
         public async Task<ServiceResult<object>> GetAvailableSeatsAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "AdminAvailableSeats";
+            if (_cache.TryGetValue(cacheKey, out object? cachedSeats) && cachedSeats != null)
+            {
+                return ServiceResult<object>.Ok(cachedSeats);
+            }
+
             var seats = await _context.SeatsSeats
                 .AsNoTracking()
                 .Where(s => s.Status != null && s.Status.ToUpper() == "AVAILABLE")
@@ -172,11 +202,18 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, seats, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(seats);
         }
 
         public async Task<ServiceResult<object>> GetSeatsStatsAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "AdminSeatsStats";
+            if (_cache.TryGetValue(cacheKey, out object? cachedStats) && cachedStats != null)
+            {
+                return ServiceResult<object>.Ok(cachedStats);
+            }
+
             var stats = await _context.SeatsSeats
                 .AsNoTracking()
                 .GroupBy(s => s.Floor)
@@ -189,6 +226,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, stats, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(stats);
         }
 
@@ -205,6 +243,7 @@ namespace WebApplication1.Services
             };
             _context.SeatsSeats.Add(draft);
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(new {
                 id = draft.Id,
                 floor = draft.Floor,
@@ -228,6 +267,7 @@ namespace WebApplication1.Services
 
                 _context.SeatsSeats.Remove(seat);
                 await _context.SaveChangesAsync(ct);
+                InvalidateSeatCaches();
                 return ServiceResult<bool>.Ok(true);
             }
             return ServiceResult<bool>.NotFound("Seat not found");
@@ -289,6 +329,7 @@ namespace WebApplication1.Services
             if (rowRefId.HasValue) seat.RowRefId = rowRefId;
 
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(new {
                 id = seat.Id,
                 floor = seat.Floor,
@@ -306,13 +347,14 @@ namespace WebApplication1.Services
             var seat = await _context.SeatsSeats.Include(s => s.Student).FirstOrDefaultAsync(s => s.Id == pk, ct);
             if (seat == null) return ServiceResult<object>.NotFound("Seat not found");
 
+            long? seatStudentId = seat.StudentId;
             seat.Status = status.ToUpper();
-            if (seat.Status == "AVAILABLE" && seat.StudentId != null)
+            if (seat.Status == "AVAILABLE" && seatStudentId != null)
             {
                 string? email = seat.Student?.Email;
                 var seatNumber = seat.SeatNumber;
                 var mobile = seat.Student?.Mobile;
-                long? studentId = seat.StudentId;
+                long? studentId = seatStudentId;
 
                 seat.StudentId = null;
                 seat.AssignedAt = null;
@@ -349,6 +391,12 @@ namespace WebApplication1.Services
                 });
             }
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
+            if (seatStudentId.HasValue)
+            {
+                _cache.Remove($"StudentDashboard_{seatStudentId.Value}");
+                _cache.Remove($"StudentSeatHistory_{seatStudentId.Value}");
+            }
             return ServiceResult<object>.Ok(new {
                 id = seat.Id,
                 status = seat.Status,
@@ -366,6 +414,9 @@ namespace WebApplication1.Services
             seat.Status = "OCCUPIED";
             seat.AssignedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
+            _cache.Remove($"StudentDashboard_{studentId}");
+            _cache.Remove($"StudentSeatHistory_{studentId}");
 
             var studentUser = await _context.AccountsCustomusers.FindAsync(new object[] { studentId }, ct);
             if (studentUser != null)
@@ -431,6 +482,12 @@ namespace WebApplication1.Services
             seat.Status = "AVAILABLE";
             seat.AssignedAt = null;
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
+            if (studentId.HasValue)
+            {
+                _cache.Remove($"StudentDashboard_{studentId.Value}");
+                _cache.Remove($"StudentSeatHistory_{studentId.Value}");
+            }
 
             _ = Task.Run(async () =>
             {
@@ -476,7 +533,13 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetFloorsListAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "AdminFloorsList";
+            if (_cache.TryGetValue(cacheKey, out object? cachedFloors) && cachedFloors != null)
+            {
+                return ServiceResult<object>.Ok(cachedFloors);
+            }
             var data = await _context.SeatsFloors.AsNoTracking().Select(f => new { id = f.Id, name = f.Name, description = f.Description }).ToListAsync(ct);
+            _cache.Set(cacheKey, data, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(data);
         }
 
@@ -490,6 +553,7 @@ namespace WebApplication1.Services
             };
             _context.SeatsFloors.Add(floor);
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(floor);
         }
 
@@ -513,6 +577,7 @@ namespace WebApplication1.Services
                 _context.SeatsSeatrows.RemoveRange(floor.SeatsSeatrows);
                 _context.SeatsFloors.Remove(floor);
                 await _context.SaveChangesAsync(ct);
+                InvalidateSeatCaches();
                 return ServiceResult<bool>.Ok(true);
             }
             return ServiceResult<bool>.NotFound("Floor not found");
@@ -520,7 +585,13 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetRowsListAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "AdminRowsList";
+            if (_cache.TryGetValue(cacheKey, out object? cachedRows) && cachedRows != null)
+            {
+                return ServiceResult<object>.Ok(cachedRows);
+            }
             var data = await _context.SeatsSeatrows.AsNoTracking().Select(r => new { id = r.Id, label = r.Label, floor = r.FloorId }).ToListAsync(ct);
+            _cache.Set(cacheKey, data, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(data);
         }
 
@@ -533,6 +604,7 @@ namespace WebApplication1.Services
             };
             _context.SeatsSeatrows.Add(row);
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(row);
         }
 
@@ -550,6 +622,7 @@ namespace WebApplication1.Services
                 _context.SeatsSeats.RemoveRange(row.SeatsSeats);
                 _context.SeatsSeatrows.Remove(row);
                 await _context.SaveChangesAsync(ct);
+                InvalidateSeatCaches();
                 return ServiceResult<bool>.Ok(true);
             }
             return ServiceResult<bool>.NotFound("Row not found");
@@ -565,6 +638,7 @@ namespace WebApplication1.Services
             floor.Order = order;
 
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(floor);
         }
 
@@ -578,6 +652,7 @@ namespace WebApplication1.Services
             row.Order = order;
 
             await _context.SaveChangesAsync(ct);
+            InvalidateSeatCaches();
             return ServiceResult<object>.Ok(row);
         }
 

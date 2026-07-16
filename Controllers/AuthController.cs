@@ -62,6 +62,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("send-register-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
         public async Task<IActionResult> SendRegisterOtpAsync([FromBody] SendOtpRequest request, CancellationToken ct)
@@ -71,6 +72,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("verify-register-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
         public async Task<IActionResult> VerifyRegisterOtpAsync([FromBody] VerifyOtpRequest request, CancellationToken ct)
@@ -80,6 +82,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("send-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
         public async Task<IActionResult> SendOtpAsync([FromBody] SendOtpRequest request, CancellationToken ct)
@@ -89,6 +92,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("verify-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(object), 400)]
         public async Task<IActionResult> VerifyOtpAsync([FromBody] VerifyOtpRequest request, CancellationToken ct)
@@ -126,6 +130,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequest request, CancellationToken ct)
         {
             var result = await _authService.ForgotPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);
@@ -133,6 +138,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("forgot-password/verify")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> VerifyForgotPasswordOtpAsync([FromBody] VerifyResetOtpRequest request, CancellationToken ct)
         {
             var result = await _authService.VerifyForgotPasswordOtpAsync(request, ct);
@@ -140,6 +146,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("reset-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request, CancellationToken ct)
         {
             var result = await _authService.ResetPasswordAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Path, Request.Method, ct);

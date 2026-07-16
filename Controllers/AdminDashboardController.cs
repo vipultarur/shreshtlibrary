@@ -66,6 +66,7 @@ namespace WebApplication1.Controllers
         [HttpGet("/api/v1/dashboard/stats")]
         [HttpGet("dashboard/stats/{section}")]
         [HttpGet("/api/v1/dashboard/stats/{section}")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetStatsOverviewAsync(string section = "overview", CancellationToken ct = default)
         {
             var stats = await _adminDashboardService.GetStatsOverviewAsync(section, ct);
@@ -75,6 +76,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts")]
         [HttpGet("/api/v1/dashboard/charts")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
         {
             var charts = await _adminDashboardService.GetDashboardChartsAsync(range, ct);
@@ -84,6 +86,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/attendance/overview")]
         [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetAttendanceOverviewChartsAsync(ct);
@@ -93,6 +96,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/revenue/overview")]
         [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRevenueOverviewChartsAsync(ct);
@@ -102,6 +106,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/students/overview")]
         [HttpGet("/api/v1/dashboard/charts/students/overview")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetStudentsOverviewChartsAsync(ct);
@@ -111,6 +116,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/memberships/overview")]
         [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetMembershipsOverviewChartsAsync(ct);
@@ -122,6 +128,7 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/alerts")]
         [HttpGet("/api/v1/dashboard/alerts")]
+        [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetDashboardAlertsAsync(ct);

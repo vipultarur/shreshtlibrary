@@ -7,6 +7,7 @@ using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Models.DTOs.Study;
 
 namespace WebApplication1.Services
@@ -14,10 +15,12 @@ namespace WebApplication1.Services
     public class StudyService : IStudyService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public StudyService(ApplicationDbContext context)
+        public StudyService(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         private object FormatSession(WebApplication1.Models.StudyStudysession session)
@@ -57,6 +60,7 @@ namespace WebApplication1.Services
 
             _context.StudyStudysessions.Add(session);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"SessionHistory_{userId}");
 
             return ServiceResult<object>.Ok(FormatSession(session));
         }
@@ -93,6 +97,7 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"SessionHistory_{userId}");
             return ServiceResult<object>.Ok(FormatSession(session));
         }
 
@@ -138,11 +143,18 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+            _cache.Remove($"SessionHistory_{userId}");
             return ServiceResult<object>.Ok(FormatSession(session));
         }
 
         public async Task<ServiceResult<object>> GetSessionHistoryAsync(long userId, int page, int pageSize, CancellationToken ct = default)
         {
+            string cacheKey = $"SessionHistory_{userId}_{page}_{pageSize}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedHistory) && cachedHistory != null)
+            {
+                return ServiceResult<object>.Ok(cachedHistory);
+            }
+
             var sessions = await _context.StudyStudysessions
                 .AsNoTracking()
                 .Where(s => s.StudentId == userId)
@@ -152,11 +164,18 @@ namespace WebApplication1.Services
                 .ToListAsync(ct);
 
             var data = sessions.Select(FormatSession).ToList();
+            _cache.Set(cacheKey, data, TimeSpan.FromMinutes(15));
             return ServiceResult<object>.Ok(data);
         }
 
         public async Task<ServiceResult<object>> GetLeaderboardAsync(string duration, string? startDate, string? endDate, string mediaBaseUrl, CancellationToken ct = default)
         {
+            string cacheKey = $"Leaderboard_{duration}_{startDate}_{endDate}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedLeaderboard) && cachedLeaderboard != null)
+            {
+                return ServiceResult<object>.Ok(cachedLeaderboard);
+            }
+
             var nowUtc = DateTime.UtcNow;
             
             var query = _context.StudyStudysessions.AsNoTracking().Where(s => s.Status == "completed");
@@ -260,6 +279,7 @@ namespace WebApplication1.Services
                 rank++;
             }
 
+            _cache.Set(cacheKey, leaderboard, TimeSpan.FromMinutes(10));
             return ServiceResult<object>.Ok(leaderboard);
         }
     }

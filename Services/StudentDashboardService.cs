@@ -5,6 +5,7 @@ using WebApplication1.Data;
 using WebApplication1.Models.Responses;
 using System.Threading;
 using System;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace WebApplication1.Services
 {
@@ -12,15 +13,23 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IMemoryCache _cache;
 
-        public StudentDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+        public StudentDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, IMemoryCache cache)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _cache = cache;
         }
 
         public async Task<ApiResponse<object>?> GetDashboardAsync(long userId, CancellationToken ct = default)
         {
+            string cacheKey = $"StudentDashboard_{userId}";
+            if (_cache.TryGetValue(cacheKey, out ApiResponse<object>? cachedDashboard) && cachedDashboard != null)
+            {
+                return cachedDashboard;
+            }
+
             var todayDate = System.DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             var today = todayDate;
 
@@ -246,7 +255,17 @@ namespace WebApplication1.Services
 
             string razorpayKey = data.RazorpayKey ?? "";
 
-            return ApiResponse<object>.Ok(new
+            var cacheVersionsStr = await _context.CoreGlobalsettings
+                .Where(gs => gs.Key == "CACHE_VERSIONS")
+                .Select(gs => gs.Value)
+                .FirstOrDefaultAsync(ct) ?? "{}";
+            
+            object? cacheVersions = null;
+            try {
+                cacheVersions = System.Text.Json.JsonSerializer.Deserialize<object>(cacheVersionsStr);
+            } catch { }
+
+            var response = ApiResponse<object>.Ok(new
             {
                 student_id = data.Profile.UserId,
                 full_name = fullName,
@@ -265,8 +284,12 @@ namespace WebApplication1.Services
                 attendance_status = attendanceStatus,
                 attendance_time = attendanceTime,
                 allow_qr_scan = allowQrScan,
-                razorpay_key = razorpayKey
+                razorpay_key = razorpayKey,
+                cache_versions = cacheVersions
             });
+
+            _cache.Set(cacheKey, response, TimeSpan.FromMinutes(5));
+            return response;
         }
     }
 }

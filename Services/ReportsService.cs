@@ -24,19 +24,20 @@ namespace WebApplication1.Services
             var query = _context.AttendanceAttendances.AsNoTracking().Include(a => a.Student);
             
             var totalCount = await query.CountAsync(ct);
-            var items = await query.OrderByDescending(a => a.Date)
+            var dbItems = await query.OrderByDescending(a => a.Date)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(a => new {
-                    id = a.Id,
-                    date = a.Date.ToString("yyyy-MM-dd"),
-                    student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : "Unknown",
-                    is_present = a.IsPresent,
-                    time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
-                    time_out = a.TimeOut,
-                    total_hours = a.TotalHours
-                })
                 .ToListAsync(ct);
+
+            var items = dbItems.Select(a => new {
+                id = a.Id,
+                date = a.Date.ToString("yyyy-MM-dd"),
+                student_name = a.Student != null ? a.Student.FirstName + " " + a.Student.LastName : "Unknown",
+                is_present = a.IsPresent,
+                time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
+                time_out = a.TimeOut,
+                total_hours = a.TotalHours
+            }).ToList();
 
             return ServiceResult<object>.Ok(new { count = totalCount, data = items });
         }
@@ -46,18 +47,19 @@ namespace WebApplication1.Services
             var query = _context.PaymentsPayments.AsNoTracking().Include(p => p.Student);
             
             var totalCount = await query.CountAsync(ct);
-            var items = await query.OrderByDescending(p => p.PaymentDate)
+            var dbItems = await query.OrderByDescending(p => p.PaymentDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(p => new {
-                    id = p.Id,
-                    date = p.PaymentDate.ToString("yyyy-MM-dd"),
-                    student_name = p.Student != null ? p.Student.FirstName + " " + p.Student.LastName : "Unknown",
-                    amount = p.Amount,
-                    status = p.Status,
-                    payment_mode = p.PaymentMode
-                })
                 .ToListAsync(ct);
+
+            var items = dbItems.Select(p => new {
+                id = p.Id,
+                date = p.PaymentDate.ToString("yyyy-MM-dd"),
+                student_name = p.Student != null ? p.Student.FirstName + " " + p.Student.LastName : "Unknown",
+                amount = p.Amount,
+                status = p.Status,
+                payment_mode = p.PaymentMode
+            }).ToList();
 
             return ServiceResult<object>.Ok(new { count = totalCount, data = items });
         }
@@ -67,17 +69,18 @@ namespace WebApplication1.Services
             var query = _context.StudentsStudentprofiles.AsNoTracking().Include(s => s.User);
             
             var totalCount = await query.CountAsync(ct);
-            var items = await query.OrderByDescending(s => s.CreatedAt)
+            var dbItems = await query.OrderByDescending(s => s.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(s => new {
-                    id = s.Id,
-                    student_id = s.StudentId,
-                    name = s.User.FirstName + " " + s.User.LastName,
-                    status = s.Status,
-                    joining_date = s.JoiningDate
-                })
                 .ToListAsync(ct);
+
+            var items = dbItems.Select(s => new {
+                id = s.Id,
+                student_id = s.StudentId,
+                name = s.User.FirstName + " " + s.User.LastName,
+                status = s.Status,
+                joining_date = s.JoiningDate
+            }).ToList();
 
             return ServiceResult<object>.Ok(new { count = totalCount, data = items });
         }
@@ -87,19 +90,20 @@ namespace WebApplication1.Services
             var query = _context.MembershipsMemberships.AsNoTracking().Include(m => m.Student).Include(m => m.Plan);
             
             var totalCount = await query.CountAsync(ct);
-            var items = await query.OrderByDescending(m => m.StartDate)
+            var dbItems = await query.OrderByDescending(m => m.StartDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(m => new {
-                    id = m.Id,
-                    student_name = m.Student != null ? m.Student.FirstName + " " + m.Student.LastName : "Unknown",
-                    plan_name = m.Plan != null ? m.Plan.Name : m.PlanNameSnapshot,
-                    start_date = m.StartDate.ToString("yyyy-MM-dd"),
-                    end_date = m.EndDate.ToString("yyyy-MM-dd"),
-                    status = m.Status,
-                    price = m.PriceSnapshot
-                })
                 .ToListAsync(ct);
+
+            var items = dbItems.Select(m => new {
+                id = m.Id,
+                student_name = m.Student != null ? m.Student.FirstName + " " + m.Student.LastName : "Unknown",
+                plan_name = m.Plan != null ? m.Plan.Name : m.PlanNameSnapshot,
+                start_date = m.StartDate.ToString("yyyy-MM-dd"),
+                end_date = m.EndDate.ToString("yyyy-MM-dd"),
+                status = m.Status,
+                price = m.PriceSnapshot
+            }).ToList();
 
             return ServiceResult<object>.Ok(new { count = totalCount, data = items });
         }

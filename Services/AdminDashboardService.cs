@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.DTOs.Admin;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace WebApplication1.Services
 {
@@ -13,12 +14,14 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ICloudinaryService _cloudinary;
+        private readonly IMemoryCache _cache;
 
-        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICloudinaryService cloudinary)
+        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICloudinaryService cloudinary, IMemoryCache cache)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _cloudinary = cloudinary;
+            _cache = cache;
         }
 
         public async Task<object?> GetAdminProfileAsync(long userId, CancellationToken ct)
@@ -109,6 +112,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetStatsOverviewAsync(string section, CancellationToken ct)
         {
+            var cacheKey = $"AdminStatsOverview_{section}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 var nowUtc = _dateTimeProvider.UtcNow;
@@ -179,7 +188,7 @@ namespace WebApplication1.Services
 
                 var paymentsMonthCount = await _context.PaymentsPayments.CountAsync(p => p.PaymentDate >= monthIstDate && p.PaymentDate <= todayIstDate && p.Status != null && p.Status.ToLower() == "verified", ct);
 
-                return new
+                var result = new
                 {
                     students = new {
                         total = studentsTotal,
@@ -206,6 +215,9 @@ namespace WebApplication1.Services
                         occupied = occupiedSeats
                     }
                 };
+                
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {
@@ -221,6 +233,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetDashboardChartsAsync(string range, CancellationToken ct)
         {
+            var cacheKey = $"AdminDashboardCharts_{range}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 int days = range == "month" ? 30 : (range == "week" ? 7 : 30);
@@ -284,13 +302,16 @@ namespace WebApplication1.Services
                 var occupied = await _context.SeatsSeats.CountAsync(s => s.Status != null && s.Status.ToUpper() == "OCCUPIED", ct);
                 var available = totalSeatsCount - occupied;
 
-                return new
+                var result = new
                 {
                     attendance_trend = new { labels = attendanceDates, data = attendanceCounts },
                     revenue_trend = new { labels = revenueLabels, data = revenueData },
                     study_hours = new { labels = studyDates, data = studyHours },
                     seat_occupancy = new { labels = new[] { "Available", "Occupied" }, data = new[] { available, occupied } }
                 };
+                
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {
@@ -375,6 +396,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
+            var cacheKey = "AdminAttendanceOverviewCharts";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 var nowUtc = _dateTimeProvider.UtcNow;
@@ -397,10 +424,13 @@ namespace WebApplication1.Services
                     data.Add(attGroups.FirstOrDefault(g => g.Date == d)?.Count ?? 0);
                 }
 
-                return new {
+                var result = new {
                     labels = labels,
                     present = data
                 };
+                
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {
@@ -410,6 +440,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
+            var cacheKey = "AdminRevenueOverviewCharts";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 var nowUtc = _dateTimeProvider.UtcNow;
@@ -431,7 +467,9 @@ namespace WebApplication1.Services
                     data.Add(g?.Revenue ?? 0);
                 }
 
-                return new { labels = labels, revenue = data };
+                var result = new { labels = labels, revenue = data };
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {
@@ -441,6 +479,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
+            var cacheKey = "AdminStudentsOverviewCharts";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 var studentGoalGroups = await _context.StudentsStudentprofiles
@@ -449,7 +493,9 @@ namespace WebApplication1.Services
                     .OrderByDescending(x => x.students)
                     .ToListAsync(ct);
 
-                return new { items = studentGoalGroups };
+                var result = new { items = studentGoalGroups };
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {
@@ -459,6 +505,12 @@ namespace WebApplication1.Services
 
         public async Task<object> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
+            var cacheKey = "AdminMembershipsOverviewCharts";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult) && cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             try
             {
                 var membershipGroups = await _context.MembershipsMemberships
@@ -469,7 +521,9 @@ namespace WebApplication1.Services
                     .OrderByDescending(x => x.active)
                     .ToListAsync(ct);
 
-                return new { items = membershipGroups };
+                var result = new { items = membershipGroups };
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return result;
             }
             catch
             {

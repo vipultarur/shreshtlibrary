@@ -15,7 +15,7 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
 
         public LibraryService(ApplicationDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
@@ -133,6 +133,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetAchieversAsync(bool? featured, string mediaBaseUrl, CancellationToken ct = default)
         {
+            string cacheKey = $"LibraryAchievers_{(featured.HasValue && featured.Value ? "Featured" : "All")}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedAchievers))
+            {
+                return ServiceResult<object>.Ok(cachedAchievers);
+            }
+
             var query = _context.LibraryAchievers.AsNoTracking().Where(a => a.IsActive);
             if (featured.HasValue && featured.Value)
             {
@@ -152,11 +158,18 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, achievers, CacheDuration);
             return ServiceResult<object>.Ok(achievers);
         }
 
         public async Task<ServiceResult<object>> GetReviewsAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "LibraryReviews";
+            if (_cache.TryGetValue(cacheKey, out object? cachedReviews))
+            {
+                return ServiceResult<object>.Ok(cachedReviews);
+            }
+
             var reviews = await _context.LibraryReviews
                 .AsNoTracking()
                 .Include(r => r.Student)
@@ -179,11 +192,18 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, reviews, CacheDuration);
             return ServiceResult<object>.Ok(reviews);
         }
 
         public async Task<ServiceResult<object>> GetReviewsSummaryAsync(CancellationToken ct = default)
         {
+            const string cacheKey = "LibraryReviewsSummary";
+            if (_cache.TryGetValue(cacheKey, out object? cachedSummary))
+            {
+                return ServiceResult<object>.Ok(cachedSummary);
+            }
+
             var stats = await _context.LibraryReviews
                 .AsNoTracking()
                 .Where(r => r.IsApproved)
@@ -212,6 +232,8 @@ namespace WebApplication1.Services
                     _5 = stats?.R5 ?? 0
                 }
             };
+            
+            _cache.Set(cacheKey, summaryData, CacheDuration);
             return ServiceResult<object>.Ok(summaryData);
         }
 
@@ -264,6 +286,12 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetSlidersAsync(string mediaBaseUrl, CancellationToken ct = default)
         {
+            const string cacheKey = "LibrarySlidersStudent";
+            if (_cache.TryGetValue(cacheKey, out object? cachedSliders))
+            {
+                return ServiceResult<object>.Ok(cachedSliders);
+            }
+
             var sliders = await _context.LibraryHomesliders
                 .AsNoTracking()
                 .Where(s => s.IsActive)
@@ -280,11 +308,18 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, sliders, CacheDuration);
             return ServiceResult<object>.Ok(sliders);
         }
 
         public async Task<ServiceResult<object>> GetGalleryImagesAsync(string mediaBaseUrl, CancellationToken ct = default)
         {
+            const string cacheKey = "LibraryGalleryImages";
+            if (_cache.TryGetValue(cacheKey, out object? cachedGallery))
+            {
+                return ServiceResult<object>.Ok(cachedGallery);
+            }
+
             var images = await _context.LibraryGalleryImages
                 .AsNoTracking()
                 .OrderBy(i => i.Order)
@@ -299,6 +334,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
+            _cache.Set(cacheKey, images, CacheDuration);
             return ServiceResult<object>.Ok(images);
         }
     }
