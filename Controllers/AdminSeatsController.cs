@@ -91,6 +91,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/layout")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsLayoutAsync(CancellationToken ct)
         {
@@ -99,6 +100,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/release-all")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsReleaseAllAsync(CancellationToken ct)
         {
@@ -107,6 +109,7 @@ namespace WebApplication1.Controllers
         }
         
         [HttpPost("seats/reserve-bulk")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsReserveBulkAsync([FromBody] SeatReserveBulkDto dto, CancellationToken ct)
         {
@@ -116,6 +119,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/available")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsAvailableAsync(CancellationToken ct)
         {
@@ -124,6 +128,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/stats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsStatsAsync(CancellationToken ct)
         {
@@ -132,6 +137,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsAddAsync([FromBody] SeatCreateDto dto, CancellationToken ct)
         {
@@ -140,6 +146,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("seats/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatDeleteAsync(int pk, CancellationToken ct)
         {
@@ -149,6 +156,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 200)
         {
@@ -162,6 +170,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatDetailAsync(int pk, CancellationToken ct)
         {
@@ -171,6 +180,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("seats/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatUpdateAsync(int pk, [FromBody] SeatCreateDto dto, CancellationToken ct)
         {
@@ -180,6 +190,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPatch("seats/{pk}/status")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatStatusAsync(int pk, [FromBody] SeatUpdateStatusDto dto, CancellationToken ct)
         {
@@ -189,6 +200,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/{pk}/assign")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatAssignAsync(int pk, [FromBody] SeatAssignDto dto, CancellationToken ct)
         {
@@ -201,6 +213,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("seats/{pk}/unassign")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatUnassignAsync(int pk, [FromBody] SeatUnassignDto dto, CancellationToken ct)
         {
@@ -210,6 +223,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats/{pk}/history")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> SeatHistoryAsync(int pk, CancellationToken ct)
         {
@@ -218,6 +232,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("floors")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorsListAsync(CancellationToken ct)
         {
@@ -226,6 +241,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("floors/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorDetailAsync(int pk, CancellationToken ct)
         {
@@ -235,6 +251,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("floors")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorAddAsync([FromBody] FloorCreateDto dto, CancellationToken ct)
         {
@@ -243,6 +260,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("floors/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorDeleteAsync(int pk, CancellationToken ct)
         {
@@ -252,6 +270,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("rows")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowsListAsync(CancellationToken ct)
         {
@@ -260,6 +279,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("rows/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowDetailAsync(int pk, CancellationToken ct)
         {
@@ -269,6 +289,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("rows")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowAddAsync([FromBody] RowCreateDto dto, CancellationToken ct)
         {
@@ -277,6 +298,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("rows/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowDeleteAsync(int pk, CancellationToken ct)
         {
@@ -286,6 +308,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("floors/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> FloorUpdateAsync(int pk, [FromBody] FloorCreateDto dto, CancellationToken ct)
         {
@@ -295,6 +318,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("rows/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Seat)]
         public async Task<IActionResult> RowUpdateAsync(int pk, [FromBody] RowCreateDto dto, CancellationToken ct)
         {

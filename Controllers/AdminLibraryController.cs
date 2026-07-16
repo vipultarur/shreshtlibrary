@@ -23,6 +23,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("info")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Info)]
         public async Task<IActionResult> GetLibraryInfo(CancellationToken ct)
         {
@@ -32,6 +33,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("info")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Info)]
         public async Task<IActionResult> UpdateLibraryInfo([FromForm] LibraryInfoUpdateDto dto, CancellationToken ct)
         {
@@ -41,6 +43,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("facilities")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> GetFacilities(CancellationToken ct)
         {
@@ -50,6 +53,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("facilities")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> CreateFacility([FromForm] FacilityDto dto, CancellationToken ct)
         {
@@ -59,6 +63,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("facilities/{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> UpdateFacility(long id, [FromForm] FacilityDto dto, CancellationToken ct)
         {
@@ -68,6 +73,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("facilities/{id}/toggle")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> ToggleFacility(long id, CancellationToken ct)
         {
@@ -77,6 +83,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("facilities/{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Facilities)]
         public async Task<IActionResult> DeleteFacility(long id, CancellationToken ct)
         {
@@ -86,6 +93,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("achievers")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetAchievers(CancellationToken ct)
         {
             var result = await _libraryService.GetAchievers(ct);
@@ -94,6 +102,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("achievers")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> CreateAchiever([FromForm] AchieverDto dto, CancellationToken ct)
         {
             var result = await _libraryService.CreateAchiever(dto, ct);
@@ -102,6 +111,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("achievers/{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> UpdateAchiever(long id, [FromForm] AchieverDto dto, CancellationToken ct)
         {
             var result = await _libraryService.UpdateAchiever(id, dto, ct);
@@ -110,6 +120,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("achievers/{id}/toggle")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ToggleAchiever(long id, CancellationToken ct)
         {
             var result = await _libraryService.ToggleAchiever(id, ct);
@@ -118,6 +129,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("achievers/{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> DeleteAchiever(long id, CancellationToken ct)
         {
             var result = await _libraryService.DeleteAchiever(id, ct);
@@ -126,6 +138,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("reviews")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
             var result = await _libraryService.GetReviews(page, page_size, ct);
@@ -134,6 +147,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("reviews/summary")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetReviewSummary(CancellationToken ct)
         {
             var result = await _libraryService.GetReviewSummary(ct);
@@ -142,6 +156,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("gallery")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> GetGalleryImages(CancellationToken ct)
         {
@@ -151,6 +166,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("gallery")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> UploadGalleryImage([FromForm] GalleryImageDto dto, CancellationToken ct)
         {
@@ -160,6 +176,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("gallery/{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Gallery)]
         public async Task<IActionResult> DeleteGalleryImage(long id, CancellationToken ct)
         {

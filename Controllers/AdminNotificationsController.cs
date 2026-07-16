@@ -22,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/templates")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationTemplatesAsync(CancellationToken ct)
         {
@@ -30,6 +31,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/scheduled")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduledAsync(CancellationToken ct)
         {
@@ -38,6 +40,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("notifications/scheduled/{pk}/cancel")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduledCancelAsync(int pk, CancellationToken ct)
         {
@@ -47,6 +50,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("notifications/schedule")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationScheduleAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
@@ -68,6 +72,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("notifications/send")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationSendAsync([FromForm] NotificationPayloadDto dto, CancellationToken ct)
         {
@@ -90,6 +95,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.View)]
         public async Task<IActionResult> NotificationsListAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 50)
         {
@@ -100,6 +106,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.View)]
         public async Task<IActionResult> NotificationDetailAsync(int pk, CancellationToken ct)
         {
@@ -109,6 +116,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("notifications/{pk}/recipients")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> NotificationRecipientsAsync(int pk, CancellationToken ct)
         {
@@ -117,6 +125,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("inbox")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxNotificationsAsync(CancellationToken ct)
         {
@@ -125,6 +134,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("inbox/{pk}/{actionType}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxActionAsync(long pk, string actionType, CancellationToken ct)
         {
@@ -134,6 +144,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("inbox/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> InboxDeleteAsync(long pk, CancellationToken ct)
         {
@@ -143,6 +154,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("notifications/clear-all")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.NotificationManagement.Send)]
         public async Task<IActionResult> ClearAllNotificationsAsync(CancellationToken ct)
         {

@@ -30,6 +30,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("profile")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetProfileAsync(CancellationToken ct)
         {
             var userId = GetCurrentUserId();
@@ -68,6 +69,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("dashboard")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetDashboardAsync(CancellationToken ct)
         {
             var userId = GetCurrentUserId();
@@ -80,6 +82,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("id-card")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetIdCardAsync(CancellationToken ct)
         {
             var userId = GetCurrentUserId();
@@ -118,6 +121,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("referral/apply")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ApplyReferralAsync([FromBody] ApplyReferralRequest request, CancellationToken ct)
         {
             var userId = GetCurrentUserId();

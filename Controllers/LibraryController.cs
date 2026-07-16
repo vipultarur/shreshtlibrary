@@ -34,6 +34,7 @@ namespace WebApplication1.Controllers
 
         [AllowAnonymous]
         [HttpGet("/favicon.ico")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> GetFaviconAsync(CancellationToken ct)
         {

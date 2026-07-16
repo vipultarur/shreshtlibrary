@@ -22,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/current")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrCurrentAsync(CancellationToken ct)
         {
@@ -30,6 +31,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/history")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrHistoryAsync(CancellationToken ct, [FromQuery] int page = 1, [FromQuery] int page_size = 20)
         {
@@ -44,6 +46,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/generate")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrGenerateAsync([FromBody] QrGenerateDto? dto, CancellationToken ct)
         {
@@ -52,6 +55,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/regenerate")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrRegenerateAsync([FromBody] QrGenerateDto? dto, CancellationToken ct)
         {
@@ -60,6 +64,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("qr/expire")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrExpireAsync(CancellationToken ct)
         {
@@ -68,6 +73,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("qr/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> QrDeleteAsync(int pk, CancellationToken ct)
         {
@@ -78,6 +84,7 @@ namespace WebApplication1.Controllers
 
         [Authorize(Roles = "super_admin")]
         [HttpDelete("qr/clear-all")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> QrClearAllAsync(CancellationToken ct)
         {
             await _adminAttendanceService.ClearAllQrAsync(ct);
@@ -85,6 +92,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("qr/{pk}/scans")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> QrScansAsync(int pk, CancellationToken ct)
         {
@@ -93,6 +101,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("holidays")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> HolidaysListAsync(CancellationToken ct, [FromQuery] string? from_date = null, [FromQuery] string? to_date = null, [FromQuery] string? date = null, [FromQuery] bool? is_active = null)
         {
@@ -101,6 +110,7 @@ namespace WebApplication1.Controllers
         }
         
         [HttpGet("holidays/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> HolidayDetailAsync(int pk, CancellationToken ct)
         {
@@ -110,6 +120,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("holidays")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> CreateHolidayAsync([FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
         {
@@ -119,6 +130,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("holidays/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> UpdateHolidayAsync(int pk, [FromBody] WebApplication1.Models.DTOs.Attendance.HolidayDto dto, CancellationToken ct)
         {
@@ -129,6 +141,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("holidays/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Holiday)]
         public async Task<IActionResult> DeleteHolidayAsync(int pk, CancellationToken ct)
         {
@@ -138,6 +151,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/daily-summary")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceDailySummaryAsync(CancellationToken ct, [FromQuery] string? date = null)
         {
@@ -146,6 +160,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/absentees")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceAbsenteesAsync(CancellationToken ct, [FromQuery] string? date = null)
         {
@@ -154,6 +169,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/streak")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceStreakAsync(CancellationToken ct)
         {
@@ -162,6 +178,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("attendance/manual")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> AttendanceManualAsync([FromBody] WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto dto, CancellationToken ct)
         {
@@ -171,6 +188,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("attendance/manual/bulk")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.Manage)]
         public async Task<IActionResult> AttendanceManualBulkAsync([FromBody] List<WebApplication1.Models.DTOs.Attendance.ManualAttendanceDto> dtos, CancellationToken ct)
         {
@@ -180,6 +198,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceListAsync(CancellationToken ct, [FromQuery] string? date = null, [FromQuery] string? from_date = null, [FromQuery] string? to_date = null, [FromQuery] int page = 1, [FromQuery] int page_size = 100)
         {
@@ -193,6 +212,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Attendance.View)]
         public async Task<IActionResult> AttendanceDetailAsync(int pk, CancellationToken ct)
         {

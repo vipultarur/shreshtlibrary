@@ -15,13 +15,15 @@ namespace WebApplication1.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ICloudinaryService _cloudinary;
         private readonly IMemoryCache _cache;
+        private readonly Microsoft.Extensions.Logging.ILogger<AdminDashboardService> _logger;
 
-        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICloudinaryService cloudinary, IMemoryCache cache)
+        public AdminDashboardService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICloudinaryService cloudinary, IMemoryCache cache, Microsoft.Extensions.Logging.ILogger<AdminDashboardService> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _cloudinary = cloudinary;
             _cache = cache;
+            _logger = logger;
         }
 
         public async Task<object?> GetAdminProfileAsync(long userId, CancellationToken ct)
@@ -53,8 +55,9 @@ namespace WebApplication1.Services
                     marked_attendance_count = await _context.AttendanceAttendances.CountAsync(a => a.MarkedById == userId, ct),
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting admin profile");
                 return null;
             }
         }
@@ -219,8 +222,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting stats overview");
                 return new
                 {
                     students = new { total = 0, live = 0, expired = 0, suspended = 0, pending = 0, girls = 0, boys = 0, other = 0 },
@@ -313,8 +317,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting dashboard charts");
                 return new
                 {
                     attendance_trend = new { labels = new System.Collections.Generic.List<string>(), data = new System.Collections.Generic.List<int>() },
@@ -343,9 +348,9 @@ namespace WebApplication1.Services
                     });
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Ignore DB error for this specific alert
+                _logger.LogWarning(ex, "Error getting pending payments alerts (ignored)");
             }
             
             try
@@ -360,9 +365,9 @@ namespace WebApplication1.Services
                     });
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Ignore DB error for this specific alert
+                _logger.LogWarning(ex, "Error getting unread messages alerts (ignored)");
             }
 
             return alerts;
@@ -388,8 +393,9 @@ namespace WebApplication1.Services
                     .ToListAsync(ct);
                 return activity;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting recent activity");
                 return new System.Collections.Generic.List<object>();
             }
         }
@@ -410,6 +416,7 @@ namespace WebApplication1.Services
                 var maxDate = DateOnly.FromDateTime(nowUtc);
                 
                 var attGroups = await _context.AttendanceAttendances
+                    .AsNoTracking()
                     .Where(a => a.Date >= minDate && a.Date <= maxDate && a.IsPresent)
                     .GroupBy(a => a.Date)
                     .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -432,8 +439,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting attendance overview charts");
                 return new { labels = new System.Collections.Generic.List<string>(), present = new System.Collections.Generic.List<int>() };
             }
         }
@@ -452,6 +460,7 @@ namespace WebApplication1.Services
                 var sixMonthsAgo = DateOnly.FromDateTime(nowUtc.AddMonths(-6));
 
                 var paymentGroups = await _context.PaymentsPayments
+                    .AsNoTracking()
                     .Where(p => p.PaymentDate >= sixMonthsAgo && p.Status != null && p.Status.ToLower() == "verified")
                     .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
                     .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, Revenue = g.Sum(p => (decimal?)p.Amount) ?? 0 })
@@ -471,8 +480,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting revenue overview charts");
                 return new { labels = new System.Collections.Generic.List<string>(), revenue = new System.Collections.Generic.List<decimal>() };
             }
         }
@@ -488,6 +498,7 @@ namespace WebApplication1.Services
             try
             {
                 var studentGoalGroups = await _context.StudentsStudentprofiles
+                    .AsNoTracking()
                     .GroupBy(s => string.IsNullOrEmpty(s.Goal) ? "Unspecified" : s.Goal)
                     .Select(g => new { goal = g.Key, students = g.Count() })
                     .OrderByDescending(x => x.students)
@@ -497,8 +508,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting students overview charts");
                 return new { items = new System.Collections.Generic.List<object>() };
             }
         }
@@ -514,6 +526,7 @@ namespace WebApplication1.Services
             try
             {
                 var membershipGroups = await _context.MembershipsMemberships
+                    .AsNoTracking()
                     .Include(m => m.Plan)
                     .Where(m => m.IsActive)
                     .GroupBy(m => m.Plan.Name)
@@ -525,8 +538,9 @@ namespace WebApplication1.Services
                 _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error getting memberships overview charts");
                 return new { items = new System.Collections.Generic.List<object>() };
             }
         }

@@ -21,6 +21,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Create)]
         [HttpPost("admins")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminsAddAsync([FromBody] AdminPayload payload, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.AddAdminAsync(payload, ct);
@@ -30,6 +31,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Edit)]
         [HttpPut("admins/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminsUpdateAsync(long pk, [FromBody] AdminPayload payload, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.UpdateAdminAsync(pk, payload, ct);
@@ -39,6 +41,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("admins")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminsListAsync(System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.GetAdminsListAsync(ct);
@@ -47,6 +50,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("admins/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminDetailAsync(long pk, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.GetAdminDetailAsync(pk, ct);
@@ -56,6 +60,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Delete)]
         [HttpDelete("admins/{pk}/remove")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminRemoveAsync(long pk, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.RemoveAdminAsync(pk, ct);
@@ -65,6 +70,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.Suspend)]
         [HttpPost("admins/{pk}/deactivate")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> AdminDeactivateAsync(long pk, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.DeactivateAdminAsync(pk, ct);
@@ -74,6 +80,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.View)]
         [HttpGet("permissions")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> PermissionsListAsync(System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.GetPermissionsListAsync(ct);
@@ -82,6 +89,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AdminManagement.ChangePermissions)]
         [HttpPost("permissions/assign")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> PermissionsAssignAsync([FromBody] PermissionPayload payload, System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.AssignPermissionsAsync(payload, ct);
@@ -90,6 +98,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Create)]
         [HttpPost("backup/create")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> BackupCreateAsync(System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.CreateBackupAsync(ct);
@@ -98,6 +107,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Download)]
         [HttpGet("backup/list")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> BackupListAsync(System.Threading.CancellationToken ct)
         {
             var result = await _superAdminService.GetBackupListAsync(ct);
@@ -108,6 +118,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Backup.Restore)]
         [HttpPost("backup/restore")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> BackupRestoreAsync([FromBody] RestoreBackupRequest request, System.Threading.CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(request?.BackupId))
@@ -131,6 +142,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.AuditLogs.View)]
         [HttpGet("activity-log")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ActivityLogAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, System.Threading.CancellationToken ct = default)
         {
             page_size = System.Math.Clamp(page_size, 1, 100);
@@ -141,6 +153,7 @@ namespace WebApplication1.Controllers
 
         // Health check requires super_admin — use /api/v1/superadmin/health with a valid super_admin token
         [HttpGet("health")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> HealthAsync(System.Threading.CancellationToken ct)
         {
             var startTime = System.Diagnostics.Stopwatch.GetTimestamp();

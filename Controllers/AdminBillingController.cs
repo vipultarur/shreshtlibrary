@@ -22,6 +22,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/stats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanStatsAsync(CancellationToken ct)
         {
@@ -30,6 +31,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlansAllAsync(CancellationToken ct)
         {
@@ -59,6 +61,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("plans/create")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlansCreateAsync([FromBody] PlanPayload payload, CancellationToken ct)
         {
@@ -68,6 +71,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanDetailAsync(long pk, CancellationToken ct)
         {
@@ -77,6 +81,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("plans/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanUpdateAsync(long pk, [FromBody] PlanPayload payload, CancellationToken ct)
         {
@@ -91,6 +96,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPatch("plans/{pk}/toggle")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanToggleAsync(long pk, [FromBody] TogglePayload payload, CancellationToken ct)
         {
@@ -100,6 +106,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("plans/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> PlanDeleteAsync(long pk, CancellationToken ct)
         {
@@ -109,6 +116,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("plans/{pk}/students")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> PlanStudentsAsync(long pk, CancellationToken ct)
         {
@@ -117,6 +125,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/expiring")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsExpiringAsync([FromQuery] int days = 7, CancellationToken ct = default)
         {
@@ -125,6 +134,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/expired-today")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsExpiredTodayAsync(CancellationToken ct)
         {
@@ -142,6 +152,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/assign")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsAssignAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
@@ -151,6 +162,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/renew")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsRenewAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
@@ -160,6 +172,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("memberships/upgrade")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.ManagePlans)]
         public async Task<IActionResult> MembershipsUpgradeAsync([FromBody] MembershipAssignPayload payload, CancellationToken ct)
         {
@@ -169,6 +182,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipsListAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "", [FromQuery] long? student_id = null, CancellationToken ct = default)
         {
@@ -185,6 +199,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Membership.View)]
         public async Task<IActionResult> MembershipDetailAsync(long pk, CancellationToken ct)
         {
@@ -194,6 +209,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/summary")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsSummaryAsync(CancellationToken ct)
         {
@@ -202,6 +218,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/pending")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsPendingAsync(CancellationToken ct)
         {
@@ -210,6 +227,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/overdue")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsOverdueAsync(CancellationToken ct)
         {
@@ -218,6 +236,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentsListAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, [FromQuery] string search = "", [FromQuery] string status = "", CancellationToken ct = default)
         {
@@ -241,6 +260,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentsCreateAsync([FromBody] PaymentCreatePayload payload, CancellationToken ct)
         {
@@ -250,6 +270,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentDetailAsync(long pk, CancellationToken ct)
         {
@@ -259,6 +280,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/verify")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentVerifyAsync(long pk, CancellationToken ct)
         {
@@ -274,6 +296,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/refund")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.Refund)]
         public async Task<IActionResult> PaymentRefundAsync(long pk, [FromBody] RefundPayload payload, CancellationToken ct)
         {
@@ -291,6 +314,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("payments/{pk}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.Verify)]
         public async Task<IActionResult> PaymentUpdateAsync(long pk, [FromBody] PaymentUpdateDto payload, CancellationToken ct)
         {
@@ -300,6 +324,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments/{pk}/receipt")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> PaymentReceiptAsync(long pk, CancellationToken ct)
         {
@@ -309,6 +334,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("payments/{pk}/send-receipt")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.Payment.View)]
         public async Task<IActionResult> SendPaymentReceiptAsync(long pk, CancellationToken ct)
         {

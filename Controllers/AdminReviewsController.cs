@@ -23,6 +23,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Review)]
         public async Task<IActionResult> GetReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
@@ -31,6 +32,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("pending")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Review)]
         public async Task<IActionResult> GetPendingReviews([FromQuery] int page = 1, [FromQuery] int page_size = 20, CancellationToken ct = default)
         {
@@ -38,6 +40,7 @@ namespace WebApplication1.Controllers
             return Ok(ApiResponse<object>.Ok(result.Data)); 
         }
         [HttpPost("{id}/approve")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Review)]
         public async Task<IActionResult> ApproveReview(long id, CancellationToken ct)
         {
@@ -47,6 +50,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("{id}/reject")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Review)]
         public async Task<IActionResult> RejectReview(long id, [FromBody] RejectReviewDto dto, CancellationToken ct)
         {
@@ -56,6 +60,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("{id}/delete")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Review)]
         public async Task<IActionResult> DeleteReview(long id, CancellationToken ct)
         {

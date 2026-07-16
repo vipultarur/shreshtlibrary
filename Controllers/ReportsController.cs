@@ -19,6 +19,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("attendance")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsAttendanceAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, CancellationToken ct = default)
         {
             page_size = Math.Clamp(page_size, 1, 100);
@@ -28,6 +29,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payments")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsPaymentsAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, CancellationToken ct = default)
         {
             page_size = Math.Clamp(page_size, 1, 100);
@@ -37,6 +39,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("students")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsStudentsAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, CancellationToken ct = default)
         {
             page_size = Math.Clamp(page_size, 1, 100);
@@ -46,6 +49,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("memberships")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsMembershipsAsync([FromQuery] int page = 1, [FromQuery] int page_size = 10, CancellationToken ct = default)
         {
             page_size = Math.Clamp(page_size, 1, 100);
@@ -55,6 +59,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("daily-summary")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsDailySummaryAsync(CancellationToken ct)
         {
             var result = await _reportsService.GetDailySummaryAsync(ct);
@@ -62,6 +67,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("seats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsSeatsAsync(CancellationToken ct)
         {
             var result = await _reportsService.GetSeatsReportAsync(ct);
@@ -69,6 +75,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("export/{kind}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ReportsExportAsync(string kind, CancellationToken ct)
         {
             var allowedKinds = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)

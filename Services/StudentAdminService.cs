@@ -21,8 +21,9 @@ namespace WebApplication1.Services
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ICloudinaryService _cloudinary;
+        private readonly Microsoft.Extensions.Logging.ILogger<StudentAdminService> _logger;
 
-        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory, ICloudinaryService cloudinary)
+        public StudentAdminService(ApplicationDbContext context, IEmailService emailService, IMemoryCache cache, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory, ICloudinaryService cloudinary, Microsoft.Extensions.Logging.ILogger<StudentAdminService> logger)
         {
             _context = context;
             _emailService = emailService;
@@ -30,6 +31,7 @@ namespace WebApplication1.Services
             _dateTimeProvider = dateTimeProvider;
             _scopeFactory = scopeFactory;
             _cloudinary = cloudinary;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<object>> GetStudentCountsAsync(CancellationToken ct = default)
@@ -106,6 +108,7 @@ namespace WebApplication1.Services
             var userIds = dbStudents.Select(s => s.UserId).ToList();
 
             var activeMemberships = await _context.MembershipsMemberships
+                .AsNoTracking()
                 .Where(m => userIds.Contains(m.StudentId) && m.Status == "active")
                 .ToListAsync(ct);
 
@@ -329,7 +332,7 @@ namespace WebApplication1.Services
                         string msg = $"🎉 Welcome to Shresht Library, {fName}!\nYour student ID is {newProfile.StudentId}. You can login using this ID/mobile number.";
                         await dispatcher.SendToStudentAsync(newUser.Id, "Welcome to Shresht Library 🎉", "Your account has been created successfully.", WebApplication1.Utils.NotificationTypes.Account, whatsappMessage: msg);
                     } catch (Exception ex) { 
-                        Console.WriteLine($"Error sending welcome notification on admin create: {ex}");
+                        _logger.LogError(ex, "Error sending welcome notification on admin create");
                     }
                 }
 
@@ -546,7 +549,7 @@ namespace WebApplication1.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error sending suspend notification: {ex}");
+                    _logger.LogError(ex, "Error sending suspend notification");
                 }
             });
 
@@ -582,7 +585,7 @@ namespace WebApplication1.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error sending activate notification: {ex}");
+                    _logger.LogError(ex, "Error sending activate notification");
                 }
             });
 

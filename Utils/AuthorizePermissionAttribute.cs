@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -21,56 +23,81 @@ namespace WebApplication1.Utils
         }
     }
 
+    /// <summary>
+    /// §1.2 — Re-derives role and permissions from the DB on every sensitive request.
+    /// A tampered token claiming role:"super_admin" is useless here because we re-fetch
+    /// the real permissions from the AccountsAdminusers table on every authorization check.
+    /// This prevents JWT payload role escalation attacks.
+    /// </summary>
     public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
     {
-        protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public PermissionAuthorizationHandler(IServiceScopeFactory scopeFactory)
         {
-            var roleClaim = context.User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+            _scopeFactory = scopeFactory;
+        }
 
-            if (string.IsNullOrEmpty(roleClaim))
-            {
-                return Task.CompletedTask;
-            }
+        protected override async Task HandleRequirementAsync(
+            AuthorizationHandlerContext context,
+            PermissionRequirement requirement)
+        {
+            var userIdClaim = context.User.Claims.FirstOrDefault(c => c.Type == "user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+                return; // deny
 
-            // Super Admin has all permissions
-            if (roleClaim == "super_admin")
+            // §1.2: Re-fetch role from DB — never trust the JWT role claim for authz decisions
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+
+            var adminUser = await db.AccountsAdminusers
+                .AsNoTracking()
+                .Select(u => new { u.Id, u.Role, u.Permissions, u.IsActive })
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            // Deny if not found, or not an admin account, or deactivated
+            if (adminUser == null || !adminUser.IsActive)
+                return;
+
+            var dbRole = adminUser.Role;
+
+            // super_admin has all permissions (verified from DB, not token)
+            if (dbRole == "super_admin")
             {
                 context.Succeed(requirement);
-                return Task.CompletedTask;
+                return;
             }
 
-            // Sub Super Admin has all permissions EXCEPT AdminManagement (or specific ones if restricted further, but per requirements they can manage normal admins)
-            // They cannot manage Super Admins or change Super Admin permissions, which is handled at the service level, but for UI/endpoints they have broad access.
-            if (roleClaim == "sub_super_admin")
+            // sub_super_admin has broad permissions (verified from DB)
+            if (dbRole == "sub_super_admin")
             {
-                // Optionally restrict some maintenance/security if needed, but requirements say "Can access almost every system feature"
                 context.Succeed(requirement);
-                return Task.CompletedTask;
+                return;
             }
 
-            // Admin: check specific permissions claim
-            if (roleClaim == "admin")
+            // regular admin: check actual permissions string stored in DB (not token)
+            if (dbRole == "admin")
             {
-                var permissionsClaim = context.User.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
-                if (!string.IsNullOrEmpty(permissionsClaim))
+                var permissionsJson = adminUser.Permissions;
+                if (!string.IsNullOrEmpty(permissionsJson))
                 {
                     try
                     {
-                        var permissions = System.Text.Json.JsonSerializer.Deserialize<string[]>(permissionsClaim);
+                        var permissions = System.Text.Json.JsonSerializer.Deserialize<string[]>(permissionsJson);
                         if (permissions != null && permissions.Contains(requirement.Permission))
                         {
                             context.Succeed(requirement);
-                            return Task.CompletedTask;
+                            return;
                         }
                     }
                     catch
                     {
-                        // JSON parsing failed, deny access
+                        // Malformed permissions JSON — deny access
                     }
                 }
             }
 
-            return Task.CompletedTask;
+            // Implicit deny — do NOT call context.Fail() so other handlers can still succeed
         }
     }
 }

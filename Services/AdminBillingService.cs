@@ -22,14 +22,16 @@ namespace WebApplication1.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly WhatsAppNotificationService _whatsappService;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly Microsoft.Extensions.Logging.ILogger<AdminBillingService> _logger;
 
-        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, WhatsAppNotificationService whatsappService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        public AdminBillingService(ApplicationDbContext context, IEmailService emailService, IServiceScopeFactory scopeFactory, WhatsAppNotificationService whatsappService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Logging.ILogger<AdminBillingService> logger)
         {
             _context = context;
             _emailService = emailService;
             _scopeFactory = scopeFactory;
             _whatsappService = whatsappService;
             _cache = cache;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<object>> GetPlanStatsAsync(CancellationToken ct = default)
@@ -362,7 +364,7 @@ namespace WebApplication1.Services
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Error sending plan details email/notification: {ex}");
+                            _logger.LogError(ex, "Error sending plan details email/notification");
                         }
                     });
                 }
@@ -738,7 +740,7 @@ namespace WebApplication1.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending receipt email/notification: {ex}");
+                        _logger.LogError(ex, "Error sending receipt email/notification");
                     }
                     
                 });
@@ -858,7 +860,7 @@ namespace WebApplication1.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending receipt email/notification: {ex}");
+                        _logger.LogError(ex, "Error sending receipt email/notification");
                     }
 
                 });
@@ -933,7 +935,7 @@ namespace WebApplication1.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error sending refund email: {ex}");
+                        _logger.LogError(ex, "Error sending refund email");
                     }
                 });
 
@@ -1235,7 +1237,7 @@ namespace WebApplication1.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error fetching logo for receipt: {ex}");
+                        _logger.LogWarning(ex, "Error fetching logo for receipt");
                     }
                 }
             }

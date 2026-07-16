@@ -24,6 +24,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> GetSliders(CancellationToken ct)
         {
@@ -32,6 +33,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> CreateSlider([FromForm] SliderDto dto, CancellationToken ct)
         {
@@ -40,6 +42,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> UpdateSlider(long id, [FromForm] SliderDto dto, CancellationToken ct)
         {
@@ -49,6 +52,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.LibraryManagement.Slider)]
         public async Task<IActionResult> DeleteSlider(long id, CancellationToken ct)
         {

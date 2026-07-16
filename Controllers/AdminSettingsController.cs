@@ -23,6 +23,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.AppSettings.Manage)]
         public async Task<IActionResult> GetSettings(CancellationToken ct)
         {
@@ -33,6 +34,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [AuthorizePermission(Permissions.AppSettings.Manage)]
         public async Task<IActionResult> UpdateSettings([FromBody] SettingsPayload payload, CancellationToken ct)
         {

@@ -29,6 +29,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("profile")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetAdminProfileAsync(CancellationToken ct)
         {
             var userId = _currentUserService.GetUserId();
@@ -46,6 +47,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("profile")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> UpdateAdminProfileAsync([FromForm] AdminProfileUpdateDto request, CancellationToken ct)
         {
             var userId = _currentUserService.GetUserId();
@@ -63,9 +65,13 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/stats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/stats")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("dashboard/stats/{section}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/stats/{section}")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetStatsOverviewAsync(string section = "overview", CancellationToken ct = default)
         {
@@ -75,7 +81,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
         {
@@ -85,7 +93,9 @@ namespace WebApplication1.Controllers
         
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/attendance/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
@@ -95,7 +105,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/revenue/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
@@ -105,7 +117,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/students/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/students/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
@@ -115,7 +129,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/charts/memberships/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
@@ -127,7 +143,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/alerts")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/alerts")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [ResponseCache(Duration = 30)]
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
         {
@@ -137,7 +155,9 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Dashboard.View)]
         [HttpGet("dashboard/activity/recent")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/activity/recent")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> GetRecentActivityAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRecentActivityAsync(ct);

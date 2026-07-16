@@ -31,6 +31,7 @@ namespace WebApplication1.Controllers
 
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.StudentManagement.Export)]
         [HttpGet("export")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         public async Task<IActionResult> ExportStudentsAsync(CancellationToken ct)
         {
             var result = await _studentAdminService.ExportStudentsAsync(ct);

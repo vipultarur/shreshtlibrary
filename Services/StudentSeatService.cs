@@ -7,17 +7,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Repositories;
 
 namespace WebApplication1.Services
 {
     public class StudentSeatService : IStudentSeatService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IRepository<SeatsSeat> _seatRepo;
+        private readonly IRepository<SeatsSeatassignment> _assignmentRepo;
         private readonly IMemoryCache _cache;
 
-        public StudentSeatService(ApplicationDbContext context, IMemoryCache cache)
+        public StudentSeatService(IRepository<SeatsSeat> seatRepo, IRepository<SeatsSeatassignment> assignmentRepo, IMemoryCache cache)
         {
-            _context = context;
+            _seatRepo = seatRepo;
+            _assignmentRepo = assignmentRepo;
             _cache = cache;
         }
 
@@ -29,8 +32,7 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Ok(cachedLayout);
             }
 
-            var seats = await _context.SeatsSeats
-                .AsNoTracking()
+            var seats = await _seatRepo.Query(trackChanges: false)
                 .OrderBy(s => s.Floor).ThenBy(s => s.Row).ThenBy(s => s.SeatNumber)
                 .Select(s => new
                 {
@@ -58,8 +60,7 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Ok(cachedHistory);
             }
 
-            var history = await _context.SeatsSeatassignments
-                .AsNoTracking()
+            var history = await _assignmentRepo.Query(trackChanges: false)
                 .Include(a => a.Seat)
                 .Where(a => a.StudentId == studentId)
                 .OrderByDescending(a => a.AssignedDate)

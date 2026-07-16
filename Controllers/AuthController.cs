@@ -130,6 +130,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequest request, CancellationToken ct)
         {
@@ -138,6 +139,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("forgot-password/verify")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> VerifyForgotPasswordOtpAsync([FromBody] VerifyResetOtpRequest request, CancellationToken ct)
         {
@@ -146,6 +148,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("reset-password")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("OtpRateThrottle")]
         public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request, CancellationToken ct)
         {
@@ -154,6 +157,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("logout")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Authorize]
         public async Task<IActionResult> LogoutAsync([FromBody] LogoutRequest request, CancellationToken ct)
         {
@@ -175,6 +179,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("change-password")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Authorize]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request, CancellationToken ct)
         {
@@ -184,6 +189,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("fcm-token/update")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [Authorize]
         public async Task<IActionResult> UpdateFcmTokenAsync([FromBody] FcmTokenUpdateDto dto, CancellationToken ct)
         {

@@ -29,10 +29,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 
-builder.Services.AddControllers(options => 
-{
-    options.Filters.Add<WebApplication1.Utils.ApiExceptionFilter>();
-})
+builder.Services.AddControllers()
 .AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
@@ -166,6 +163,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider, WebApplication1.Utils.PermissionPolicyProvider>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, WebApplication1.Utils.PermissionAuthorizationHandler>();
+// §1.2: PermissionAuthorizationHandler is registered as Scoped so it can accept IServiceScopeFactory for DB re-fetch
+// IServiceScopeFactory is a singleton by default, safe to inject into any lifetime
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -195,6 +194,7 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "role",
         NameClaimType = System.Security.Claims.ClaimTypes.Name,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
         ClockSkew = TimeSpan.Zero // Force exact expiration
     };
     options.Events = new JwtBearerEvents
@@ -308,36 +308,13 @@ using (var scope = app.Services.CreateScope())
 app.UseForwardedHeaders();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<WebApplication1.Middleware.CorrelationIdMiddleware>();
+app.UseMiddleware<WebApplication1.Middleware.GlobalExceptionHandlerMiddleware>();
+// §1.9 — Audit all 401/403 responses (log before response finalises)
+app.UseMiddleware<WebApplication1.Middleware.SecurityAuditMiddleware>();
 app.UseResponseCompression();
 
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    app.UseExceptionHandler(exceptionHandlerApp =>
-    {
-        exceptionHandlerApp.Run(async context =>
-        {
-            var exceptionHandlerFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-            if (exceptionHandlerFeature?.Error != null)
-            {
-                Log.Error(exceptionHandlerFeature.Error, "Unhandled exception caught by global handler");
-            }
-            var problemDetailsService = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Http.IProblemDetailsService>();
-            await problemDetailsService.TryWriteAsync(new Microsoft.AspNetCore.Http.ProblemDetailsContext
-            {
-                HttpContext = context,
-                ProblemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
-                {
-                    Status = 500,
-                    Title = "An internal server error occurred.",
-                    Detail = "Please contact support."
-                }
-            });
-        });
-    });
     app.UseHsts();
 }
 
@@ -350,16 +327,14 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
-    c.RoutePrefix = "api-docs";
-});
-
 if (app.Environment.IsDevelopment())
 {
-    // Minimal setup for local dev
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shresht API v1");
+        c.RoutePrefix = "api-docs";
+    });
 }
 
 var mediaPath = app.Environment.IsDevelopment() 
@@ -431,11 +406,14 @@ app.MapGet("/media/{*path}", async (string path, WebApplication1.Data.Applicatio
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
 app.UseCors("AllowAll");
 
 app.UseRateLimiter();
 
 app.UseAuthentication();
+// §1.4 — Reject tokens that were revoked server-side (logout, password change)
+app.UseMiddleware<WebApplication1.Middleware.TokenRevocationMiddleware>();
 app.UseAuthorization();
 
 app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
