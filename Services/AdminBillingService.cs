@@ -1214,31 +1214,41 @@ namespace WebApplication1.Services
 
             if (libraryInfo != null)
             {
-                var imageUrl = !string.IsNullOrWhiteSpace(libraryInfo.BannerImage) ? libraryInfo.BannerImage : libraryInfo.Logo;
-                if (!string.IsNullOrWhiteSpace(imageUrl))
+                try
                 {
-                    try
+                    // Direct place image from local file system as requested
+                    var directLogoPath = System.IO.Path.Combine(System.IO.Directory.GetParent(System.IO.Directory.GetCurrentDirectory())?.FullName ?? "", "shreshtibrary", "public", "logos", "logo.png");
+                    
+                    if (System.IO.File.Exists(directLogoPath))
                     {
-                        if (imageUrl.StartsWith("http"))
+                        logoBytes = await System.IO.File.ReadAllBytesAsync(directLogoPath, ct);
+                    }
+                    else
+                    {
+                        var imageUrl = !string.IsNullOrWhiteSpace(libraryInfo.Logo) ? libraryInfo.Logo : libraryInfo.BannerImage;
+                        if (!string.IsNullOrWhiteSpace(imageUrl))
                         {
-                            using var client = new System.Net.Http.HttpClient();
-                            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-                            client.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
-                            logoBytes = await client.GetByteArrayAsync(imageUrl, ct);
-                        }
-                        else
-                        {
-                            var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", imageUrl.TrimStart('/'));
-                            if (System.IO.File.Exists(filePath))
+                            if (imageUrl.StartsWith("http"))
                             {
-                                logoBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                                using var client = new System.Net.Http.HttpClient();
+                                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                                client.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+                                logoBytes = await client.GetByteArrayAsync(imageUrl, ct);
+                            }
+                            else
+                            {
+                                var filePath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", imageUrl.TrimStart('/'));
+                                if (System.IO.File.Exists(filePath))
+                                {
+                                    logoBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                                }
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Error fetching logo for receipt");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error fetching logo for receipt");
                 }
             }
 
