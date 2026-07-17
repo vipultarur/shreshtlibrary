@@ -78,6 +78,36 @@ namespace WebApplication1.Services
             await File.WriteAllTextAsync(filePath, json, ct);
 
             _logger.LogInformation($"Weekly backup successfully saved to: {filePath}");
+
+            // Send backup file via email to super_admin and sub_super_admin
+            try
+            {
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var targetAdmins = await dbContext.AccountsCustomusers
+                    .Where(u => (u.Role == "super_admin" || u.Role == "sub_super_admin") && !string.IsNullOrEmpty(u.Email))
+                    .Select(u => u.Email)
+                    .ToListAsync(ct);
+
+                if (targetAdmins.Count > 0)
+                {
+                    var fileBytes = await File.ReadAllBytesAsync(filePath, ct);
+                    string subject = "Weekly System Backup 📦";
+                    string htmlMessage = $@"
+                        <h3>Weekly Database Backup</h3>
+                        <p>Please find attached the latest system backup generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC.</p>
+                        <p>This email is sent automatically to all authorized library administrators.</p>";
+
+                    foreach (var adminEmail in targetAdmins)
+                    {
+                        await emailService.SendEmailWithAttachmentAsync(adminEmail, subject, htmlMessage, fileBytes, $"{backupId}.json");
+                    }
+                    _logger.LogInformation($"Backup emailed successfully to {targetAdmins.Count} administrators.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to email the weekly backup to administrators.");
+            }
         }
     }
 }

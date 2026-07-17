@@ -117,9 +117,9 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
-            bool isForgotPassword = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase);
+            bool isBypassOverride = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase) || subject.Contains("Backup", StringComparison.OrdinalIgnoreCase);
 
-            if (!config.enableEmailSystem && !isForgotPassword)
+            if (!config.enableEmailSystem && !isBypassOverride)
             {
                 _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
                 return;
@@ -153,9 +153,9 @@ namespace WebApplication1.Services
                 throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
-            bool isForgotPassword = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase);
+            bool isBypassOverride = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase) || subject.Contains("Backup", StringComparison.OrdinalIgnoreCase);
 
-            if (!config.enableEmailSystem && !isForgotPassword)
+            if (!config.enableEmailSystem && !isBypassOverride)
             {
                 _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
                 return;

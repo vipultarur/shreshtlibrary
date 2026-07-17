@@ -299,15 +299,69 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> CreateBackupAsync(CancellationToken ct = default)
         {
-            return ServiceResult<object>.Ok(new { id = $"backup_{DateTime.UtcNow.Ticks}", status = "in_progress" });
+            try
+            {
+                var backupId = $"manual_backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}";
+                var backupData = new
+                {
+                    BackupId = backupId,
+                    GeneratedAt = DateTime.UtcNow,
+                    Type = "Manual Backup",
+                    Admins = await _context.AccountsAdminusers.AsNoTracking().ToListAsync(ct),
+                    Students = await _context.StudentsStudentprofiles.AsNoTracking().ToListAsync(ct),
+                    Facilities = await _context.LibraryFacilities.AsNoTracking().ToListAsync(ct),
+                    Achievers = await _context.LibraryAchievers.AsNoTracking().ToListAsync(ct),
+                    Sliders = await _context.LibraryHomesliders.AsNoTracking().ToListAsync(ct),
+                    LibraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().ToListAsync(ct),
+                    LibraryAppConfigs = await _context.LibraryAppconfigs.AsNoTracking().ToListAsync(ct),
+                    LibraryReviews = await _context.LibraryReviews.AsNoTracking().ToListAsync(ct)
+                };
+
+                var json = System.Text.Json.JsonSerializer.Serialize(backupData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                
+                var backupDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Backups");
+                if (!System.IO.Directory.Exists(backupDir))
+                {
+                    System.IO.Directory.CreateDirectory(backupDir);
+                }
+
+                var filePath = System.IO.Path.Combine(backupDir, $"{backupId}.json");
+                await System.IO.File.WriteAllTextAsync(filePath, json, ct);
+
+                return ServiceResult<object>.Ok(new { id = backupId, status = "completed" });
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<object>.Fail($"Backup failed: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> GetBackupListAsync(CancellationToken ct = default)
         {
-            return ServiceResult<object>.Ok(new[] {
-                new { id = "backup_1", created_at = DateTime.UtcNow.AddDays(-1), status = "completed" },
-                new { id = "backup_2", created_at = DateTime.UtcNow.AddDays(-7), status = "completed" }
-            });
+            try
+            {
+                var backupDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Backups");
+                if (!System.IO.Directory.Exists(backupDir))
+                {
+                    return ServiceResult<object>.Ok(new object[0]);
+                }
+
+                var files = System.IO.Directory.GetFiles(backupDir, "*.json");
+                var result = files.Select(f => {
+                    var fileInfo = new System.IO.FileInfo(f);
+                    return new {
+                        id = System.IO.Path.GetFileNameWithoutExtension(f),
+                        created_at = fileInfo.CreationTimeUtc,
+                        status = "completed"
+                    };
+                }).OrderByDescending(x => x.created_at).ToList();
+
+                return ServiceResult<object>.Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<object>.Fail($"Failed to load backups: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> GetBackupDataAsync(string backupId, CancellationToken ct = default)
