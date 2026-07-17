@@ -41,7 +41,7 @@ namespace WebApplication1.Services
     {
         Task<ServiceResult<object>> GetPlatformPlansAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> CreatePlatformPlanAsync(PlatformPlanPayload payload, CancellationToken ct = default);
-        Task<ServiceResult<object>> DeletePlatformPlanAsync(long planId, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeletePlatformPlanAsync(long id, CancellationToken ct = default);
         Task<ServiceResult<object>> GetPlatformPaymentSettingsAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> UpdatePlatformPaymentSettingsAsync(PlatformPaymentSettingsPayload payload, CancellationToken ct = default);
         

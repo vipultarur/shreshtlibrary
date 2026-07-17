@@ -63,21 +63,14 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(plan);
         }
 
-        public async Task<ServiceResult<object>> DeletePlatformPlanAsync(long planId, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> DeletePlatformPlanAsync(long id, CancellationToken ct = default)
         {
-            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { planId }, ct);
+            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { id }, ct);
             if (plan == null) return ServiceResult<object>.NotFound("Plan not found");
-
-            // Optionally check if subscriptions are tied to this plan before deleting.
-            var hasSubscriptions = await _context.LibrarySubscriptions.AnyAsync(s => s.PlanId == planId, ct);
-            if (hasSubscriptions)
-            {
-                return ServiceResult<object>.Fail("Cannot delete plan because there are active or past subscriptions tied to it. Consider deactivating it instead.");
-            }
 
             _context.PlatformSubscriptionPlans.Remove(plan);
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(new { success = true, message = "Plan deleted successfully" });
+            return ServiceResult<object>.Ok(new { success = true });
         }
 
         public async Task<ServiceResult<object>> GetPlatformPaymentSettingsAsync(CancellationToken ct = default)
