@@ -11,7 +11,7 @@ namespace WebApplication1.Services
     public interface INotificationService
     {
         Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string> data = null);
-        Task<(int SuccessCount, List<string> FailedTokens)> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null);
+        Task<int> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null);
     }
 
     public class FirebaseNotificationService : INotificationService
@@ -29,12 +29,12 @@ namespace WebApplication1.Services
                     var jsonCredentials = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
                     if (!string.IsNullOrEmpty(jsonCredentials))
                     {
-#pragma warning disable CS0618
+                        #pragma warning disable CS0618
                         FirebaseApp.Create(new AppOptions()
                         {
                             Credential = GoogleCredential.FromJson(jsonCredentials)
                         });
-#pragma warning restore CS0618
+                        #pragma warning restore CS0618
                         _logger.LogInformation("✅ Firebase initialized successfully from FIREBASE_CREDENTIALS_JSON.");
                     }
                     else
@@ -94,17 +94,20 @@ namespace WebApplication1.Services
             }
         }
 
-        public async Task<(int SuccessCount, List<string> FailedTokens)> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null)
+        public async Task<int> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null)
         {
-            var failedTokens = new List<string>();
-            if (tokens == null || tokens.Count == 0) return (0, failedTokens);
+            if (tokens == null || tokens.Count == 0) return 0;
 
             if (!_isFirebaseInitialized)
             {
                 _logger.LogWarning("[Mock] Firebase not initialized. Skipping multicast push to {Count} devices.", tokens.Count);
-                return (0, failedTokens);
+                return 0;
             }
 
+            // DATA-ONLY message: Flutter handles display in ALL app states
+            // - App FOREGROUND  → FirebaseMessaging.onMessage fires → flutter_local_notifications shows it
+            // - App BACKGROUND  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
+            // - App TERMINATED  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
             var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
             {
                 ["title"] = title,
@@ -114,9 +117,11 @@ namespace WebApplication1.Services
             var message = new MulticastMessage()
             {
                 Tokens = tokens,
+                // NO Notification object — data-only so Flutter controls display in all states
                 Android = new AndroidConfig()
                 {
                     Priority = Priority.High,
+                    // No AndroidNotification — Flutter handles via flutter_local_notifications
                 },
                 Data = mergedData
             };
@@ -128,27 +133,21 @@ namespace WebApplication1.Services
                 _logger.LogInformation("[FCM] Multicast done: {Success} success, {Failure} failure out of {Total}",
                     response.SuccessCount, response.FailureCount, tokens.Count);
 
+                // Log individual failures for debugging
                 for (int i = 0; i < response.Responses.Count; i++)
                 {
                     if (!response.Responses[i].IsSuccess)
                     {
-                        var error = response.Responses[i].Exception?.MessagingErrorCode;
-                        _logger.LogWarning("[FCM] Token #{Index} failed: {Error}", i, error);
-                        
-                        // We will return tokens that failed because they are invalid/not registered
-                        if (error == MessagingErrorCode.Unregistered || error == MessagingErrorCode.InvalidArgument)
-                        {
-                            failedTokens.Add(tokens[i]);
-                        }
+                        _logger.LogWarning("[FCM] Token #{Index} failed: {Error}", i, response.Responses[i].Exception?.Message);
                     }
                 }
 
-                return (response.SuccessCount, failedTokens);
+                return response.SuccessCount;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[FCM] Multicast send FAILED for {Count} devices", tokens.Count);
-                return (0, failedTokens);
+                return 0;
             }
         }
     }

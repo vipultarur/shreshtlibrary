@@ -25,7 +25,7 @@ namespace WebApplication1.Controllers
         // ==========================
 
         [HttpGet("platform-plans")]
-        [Authorize(Roles = "super_admin")] // Adjust this if we don't have this policy, we can just check role
+        [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> GetPlatformPlans(CancellationToken ct)
         {
             var result = await _licensingService.GetPlatformPlansAsync(ct);
@@ -33,7 +33,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("platform-plans")]
-        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> CreatePlatformPlan([FromBody] PlatformPlanPayload payload, CancellationToken ct)
         {
             var result = await _licensingService.CreatePlatformPlanAsync(payload, ct);
@@ -41,7 +41,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("payment-settings")]
-        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> GetPaymentSettings(CancellationToken ct)
         {
             var result = await _licensingService.GetPlatformPaymentSettingsAsync(ct);
@@ -49,7 +49,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("payment-settings")]
-        [Authorize(Roles = "super_admin")]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> UpdatePaymentSettings([FromBody] PlatformPaymentSettingsPayload payload, CancellationToken ct)
         {
             var result = await _licensingService.UpdatePlatformPaymentSettingsAsync(payload, ct);
@@ -57,7 +57,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("library-payments")]
-        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> GetLibraryPayments(CancellationToken ct)
         {
             var result = await _licensingService.GetLibraryPaymentsAsync(ct);
