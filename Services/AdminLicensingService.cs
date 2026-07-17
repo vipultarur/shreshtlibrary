@@ -63,16 +63,6 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(plan);
         }
 
-        public async Task<ServiceResult<object>> DeletePlatformPlanAsync(long id, CancellationToken ct = default)
-        {
-            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { id }, ct);
-            if (plan == null) return ServiceResult<object>.NotFound("Plan not found");
-
-            _context.PlatformSubscriptionPlans.Remove(plan);
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(new { success = true });
-        }
-
         public async Task<ServiceResult<object>> GetPlatformPaymentSettingsAsync(CancellationToken ct = default)
         {
             var settings = await _context.PlatformPaymentSettings.FirstOrDefaultAsync(ct);

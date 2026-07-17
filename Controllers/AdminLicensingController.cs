@@ -33,23 +33,15 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("platform-plans")]
-        [Authorize(Roles = "super_admin")]
+        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
         public async Task<IActionResult> CreatePlatformPlan([FromBody] PlatformPlanPayload payload, CancellationToken ct)
         {
             var result = await _licensingService.CreatePlatformPlanAsync(payload, ct);
             return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
         }
 
-        [HttpDelete("platform-plans/{id}")]
-        [Authorize(Roles = "super_admin")]
-        public async Task<IActionResult> DeletePlatformPlan(long id, CancellationToken ct)
-        {
-            var result = await _licensingService.DeletePlatformPlanAsync(id, ct);
-            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
-        }
-
         [HttpGet("payment-settings")]
-        [Authorize(Roles = "super_admin")]
+        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
         public async Task<IActionResult> GetPaymentSettings(CancellationToken ct)
         {
             var result = await _licensingService.GetPlatformPaymentSettingsAsync(ct);
@@ -65,7 +57,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("library-payments")]
-        [Authorize(Roles = "super_admin")]
+        [Authorize(Roles = "super_admin"),Authorize(Roles = "sub_super_admin"),]
         public async Task<IActionResult> GetLibraryPayments(CancellationToken ct)
         {
             var result = await _licensingService.GetLibraryPaymentsAsync(ct);
@@ -73,7 +65,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("library-payments/{id}/approve")]
-        [Authorize(Policy = "RequireSuperAdmin")]
+        [Authorize(Roles = "super_admin"), Authorize(Roles = "sub_super_admin"),]
         public async Task<IActionResult> ApproveLibraryPayment(long id, CancellationToken ct)
         {
             var userIdStr = User.FindFirstValue("user_id");
