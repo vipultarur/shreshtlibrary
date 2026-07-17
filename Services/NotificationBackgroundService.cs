@@ -88,7 +88,7 @@ namespace WebApplication1.Services
                             { "link_button_text", notification.LinkButtonText ?? "" }
                         };
 
-                        var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
+                        var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "http://localhost:5247";
 
                         if (!string.IsNullOrEmpty(notification.BackgroundImage))
                         {

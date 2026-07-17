@@ -41,11 +41,15 @@ namespace WebApplication1.Services
     {
         Task<ServiceResult<object>> GetPlatformPlansAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> CreatePlatformPlanAsync(PlatformPlanPayload payload, CancellationToken ct = default);
+        Task<ServiceResult<object>> UpdatePlatformPlanAsync(long id, PlatformPlanPayload payload, CancellationToken ct = default);
+        Task<ServiceResult<object>> DeletePlatformPlanAsync(long id, CancellationToken ct = default);
+        Task<ServiceResult<object>> TogglePlatformPlanStatusAsync(long id, bool? isActive = null, CancellationToken ct = default);
         Task<ServiceResult<object>> GetPlatformPaymentSettingsAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> UpdatePlatformPaymentSettingsAsync(PlatformPaymentSettingsPayload payload, CancellationToken ct = default);
         
         Task<ServiceResult<object>> GetLibraryPaymentsAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> ApproveLibraryPaymentAsync(long paymentId, long adminId, CancellationToken ct = default);
+        Task<ServiceResult<object>> RejectLibraryPaymentAsync(long paymentId, long adminId, CancellationToken ct = default);
         
         Task<ServiceResult<object>> GetCurrentSubscriptionAsync(CancellationToken ct = default);
         Task<ServiceResult<object>> SubmitLibraryPaymentAsync(LibraryPaymentSubmitPayload payload, CancellationToken ct = default);

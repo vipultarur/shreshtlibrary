@@ -10,8 +10,8 @@ namespace WebApplication1.Services
 {
     public interface INotificationService
     {
-        Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string> data = null);
-        Task<int> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null);
+        Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string>? data = null);
+        Task<(int success, List<string> failed)> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data = null);
     }
 
     public class FirebaseNotificationService : INotificationService
@@ -54,7 +54,7 @@ namespace WebApplication1.Services
             }
         }
 
-        public async Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string> data = null)
+        public async Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string>? data = null)
         {
             if (!_isFirebaseInitialized)
             {
@@ -94,14 +94,14 @@ namespace WebApplication1.Services
             }
         }
 
-        public async Task<int> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string> data = null)
+        public async Task<(int success, List<string> failed)> SendMulticastPushNotificationAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data = null)
         {
-            if (tokens == null || tokens.Count == 0) return 0;
+            if (tokens == null || tokens.Count == 0) return (0, new List<string>());
 
             if (!_isFirebaseInitialized)
             {
                 _logger.LogWarning("[Mock] Firebase not initialized. Skipping multicast push to {Count} devices.", tokens.Count);
-                return 0;
+                return (0, tokens);
             }
 
             // DATA-ONLY message: Flutter handles display in ALL app states
@@ -134,20 +134,22 @@ namespace WebApplication1.Services
                     response.SuccessCount, response.FailureCount, tokens.Count);
 
                 // Log individual failures for debugging
+                var failedTokens = new List<string>();
                 for (int i = 0; i < response.Responses.Count; i++)
                 {
                     if (!response.Responses[i].IsSuccess)
                     {
+                        failedTokens.Add(tokens[i]);
                         _logger.LogWarning("[FCM] Token #{Index} failed: {Error}", i, response.Responses[i].Exception?.Message);
                     }
                 }
 
-                return response.SuccessCount;
+                return (response.SuccessCount, failedTokens);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[FCM] Multicast send FAILED for {Count} devices", tokens.Count);
-                return 0;
+                return (0, tokens);
             }
         }
     }

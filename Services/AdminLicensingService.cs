@@ -63,6 +63,54 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(plan);
         }
 
+        public async Task<ServiceResult<object>> UpdatePlatformPlanAsync(long id, PlatformPlanPayload payload, CancellationToken ct = default)
+        {
+            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { id }, ct);
+            if (plan == null) return ServiceResult<object>.NotFound("Plan not found");
+
+            plan.PlanName = payload.Name;
+            plan.MonthlyPrice = payload.MonthlyPrice;
+            plan.QuarterlyPrice = payload.QuarterlyPrice;
+            plan.HalfYearlyPrice = payload.HalfYearlyPrice;
+            plan.YearlyPrice = payload.YearlyPrice;
+            plan.MaxStudents = payload.MaxStudents;
+            plan.MaxStaff = payload.MaxStaff;
+            plan.Features = JsonSerializer.Serialize(payload.Features);
+            plan.IsRecommended = payload.IsRecommended;
+            plan.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok(plan);
+        }
+
+        public async Task<ServiceResult<object>> DeletePlatformPlanAsync(long id, CancellationToken ct = default)
+        {
+            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { id }, ct);
+            if (plan == null) return ServiceResult<object>.NotFound("Plan not found");
+
+            var hasSubscriptions = await _context.LibrarySubscriptions.AnyAsync(s => s.PlanId == id, ct);
+            if (hasSubscriptions)
+            {
+                return ServiceResult<object>.Fail("Cannot delete plan with active subscriptions. Try deactivating it instead.");
+            }
+
+            _context.PlatformSubscriptionPlans.Remove(plan);
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok(new { message = "Plan deleted successfully" });
+        }
+
+        public async Task<ServiceResult<object>> TogglePlatformPlanStatusAsync(long id, bool? isActive = null, CancellationToken ct = default)
+        {
+            var plan = await _context.PlatformSubscriptionPlans.FindAsync(new object[] { id }, ct);
+            if (plan == null) return ServiceResult<object>.NotFound("Plan not found");
+
+            plan.IsActive = isActive ?? !plan.IsActive;
+            plan.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok(plan);
+        }
+
         public async Task<ServiceResult<object>> GetPlatformPaymentSettingsAsync(CancellationToken ct = default)
         {
             var settings = await _context.PlatformPaymentSettings.FirstOrDefaultAsync(ct);
@@ -124,7 +172,7 @@ namespace WebApplication1.Services
 
             payment.Status = "Approved";
             payment.ApprovedAt = DateTime.UtcNow;
-            payment.ApprovedById = adminId;
+            payment.ApprovedById = adminId > 0 ? adminId : null;
 
             // Update or create subscription
             var latestSub = await _context.LibrarySubscriptions
@@ -153,6 +201,22 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(newSub);
         }
 
+        public async Task<ServiceResult<object>> RejectLibraryPaymentAsync(long paymentId, long adminId, CancellationToken ct = default)
+        {
+            var payment = await _context.LibraryPayments
+                .FirstOrDefaultAsync(p => p.Id == paymentId, ct);
+
+            if (payment == null) return ServiceResult<object>.NotFound("Payment not found");
+            if (payment.Status != "Pending") return ServiceResult<object>.Fail("Payment is not pending");
+
+            payment.Status = "Rejected";
+            payment.ApprovedAt = DateTime.UtcNow;
+            payment.ApprovedById = adminId > 0 ? adminId : null;
+            
+            await _context.SaveChangesAsync(ct);
+            return ServiceResult<object>.Ok(payment);
+        }
+
         public async Task<ServiceResult<object>> GetCurrentSubscriptionAsync(CancellationToken ct = default)
         {
             var sub = await _context.LibrarySubscriptions
@@ -160,7 +224,12 @@ namespace WebApplication1.Services
                 .OrderByDescending(s => s.ExpiryDate)
                 .FirstOrDefaultAsync(ct);
 
-            if (sub == null) return ServiceResult<object>.Ok(new { Status = "None" });
+            var pendingPayment = await _context.LibraryPayments
+                .OrderByDescending(p => p.SubmittedAt)
+                .FirstOrDefaultAsync(p => p.Status == "Pending", ct);
+            bool hasPendingPayment = pendingPayment != null;
+
+            if (sub == null) return ServiceResult<object>.Ok(new { Status = "None", HasPendingPayment = hasPendingPayment });
 
             return ServiceResult<object>.Ok(new
             {
@@ -171,6 +240,7 @@ namespace WebApplication1.Services
                 sub.ExpiryDate,
                 sub.Status,
                 IsExpired = sub.ExpiryDate < DateTime.UtcNow,
+                HasPendingPayment = hasPendingPayment,
                 Features = JsonSerializer.Deserialize<string[]>(sub.Plan.Features, (JsonSerializerOptions?)null) ?? Array.Empty<string>()
             });
         }

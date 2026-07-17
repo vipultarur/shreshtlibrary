@@ -85,27 +85,28 @@ namespace WebApplication1.Services
 
             if (role == "super_admin")
             {
-                var brevoApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_api_key", ct);
-                var brevoFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_name", ct);
-                var brevoFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_email", ct);
                 var waBaseUrl = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_base_url", ct);
                 var waSessionId = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_session_id", ct);
                 var waApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "wa_api_key", ct);
 
-                result.Add("brevo_api_key", brevoApiKey?.Value ?? "");
-                result.Add("brevo_from_name", brevoFromName?.Value ?? "");
-                result.Add("brevo_from_email", brevoFromEmail?.Value ?? "");
-                
                 result.Add("wa_base_url", waBaseUrl?.Value ?? "");
                 result.Add("wa_session_id", waSessionId?.Value ?? "");
                 result.Add("wa_api_key", waApiKey?.Value ?? "");
-
-                var enableEmailSystemStr = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "enable_email_system", ct);
-                result.Add("enable_email_system", enableEmailSystemStr?.Value == "true");
             }
 
             if (role == "super_admin" || role == "sub_super_admin")
             {
+                var brevoApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_api_key", ct);
+                var brevoFromName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_name", ct);
+                var brevoFromEmail = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "brevo_from_email", ct);
+
+                result.Add("brevo_api_key", brevoApiKey?.Value ?? "");
+                result.Add("brevo_from_name", brevoFromName?.Value ?? "");
+                result.Add("brevo_from_email", brevoFromEmail?.Value ?? "");
+
+                var enableEmailSystemStr = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "enable_email_system", ct);
+                result.Add("enable_email_system", enableEmailSystemStr?.Value == "true");
+
                 var cloudinaryCloudName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_cloud_name", ct);
                 var cloudinaryApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_api_key", ct);
                 var cloudinaryApiSecret = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_api_secret", ct);
@@ -196,6 +197,16 @@ namespace WebApplication1.Services
                     await UpdateGlobalSetting("MAINTENANCE_MODE", payload.MaintenanceMode.Value ? "true" : "false", "App Maintenance Mode", ct);
                 }
 
+                await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL", ct);
+                await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID", ct);
+                if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
+                {
+                    await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key", ct);
+                }
+            }
+
+            if (role == "super_admin" || role == "sub_super_admin")
+            {
                 if (!string.IsNullOrEmpty(payload.BrevoApiKey) && payload.BrevoApiKey != "******")
                 {
                     await UpdateGlobalSetting("brevo_api_key", payload.BrevoApiKey, "Brevo HTTP API Key", ct);
@@ -203,21 +214,11 @@ namespace WebApplication1.Services
                 await UpdateGlobalSetting("brevo_from_name", payload.BrevoFromName, "Brevo From Name", ct);
                 await UpdateGlobalSetting("brevo_from_email", payload.BrevoFromEmail, "Brevo From Email Address", ct);
                 
-                await UpdateGlobalSetting("wa_base_url", payload.WaBaseUrl, "WhatsApp API Base URL", ct);
-                await UpdateGlobalSetting("wa_session_id", payload.WaSessionId, "WhatsApp API Session ID", ct);
-                if (!string.IsNullOrEmpty(payload.WaApiKey) && payload.WaApiKey != "******")
-                {
-                    await UpdateGlobalSetting("wa_api_key", payload.WaApiKey, "WhatsApp API Key", ct);
-                }
-
                 if (payload.EnableEmailSystem.HasValue)
                 {
                     await UpdateGlobalSetting("enable_email_system", payload.EnableEmailSystem.Value ? "true" : "false", "Enable Email System", ct);
                 }
-            }
 
-            if (role == "super_admin" || role == "sub_super_admin")
-            {
                 await UpdateGlobalSetting("cloudinary_cloud_name", payload.CloudinaryCloudName, "Cloudinary Cloud Name", ct);
                 if (!string.IsNullOrEmpty(payload.CloudinaryApiKey) && payload.CloudinaryApiKey != "******")
                 {

@@ -40,6 +40,32 @@ namespace WebApplication1.Controllers
             return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
         }
 
+        [HttpPut("platform-plans/{id}")]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
+        public async Task<IActionResult> UpdatePlatformPlan(long id, [FromBody] PlatformPlanPayload payload, CancellationToken ct)
+        {
+            var result = await _licensingService.UpdatePlatformPlanAsync(id, payload, ct);
+            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
+        }
+
+        [HttpDelete("platform-plans/{id}")]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
+        public async Task<IActionResult> DeletePlatformPlan(long id, CancellationToken ct)
+        {
+            var result = await _licensingService.DeletePlatformPlanAsync(id, ct);
+            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
+        }
+
+        public class TogglePlanPayload { public bool? isActive { get; set; } }
+
+        [HttpPatch("platform-plans/{id}/toggle")]
+        [Authorize(Roles = "super_admin,sub_super_admin")]
+        public async Task<IActionResult> TogglePlatformPlan(long id, [FromBody] TogglePlanPayload payload, CancellationToken ct)
+        {
+            var result = await _licensingService.TogglePlatformPlanStatusAsync(id, payload.isActive, ct);
+            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
+        }
+
         [HttpGet("payment-settings")]
         [Authorize(Roles = "super_admin,sub_super_admin")]
         public async Task<IActionResult> GetPaymentSettings(CancellationToken ct)
@@ -65,13 +91,24 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("library-payments/{id}/approve")]
-        [Authorize(Roles = "super_admin"), Authorize(Roles = "sub_super_admin"),]
+        [Authorize(Roles = "super_admin")]
         public async Task<IActionResult> ApproveLibraryPayment(long id, CancellationToken ct)
         {
-            var userIdStr = User.FindFirstValue("user_id");
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
             long.TryParse(userIdStr, out var adminId);
 
             var result = await _licensingService.ApproveLibraryPaymentAsync(id, adminId, ct);
+            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
+        }
+
+        [HttpPost("library-payments/{id}/reject")]
+        [Authorize(Roles = "super_admin")]
+        public async Task<IActionResult> RejectLibraryPayment(long id, CancellationToken ct)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("user_id");
+            long.TryParse(userIdStr, out var adminId);
+
+            var result = await _licensingService.RejectLibraryPaymentAsync(id, adminId, ct);
             return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
         }
 
