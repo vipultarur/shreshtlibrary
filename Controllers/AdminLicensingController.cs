@@ -40,6 +40,14 @@ namespace WebApplication1.Controllers
             return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
         }
 
+        [HttpDelete("platform-plans/{id}")]
+        [Authorize(Roles = "super_admin")]
+        public async Task<IActionResult> DeletePlatformPlan(long id, CancellationToken ct)
+        {
+            var result = await _licensingService.DeletePlatformPlanAsync(id, ct);
+            return result.Success ? Ok(ApiResponse<object>.Ok(result.Data)) : BadRequest(ApiResponse<object>.Fail(result.Message!));
+        }
+
         [HttpGet("payment-settings")]
         [Authorize(Roles = "super_admin")]
         public async Task<IActionResult> GetPaymentSettings(CancellationToken ct)
