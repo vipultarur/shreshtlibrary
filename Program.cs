@@ -428,7 +428,25 @@ app.MapGet("/", (IWebHostEnvironment env) =>
 
 app.MapControllers();
 
-
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<WebApplication1.Data.ApplicationDbContext>();
+        await db.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE IF EXISTS library_achiever ALTER COLUMN photo TYPE character varying(500);
+            ALTER TABLE IF EXISTS library_achiever ALTER COLUMN goal TYPE character varying(500);
+            ALTER TABLE IF EXISTS library_achiever ALTER COLUMN achievement TYPE character varying(500);
+            ALTER TABLE IF EXISTS library_achiever ALTER COLUMN name TYPE character varying(255);
+            ALTER TABLE IF EXISTS library_facility ALTER COLUMN image TYPE character varying(500);
+            ALTER TABLE IF EXISTS library_homeslider ALTER COLUMN image TYPE character varying(500);
+        ");
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Failed to apply database column length upgrades.");
+    }
+}
 
 app.Run();
 

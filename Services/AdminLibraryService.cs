@@ -404,7 +404,8 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                return ServiceResult<object>.Fail($"Error creating achiever: {ex.Message}");
+                var msg = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
+                return ServiceResult<object>.Fail($"Error creating achiever: {msg}");
             }
         }
 
@@ -450,7 +451,8 @@ namespace WebApplication1.Services
             }
             catch (Exception ex)
             {
-                return ServiceResult<object>.Fail($"Error updating achiever: {ex.Message}");
+                var msg = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
+                return ServiceResult<object>.Fail($"Error updating achiever: {msg}");
             }
         }
 
