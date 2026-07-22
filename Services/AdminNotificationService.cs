@@ -17,14 +17,16 @@ namespace WebApplication1.Services
         private readonly WhatsAppNotificationService _whatsAppService;
         private readonly ILogger<AdminNotificationService> _logger;
         private readonly ICloudinaryService _cloudinary;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
-        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService, ILogger<AdminNotificationService> logger, ICloudinaryService cloudinary)
+        public AdminNotificationService(ApplicationDbContext context, INotificationService notificationService, WhatsAppNotificationService whatsAppService, ILogger<AdminNotificationService> logger, ICloudinaryService cloudinary, Microsoft.Extensions.Configuration.IConfiguration config)
         {
             _context = context;
             _notificationService = notificationService;
             _whatsAppService = whatsAppService;
             _logger = logger;
             _cloudinary = cloudinary;
+            _config = config;
         }
 
         public async Task<ServiceResult<object>> GetNotificationTemplatesAsync(CancellationToken ct = default)
@@ -269,7 +271,7 @@ namespace WebApplication1.Services
                         { "link_button_text", notification.LinkButtonText ?? "" }
                     };
 
-                    var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
+                    var baseUrl = _config["ServerBaseUrl"] ?? _config["BaseUrl"] ?? Environment.GetEnvironmentVariable("BASE_URL") ?? "https://shreshtlibrary.onrender.com";
 
                     if (!string.IsNullOrEmpty(notification.BackgroundImage))
                     {

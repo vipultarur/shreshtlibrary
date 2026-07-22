@@ -32,7 +32,7 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("plans")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
+
         public async Task<IActionResult> GetPublicPlansAsync(CancellationToken ct)
         {
             var result = await _paymentService.GetPublicPlansAsync(ct);
@@ -41,7 +41,7 @@ namespace WebApplication1.Controllers
 
         [HttpGet("memberships/plans")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
+
         public async Task<IActionResult> GetMembershipPlansAsync(CancellationToken ct)
         {
             var result = await _paymentService.GetMembershipPlansAsync(ct);

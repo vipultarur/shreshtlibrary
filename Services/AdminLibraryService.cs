@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
@@ -40,11 +41,15 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ICloudinaryService _cloudinary;
+        private readonly IMemoryCache _cache;
+        private readonly WebApplication1.Services.Caching.CacheVersionStore _versionStore;
 
-        public AdminLibraryService(ApplicationDbContext context, ICloudinaryService cloudinary)
+        public AdminLibraryService(ApplicationDbContext context, ICloudinaryService cloudinary, IMemoryCache cache, WebApplication1.Services.Caching.CacheVersionStore versionStore)
         {
             _context = context;
             _cloudinary = cloudinary;
+            _cache = cache;
+            _versionStore = versionStore;
         }
 
 
@@ -218,6 +223,8 @@ namespace WebApplication1.Services
                 info.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("LibraryInfo");
+                _versionStore.BumpVersion("library_info");
                 return ServiceResult<object>.Ok(new
                 {
                     id = info.Id,
@@ -283,6 +290,8 @@ namespace WebApplication1.Services
             };
             _context.LibraryFacilities.Add(facility);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryFacilities");
+            _versionStore.BumpVersion("facility");
             return ServiceResult<object>.Ok(new
             {
                 id = facility.Id,
@@ -311,6 +320,8 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryFacilities");
+            _versionStore.BumpVersion("facility");
             return ServiceResult<object>.Ok(new
             {
                 id = facility.Id,
@@ -329,6 +340,8 @@ namespace WebApplication1.Services
             if (facility == null) return ServiceResult<object>.NotFound("Not found");
             facility.IsActive = !facility.IsActive;
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryFacilities");
+            _versionStore.BumpVersion("facility");
             return ServiceResult<object>.Ok("Facility toggled.");
         }
 
@@ -338,6 +351,8 @@ namespace WebApplication1.Services
             if (facility == null) return ServiceResult<object>.NotFound("Not found");
             _context.LibraryFacilities.Remove(facility);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryFacilities");
+            _versionStore.BumpVersion("facility");
             return ServiceResult<object>.Ok("Facility deleted.");
         }
 
@@ -389,6 +404,9 @@ namespace WebApplication1.Services
                 };
                 _context.LibraryAchievers.Add(achiever);
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("LibraryAchievers_All");
+                _cache.Remove("LibraryAchievers_Featured");
+                _versionStore.BumpVersion("achiever");
                 return ServiceResult<object>.Ok(new
                 {
                     id = achiever.Id,
@@ -436,6 +454,9 @@ namespace WebApplication1.Services
                 }
 
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("LibraryAchievers_All");
+                _cache.Remove("LibraryAchievers_Featured");
+                _versionStore.BumpVersion("achiever");
                 return ServiceResult<object>.Ok(new
                 {
                     id = achiever.Id,
@@ -464,6 +485,9 @@ namespace WebApplication1.Services
                 if (achiever == null) return ServiceResult<object>.NotFound("Achiever not found");
                 achiever.IsActive = !achiever.IsActive;
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("LibraryAchievers_All");
+                _cache.Remove("LibraryAchievers_Featured");
+                _versionStore.BumpVersion("achiever");
                 return ServiceResult<object>.Ok("Achiever toggled.");
             }
             catch (Exception ex)
@@ -480,6 +504,9 @@ namespace WebApplication1.Services
                 if (achiever == null) return ServiceResult<object>.NotFound("Achiever not found");
                 _context.LibraryAchievers.Remove(achiever);
                 await _context.SaveChangesAsync(ct);
+                _cache.Remove("LibraryAchievers_All");
+                _cache.Remove("LibraryAchievers_Featured");
+                _versionStore.BumpVersion("achiever");
                 return ServiceResult<object>.Ok("Achiever deleted.");
             }
             catch (Exception ex)
@@ -560,6 +587,7 @@ namespace WebApplication1.Services
             review.ApprovedAt = DateTime.UtcNow;
             
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryReviews");
             return ServiceResult<object>.Ok("Review approved");
         }
 
@@ -572,6 +600,7 @@ namespace WebApplication1.Services
             review.RejectionReason = reason;
             
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryReviews");
             return ServiceResult<object>.Ok("Review rejected");
         }
 
@@ -582,6 +611,7 @@ namespace WebApplication1.Services
             
             _context.LibraryReviews.Remove(review);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryReviews");
             return ServiceResult<object>.Ok("Review deleted");
         }
 
@@ -628,6 +658,7 @@ namespace WebApplication1.Services
             };
             _context.LibraryGalleryImages.Add(galleryImage);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryGallery");
 
             return ServiceResult<object>.Ok(new
             {
@@ -646,6 +677,7 @@ namespace WebApplication1.Services
 
             _context.LibraryGalleryImages.Remove(image);
             await _context.SaveChangesAsync(ct);
+            _cache.Remove("LibraryGallery");
             
             return ServiceResult<object>.Ok("Gallery image deleted.");
         }

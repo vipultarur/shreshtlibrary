@@ -22,9 +22,17 @@ namespace WebApplication1.Models.Responses
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? Errors { get; set; }
 
-        public static ApiResponse<T> Ok(T? data, string? message = null)
+        [JsonPropertyName("version")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public long? Version { get; set; }
+
+        [JsonPropertyName("updated_at")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public System.DateTime? UpdatedAt { get; set; }
+
+        public static ApiResponse<T> Ok(T? data, string? message = null, long? version = null, System.DateTime? updatedAt = null)
         {
-            return new ApiResponse<T> { Success = true, Status = "success", Data = data, Message = message };
+            return new ApiResponse<T> { Success = true, Status = "success", Data = data, Message = message, Version = version, UpdatedAt = updatedAt };
         }
 
         public static ApiResponse<T> Fail(string? message, object? errors = null)

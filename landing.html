@@ -1444,7 +1444,7 @@
         async function loadData() {
             try {
                 // Fetch Library Info
-                fetch(`${API_BASE}/library/info`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/library/info?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const info = result.data;
                         window.libraryWhatsApp = info.whatsapp_number || '';
@@ -1620,7 +1620,7 @@
                 }).catch(e => console.error("Error loading info:", e));
 
                 // Fetch Facilities
-                fetch(`${API_BASE}/library/facilities`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/library/facilities?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const container = document.getElementById('dynamic-facilities');
                         if (!result.data.length) {
@@ -1643,7 +1643,7 @@
                 }).catch(e => console.error("Error loading facilities:", e));
 
                 // Fetch Achievers
-                fetch(`${API_BASE}/library/achievers`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/library/achievers?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const container = document.getElementById('dynamic-achievers');
                         if (!result.data.length) {
@@ -1664,7 +1664,7 @@
                 }).catch(e => console.error("Error loading achievers:", e));
 
                 // Fetch Reviews
-                fetch(`${API_BASE}/library/reviews`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/library/reviews?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const container = document.getElementById('dynamic-reviews');
                         if (!result.data.length) {
@@ -1697,7 +1697,7 @@
                 }).catch(e => console.error("Error loading reviews:", e));
 
                 // Fetch Plans
-                fetch(`${API_BASE}/plans`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/plans?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const container = document.getElementById('dynamic-plans');
                         if (!result.data.length) {
@@ -1739,7 +1739,7 @@
                 }).catch(e => console.error("Error loading plans:", e));
 
                 // Fetch Gallery
-                fetch(`${API_BASE}/library/gallery`).then(res => res.json()).then(result => {
+                fetch(`${API_BASE}/library/gallery?t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()).then(result => {
                     if (result.success && result.data) {
                         const container = document.getElementById('dynamic-gallery');
                         if (!result.data.length) {

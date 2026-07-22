@@ -16,12 +16,14 @@ namespace WebApplication1.Services
         private readonly IRepository<LibraryHomeslider> _repository;
         private readonly ICloudinaryService _cloudinary;
         private readonly IMemoryCache _cache;
+        private readonly WebApplication1.Services.Caching.CacheVersionStore _versionStore;
 
-        public AdminSlidersService(IRepository<LibraryHomeslider> repository, ICloudinaryService cloudinary, IMemoryCache cache)
+        public AdminSlidersService(IRepository<LibraryHomeslider> repository, ICloudinaryService cloudinary, IMemoryCache cache, WebApplication1.Services.Caching.CacheVersionStore versionStore)
         {
             _repository = repository;
             _cloudinary = cloudinary;
             _cache = cache;
+            _versionStore = versionStore;
         }
 
         public async Task<ServiceResult<object>> GetSliders(CancellationToken ct = default)
@@ -74,6 +76,7 @@ namespace WebApplication1.Services
             _repository.Add(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new
             {
@@ -115,6 +118,7 @@ namespace WebApplication1.Services
             _repository.Update(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new
             {
@@ -137,6 +141,7 @@ namespace WebApplication1.Services
             _repository.Remove(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new { message = "Slider deleted successfully." });
         }

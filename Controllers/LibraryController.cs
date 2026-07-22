@@ -16,20 +16,36 @@ namespace WebApplication1.Controllers
     {
         private readonly ILibraryService _libraryService;
 
-        public LibraryController(ILibraryService libraryService, ICurrentUserService currentUserService) : base(currentUserService)
+        private readonly WebApplication1.Services.Caching.CacheVersionStore _versionStore;
+
+        public LibraryController(ILibraryService libraryService, ICurrentUserService currentUserService, WebApplication1.Services.Caching.CacheVersionStore versionStore) : base(currentUserService)
         {
             _libraryService = libraryService;
+            _versionStore = versionStore;
+        }
+
+        private IActionResult HandleConditionalGet(string scope, object? data)
+        {
+            var version = _versionStore.GetVersion(scope);
+            var etag = $"\"{scope}-v{version}\"";
+
+            Response.Headers["X-Cache-Version"] = version.ToString();
+            Response.Headers["ETag"] = etag;
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
+            return Ok(ApiResponse<object>.Ok(data));
         }
 
         [AllowAnonymous]
         [HttpGet("library/info")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetLibraryInfoAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _libraryService.GetLibraryInfoAsync(mediaBaseUrl, ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("library_info", result.Data);
         }
 
         [AllowAnonymous]
@@ -54,23 +70,21 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("library/facilities")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetFacilitiesAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _libraryService.GetFacilitiesAsync(mediaBaseUrl, ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("facility", result.Data);
         }
 
         [AllowAnonymous]
         [HttpGet("library/achievers")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetAchieversAsync([FromQuery] bool? featured, CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _libraryService.GetAchieversAsync(featured, mediaBaseUrl, ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("achiever", result.Data);
         }
 
         [AllowAnonymous]
@@ -79,17 +93,16 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetReviewsAsync(CancellationToken ct)
         {
             var result = await _libraryService.GetReviewsAsync(ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("review", result.Data);
         }
 
         [AllowAnonymous]
         [HttpGet("library/reviews/summary")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetReviewsSummaryAsync(CancellationToken ct)
         {
             var result = await _libraryService.GetReviewsSummaryAsync(ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("review", result.Data);
         }
 
         [HttpGet("library/reviews/my")]
@@ -120,23 +133,21 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         [HttpGet("sliders")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetSlidersAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _libraryService.GetSlidersAsync(mediaBaseUrl, ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("slider", result.Data);
         }
 
         [AllowAnonymous]
         [HttpGet("library/gallery")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 900)]
         public async Task<IActionResult> GetGalleryImagesAsync(CancellationToken ct)
         {
             var mediaBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _libraryService.GetGalleryImagesAsync(mediaBaseUrl, ct);
-            return Ok(ApiResponse<object>.Ok(result.Data));
+            return HandleConditionalGet("gallery", result.Data);
         }
     }
 }

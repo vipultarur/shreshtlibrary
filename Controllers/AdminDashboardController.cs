@@ -18,6 +18,19 @@ namespace WebApplication1.Controllers
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<AdminDashboardController> _logger;
 
+        [HttpGet("diagnostics/cache-metrics")]
+        [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
+        public IActionResult GetCacheMetrics([FromServices] WebApplication1.Services.Caching.CacheVersionStore versionStore)
+        {
+            var metrics = WebApplication1.Services.Caching.CacheMetrics.Snapshot();
+            var versions = versionStore.GetAllVersions();
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                metrics,
+                versions
+            }));
+        }
+
         public AdminDashboardController(
             IAdminDashboardService adminDashboardService,
             ICurrentUserService currentUserService,
@@ -72,7 +85,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/stats/{section}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetStatsOverviewAsync(string section = "overview", CancellationToken ct = default)
         {
             var stats = await _adminDashboardService.GetStatsOverviewAsync(section, ct);
@@ -84,7 +97,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetDashboardChartsAsync([FromQuery] string range = "month", CancellationToken ct = default)
         {
             var charts = await _adminDashboardService.GetDashboardChartsAsync(range, ct);
@@ -96,7 +109,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/attendance/overview")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetAttendanceOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetAttendanceOverviewChartsAsync(ct);
@@ -108,7 +121,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/revenue/overview")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetRevenueOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetRevenueOverviewChartsAsync(ct);
@@ -120,7 +133,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/students/overview")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetStudentsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetStudentsOverviewChartsAsync(ct);
@@ -132,7 +145,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/charts/memberships/overview")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetMembershipsOverviewChartsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetMembershipsOverviewChartsAsync(ct);
@@ -146,7 +159,7 @@ namespace WebApplication1.Controllers
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
         [HttpGet("/api/v1/dashboard/alerts")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        [ResponseCache(Duration = 30)]
+
         public async Task<IActionResult> GetDashboardAlertsAsync(CancellationToken ct)
         {
             var data = await _adminDashboardService.GetDashboardAlertsAsync(ct);

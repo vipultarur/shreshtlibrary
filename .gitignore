@@ -13,3 +13,9 @@ obj/
 .vscode/
 *.user
 *.suo
+
+# Runtime & Local Data
+Backups/
+logs/
+cache.db*
+

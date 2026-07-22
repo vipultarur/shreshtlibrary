@@ -36,6 +36,10 @@ builder.Services.AddControllers()
 });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<WebApplication1.Services.Caching.CacheVersionStore>();
+builder.Services.AddSingleton<WebApplication1.Services.Caching.SqliteDiskCache>();
+builder.Services.AddSingleton<WebApplication1.Services.Caching.ITieredCache, WebApplication1.Services.Caching.TieredCache>();
+builder.Services.AddSingleton<WebApplication1.Services.Caching.StampedeGuard>();
 
 builder.Services.AddFluentValidationAutoValidation()
                 .AddFluentValidationClientsideAdapters()
@@ -125,10 +129,13 @@ builder.Services.AddHostedService<WebApplication1.Services.AutoBackupService>();
 builder.Services.AddScoped<WebApplication1.Services.IAdminDashboardService, WebApplication1.Services.AdminDashboardService>();
 builder.Services.AddScoped<WebApplication1.Services.IAttendanceService, WebApplication1.Services.AttendanceService>();
 
+// Add Health Checks
+builder.Services.AddHealthChecks();
+
 // Configure CORS securely
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowedFrontends", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
         if (allowedOrigins == null || allowedOrigins.Length == 0)
@@ -408,7 +415,7 @@ app.MapGet("/media/{*path}", async (string path, WebApplication1.Data.Applicatio
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors("AllowAll");
+app.UseCors("AllowedFrontends");
 
 app.UseRateLimiter();
 
@@ -426,6 +433,7 @@ app.MapGet("/", (IWebHostEnvironment env) =>
     return Results.File(path, "text/html");
 });
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

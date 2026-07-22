@@ -15,7 +15,9 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan LibraryInfoCacheDuration = TimeSpan.FromHours(24);
+        private static readonly TimeSpan LibraryMediaCacheDuration = TimeSpan.FromHours(12);
+        private static readonly TimeSpan LibraryReviewCacheDuration = TimeSpan.FromMinutes(30);
 
         public LibraryService(ApplicationDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
@@ -101,7 +103,7 @@ namespace WebApplication1.Services
                 maintenance_mode = maintenanceMode
             };
             
-            _cache.Set(cacheKey, responseData, CacheDuration);
+            _cache.Set(cacheKey, responseData, LibraryInfoCacheDuration);
             return ServiceResult<object>.Ok(responseData);
         }
 
@@ -127,7 +129,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
-            _cache.Set(cacheKey, facilities, CacheDuration);
+            _cache.Set(cacheKey, facilities, LibraryMediaCacheDuration);
             return ServiceResult<object>.Ok(facilities);
         }
 
@@ -158,7 +160,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
-            _cache.Set(cacheKey, achievers, CacheDuration);
+            _cache.Set(cacheKey, achievers, LibraryMediaCacheDuration);
             return ServiceResult<object>.Ok(achievers);
         }
 
@@ -192,7 +194,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
-            _cache.Set(cacheKey, reviews, CacheDuration);
+            _cache.Set(cacheKey, reviews, LibraryReviewCacheDuration);
             return ServiceResult<object>.Ok(reviews);
         }
 
@@ -233,7 +235,7 @@ namespace WebApplication1.Services
                 }
             };
             
-            _cache.Set(cacheKey, summaryData, CacheDuration);
+            _cache.Set(cacheKey, summaryData, LibraryReviewCacheDuration);
             return ServiceResult<object>.Ok(summaryData);
         }
 
@@ -308,7 +310,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
-            _cache.Set(cacheKey, sliders, CacheDuration);
+            _cache.Set(cacheKey, sliders, LibraryMediaCacheDuration);
             return ServiceResult<object>.Ok(sliders);
         }
 
@@ -334,7 +336,7 @@ namespace WebApplication1.Services
                 })
                 .ToListAsync(ct);
 
-            _cache.Set(cacheKey, images, CacheDuration);
+            _cache.Set(cacheKey, images, LibraryMediaCacheDuration);
             return ServiceResult<object>.Ok(images);
         }
     }

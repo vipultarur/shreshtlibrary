@@ -170,9 +170,9 @@ namespace WebApplication1.Services
             return ServiceResult<object>.Ok(pagedData);
         }
 
-        public async Task<ServiceResult<object>> GetLeaderboardAsync(string duration, string? startDate, string? endDate, string mediaBaseUrl, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetLeaderboardAsync(string duration = "month", string? startDate = null, string? endDate = null, string mediaBaseUrl = "", CancellationToken ct = default)
         {
-            string cacheKey = $"Leaderboard_{duration}_{startDate}_{endDate}";
+            string cacheKey = $"StudyLeaderboard_{duration}_{startDate}_{endDate}";
             if (_cache.TryGetValue(cacheKey, out object? cachedLeaderboard) && cachedLeaderboard != null)
             {
                 return ServiceResult<object>.Ok(cachedLeaderboard);

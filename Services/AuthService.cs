@@ -843,6 +843,10 @@ namespace WebApplication1.Services
             _context.CoreActivitylogs.Add(log);
             await _context.SaveChangesAsync(ct);
 
+            // Immediately invalidate the cached revocation set so the middleware
+            // picks up the newly revoked tokens on the very next request
+            WebApplication1.Middleware.TokenRevocationMiddleware.InvalidateCache(_cache);
+
             return ServiceResult<object>.Ok(null, "Logged out successfully.");
         }
 
@@ -1080,6 +1084,7 @@ namespace WebApplication1.Services
                     ExpiresAt = System.DateTime.UtcNow.AddDays(31) // covers max refresh token lifetime
                 });
                 await _context.SaveChangesAsync(ct);
+                WebApplication1.Middleware.TokenRevocationMiddleware.InvalidateCache(_cache);
             }
             catch (Exception ex)
             {
