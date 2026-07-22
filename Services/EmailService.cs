@@ -112,17 +112,15 @@ namespace WebApplication1.Services
 
             var config = await GetBrevoConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
-            {
-                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
-            }
-
-            bool isBypassOverride = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase) || subject.Contains("Backup", StringComparison.OrdinalIgnoreCase);
-
-            if (!config.enableEmailSystem && !isBypassOverride)
+            if (!config.enableEmailSystem)
             {
                 _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
                 return;
+            }
+
+            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
+            {
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
             _logger.LogInformation("[EMAIL] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject}", config.fromEmail, toEmail, subject);
@@ -148,17 +146,15 @@ namespace WebApplication1.Services
 
             var config = await GetBrevoConfigAsync();
 
-            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
-            {
-                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
-            }
-
-            bool isBypassOverride = subject.Contains("Reset", StringComparison.OrdinalIgnoreCase) || subject.Contains("OTP", StringComparison.OrdinalIgnoreCase) || subject.Contains("Backup", StringComparison.OrdinalIgnoreCase);
-
-            if (!config.enableEmailSystem && !isBypassOverride)
+            if (!config.enableEmailSystem)
             {
                 _logger.LogInformation("[EMAIL SKIPPED] Email system is disabled. Subject: '{Subject}'", subject);
                 return;
+            }
+
+            if (string.IsNullOrWhiteSpace(config.brevoApiKey))
+            {
+                throw new InvalidOperationException($"Email not configured. Set brevo_api_key in database.");
             }
 
             _logger.LogInformation("[EMAIL+ATTACHMENT] Sending via Brevo API → From: {From} | To: {To} | Subject: {Subject} | File: {File}",

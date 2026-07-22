@@ -149,23 +149,25 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> GetSessionHistoryAsync(long userId, int page, int pageSize, CancellationToken ct = default)
         {
-            string cacheKey = $"SessionHistory_{userId}_{page}_{pageSize}";
-            if (_cache.TryGetValue(cacheKey, out object? cachedHistory) && cachedHistory != null)
+            string cacheKey = $"SessionHistory_{userId}";
+            if (!_cache.TryGetValue(cacheKey, out System.Collections.Generic.List<object>? allSessions) || allSessions == null)
             {
-                return ServiceResult<object>.Ok(cachedHistory);
+                var sessions = await _context.StudyStudysessions
+                    .AsNoTracking()
+                    .Where(s => s.StudentId == userId)
+                    .OrderByDescending(s => s.StartTime)
+                    .ToListAsync(ct);
+
+                allSessions = sessions.Select(FormatSession).ToList();
+                _cache.Set(cacheKey, allSessions, TimeSpan.FromMinutes(15));
             }
 
-            var sessions = await _context.StudyStudysessions
-                .AsNoTracking()
-                .Where(s => s.StudentId == userId)
-                .OrderByDescending(s => s.StartTime)
+            var pagedData = allSessions
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync(ct);
+                .ToList();
 
-            var data = sessions.Select(FormatSession).ToList();
-            _cache.Set(cacheKey, data, TimeSpan.FromMinutes(15));
-            return ServiceResult<object>.Ok(data);
+            return ServiceResult<object>.Ok(pagedData);
         }
 
         public async Task<ServiceResult<object>> GetLeaderboardAsync(string duration, string? startDate, string? endDate, string mediaBaseUrl, CancellationToken ct = default)

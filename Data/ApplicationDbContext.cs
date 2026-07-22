@@ -752,7 +752,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.Order).HasColumnName("order");
             entity.Property(e => e.Photo)
-                .HasMaxLength(100)
+                .HasMaxLength(500)
                 .HasColumnName("photo");
             entity.Property(e => e.Year).HasColumnName("year");
         });

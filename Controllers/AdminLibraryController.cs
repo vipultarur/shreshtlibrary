@@ -103,8 +103,17 @@ namespace WebApplication1.Controllers
 
         [HttpPost("achievers")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        public async Task<IActionResult> CreateAchiever([FromForm] AchieverDto dto, CancellationToken ct)
+        public async Task<IActionResult> CreateAchiever([FromForm] AchieverDto? dto, CancellationToken ct)
         {
+            if (dto == null || (dto.Name == null && Request.HasJsonContentType()))
+            {
+                try
+                {
+                    dto = await Request.ReadFromJsonAsync<AchieverDto>(cancellationToken: ct) ?? dto;
+                }
+                catch { }
+            }
+            dto ??= new AchieverDto();
             var result = await _libraryService.CreateAchiever(dto, ct);
             if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));
@@ -112,8 +121,17 @@ namespace WebApplication1.Controllers
 
         [HttpPut("achievers/{id}")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        public async Task<IActionResult> UpdateAchiever(long id, [FromForm] AchieverDto dto, CancellationToken ct)
+        public async Task<IActionResult> UpdateAchiever(long id, [FromForm] AchieverDto? dto, CancellationToken ct)
         {
+            if (dto == null || (dto.Name == null && dto.Achievement == null && dto.Goal == null && dto.Year == null && Request.HasJsonContentType()))
+            {
+                try
+                {
+                    dto = await Request.ReadFromJsonAsync<AchieverDto>(cancellationToken: ct) ?? dto;
+                }
+                catch { }
+            }
+            dto ??= new AchieverDto();
             var result = await _libraryService.UpdateAchiever(id, dto, ct);
             if (!result.Success) return BadRequest(ApiResponse<object>.Fail(result.Message));
             return Ok(ApiResponse<object>.Ok(result.Data));

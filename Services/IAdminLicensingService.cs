@@ -11,6 +11,8 @@ namespace WebApplication1.Services
         public decimal QuarterlyPrice { get; set; }
         public decimal HalfYearlyPrice { get; set; }
         public decimal YearlyPrice { get; set; }
+        public int DurationMonths { get; set; } = 1;
+        public int DurationDays { get; set; } = 30;
         public int MaxStudents { get; set; }
         public int MaxStaff { get; set; }
         public string[] Features { get; set; } = Array.Empty<string>();

@@ -54,6 +54,21 @@ namespace WebApplication1.Services
             }
         }
 
+        private static string GetChannelIdForType(Dictionary<string, string>? data)
+        {
+            if (data != null && data.TryGetValue("type", out var typeVal) && !string.IsNullOrEmpty(typeVal))
+            {
+                return typeVal.ToUpperInvariant() switch
+                {
+                    "ATTENDANCE" => "attendance_notifications",
+                    "BILLING" or "EXPIRY" => "billing_notifications",
+                    "ACCOUNT" => "account_notifications",
+                    _ => "staff_notifications"
+                };
+            }
+            return "staff_notifications";
+        }
+
         public async Task<bool> SendPushNotificationAsync(string token, string title, string body, Dictionary<string, string>? data = null)
         {
             if (!_isFirebaseInitialized)
@@ -62,7 +77,13 @@ namespace WebApplication1.Services
                 return false;
             }
 
-            // DATA-ONLY message: Flutter handles display in ALL app states
+            var channelId = GetChannelIdForType(data);
+            string? imageUrl = null;
+            if (data != null && data.TryGetValue("image_url", out var img) && !string.IsNullOrEmpty(img))
+            {
+                imageUrl = img;
+            }
+
             var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
             {
                 ["title"] = title,
@@ -72,11 +93,42 @@ namespace WebApplication1.Services
             var message = new Message()
             {
                 Token = token,
-                // NO Notification object — data-only so Flutter controls display in all states
+                Notification = new Notification()
+                {
+                    Title = title,
+                    Body = body,
+                    ImageUrl = imageUrl
+                },
                 Android = new AndroidConfig()
                 {
                     Priority = Priority.High,
-                    // No AndroidNotification here — Flutter handles it via flutter_local_notifications
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = channelId,
+                        Priority = NotificationPriority.MAX,
+                        Visibility = NotificationVisibility.PUBLIC,
+                        Sound = "default",
+                        DefaultSound = true,
+                        DefaultVibrateTimings = true,
+                        ImageUrl = imageUrl
+                    }
+                },
+                Apns = new ApnsConfig()
+                {
+                    Headers = new Dictionary<string, string>
+                    {
+                        { "apns-priority", "10" }
+                    },
+                    Aps = new Aps()
+                    {
+                        Alert = new ApsAlert()
+                        {
+                            Title = title,
+                            Body = body
+                        },
+                        Sound = "default",
+                        ContentAvailable = true
+                    }
                 },
                 Data = mergedData
             };
@@ -104,10 +156,13 @@ namespace WebApplication1.Services
                 return (0, tokens);
             }
 
-            // DATA-ONLY message: Flutter handles display in ALL app states
-            // - App FOREGROUND  → FirebaseMessaging.onMessage fires → flutter_local_notifications shows it
-            // - App BACKGROUND  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
-            // - App TERMINATED  → _firebaseMessagingBackgroundHandler fires → flutter_local_notifications shows it
+            var channelId = GetChannelIdForType(data);
+            string? imageUrl = null;
+            if (data != null && data.TryGetValue("image_url", out var img) && !string.IsNullOrEmpty(img))
+            {
+                imageUrl = img;
+            }
+
             var mergedData = new Dictionary<string, string>(data ?? new Dictionary<string, string>())
             {
                 ["title"] = title,
@@ -117,18 +172,49 @@ namespace WebApplication1.Services
             var message = new MulticastMessage()
             {
                 Tokens = tokens,
-                // NO Notification object — data-only so Flutter controls display in all states
+                Notification = new Notification()
+                {
+                    Title = title,
+                    Body = body,
+                    ImageUrl = imageUrl
+                },
                 Android = new AndroidConfig()
                 {
                     Priority = Priority.High,
-                    // No AndroidNotification — Flutter handles via flutter_local_notifications
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = channelId,
+                        Priority = NotificationPriority.MAX,
+                        Visibility = NotificationVisibility.PUBLIC,
+                        Sound = "default",
+                        DefaultSound = true,
+                        DefaultVibrateTimings = true,
+                        ImageUrl = imageUrl
+                    }
+                },
+                Apns = new ApnsConfig()
+                {
+                    Headers = new Dictionary<string, string>
+                    {
+                        { "apns-priority", "10" }
+                    },
+                    Aps = new Aps()
+                    {
+                        Alert = new ApsAlert()
+                        {
+                            Title = title,
+                            Body = body
+                        },
+                        Sound = "default",
+                        ContentAvailable = true
+                    }
                 },
                 Data = mergedData
             };
 
             try
             {
-                _logger.LogInformation("[FCM] Sending data-only multicast to {Count} devices. Title={Title}", tokens.Count, title);
+                _logger.LogInformation("[FCM] Sending high-priority notification multicast to {Count} devices. Title={Title}", tokens.Count, title);
                 var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
                 _logger.LogInformation("[FCM] Multicast done: {Success} success, {Failure} failure out of {Total}",
                     response.SuccessCount, response.FailureCount, tokens.Count);

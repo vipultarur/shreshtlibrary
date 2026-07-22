@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Models.DTOs.Attendance;
@@ -18,13 +19,15 @@ namespace WebApplication1.Services
         private readonly IEmailService _emailService;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IMemoryCache _cache;
 
-        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory)
+        public AdminAttendanceService(ApplicationDbContext context, IEmailService emailService, IDateTimeProvider dateTimeProvider, IServiceScopeFactory scopeFactory, IMemoryCache cache)
         {
             _context = context;
             _emailService = emailService;
             _dateTimeProvider = dateTimeProvider;
             _scopeFactory = scopeFactory;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<object>> GetCurrentQrAsync(CancellationToken ct = default)
@@ -571,6 +574,13 @@ namespace WebApplication1.Services
             });
 
             await _context.SaveChangesAsync(ct);
+
+            if (targetStudentId.HasValue)
+            {
+                _cache.Remove($"StudentDashboard_{targetStudentId.Value}");
+                _cache.Remove($"AttendanceLogs_{targetStudentId.Value}");
+            }
+
             return ServiceResult<bool>.Ok(true);
         }
 
@@ -693,6 +703,13 @@ namespace WebApplication1.Services
             }
 
             await _context.SaveChangesAsync(ct);
+
+            foreach (var studentId in allValidStudentIds)
+            {
+                _cache.Remove($"StudentDashboard_{studentId}");
+                _cache.Remove($"AttendanceLogs_{studentId}");
+            }
+
             return ServiceResult<object>.Ok(new { message = $"{dtos.Count} records processed." });
         }
 

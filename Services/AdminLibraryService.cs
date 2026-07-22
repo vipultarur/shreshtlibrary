@@ -360,95 +360,130 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> CreateAchiever(AdminLibraryController.AchieverDto dto, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
-            var imagePath = await _cloudinary.UploadImageAsync(dto.Photo, "library");
-            int year = DateTime.Now.Year;
-            if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) year = y;
-
-            bool isFeatured = false;
-            if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) isFeatured = f;
-
-            int order = 0;
-            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
-
-            bool isActive = true;
-            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) isActive = a;
-
-            var achiever = new LibraryAchiever
+            try
             {
-                Name = dto.Name,
-                Achievement = dto.Achievement ?? "",
-                Goal = dto.Goal ?? "",
-                Year = year,
-                IsFeatured = isFeatured,
-                Photo = imagePath ?? "",
-                Order = order,
-                IsActive = isActive
-            };
-            _context.LibraryAchievers.Add(achiever);
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(new
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Name)) return ServiceResult<object>.Fail("Name is required");
+                var imagePath = dto.Photo != null ? await _cloudinary.UploadImageAsync(dto.Photo, "library") : null;
+                int year = DateTime.Now.Year;
+                if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) year = y;
+
+                bool isFeatured = false;
+                if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) isFeatured = f;
+
+                int order = 0;
+                if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) order = o;
+
+                bool isActive = true;
+                if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) isActive = a;
+
+                var achiever = new LibraryAchiever
+                {
+                    Name = dto.Name,
+                    Achievement = dto.Achievement ?? "",
+                    Goal = dto.Goal ?? "",
+                    Year = year,
+                    IsFeatured = isFeatured,
+                    Photo = imagePath ?? "",
+                    Order = order,
+                    IsActive = isActive
+                };
+                _context.LibraryAchievers.Add(achiever);
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok(new
+                {
+                    id = achiever.Id,
+                    name = achiever.Name,
+                    achievement = achiever.Achievement,
+                    goal = achiever.Goal,
+                    year = achiever.Year,
+                    is_featured = achiever.IsFeatured,
+                    photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
+                    order = achiever.Order,
+                    is_active = achiever.IsActive
+                });
+            }
+            catch (Exception ex)
             {
-                id = achiever.Id,
-                name = achiever.Name,
-                achievement = achiever.Achievement,
-                goal = achiever.Goal,
-                year = achiever.Year,
-                is_featured = achiever.IsFeatured,
-                photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
-                order = achiever.Order,
-                is_active = achiever.IsActive
-            });
+                return ServiceResult<object>.Fail($"Error creating achiever: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> UpdateAchiever(long id, AdminLibraryController.AchieverDto dto, CancellationToken ct = default)
         {
-            var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
-            if (achiever == null) return ServiceResult<object>.NotFound("Not found");
-
-            if (dto.Name != null) achiever.Name = dto.Name;
-            if (dto.Achievement != null) achiever.Achievement = dto.Achievement;
-            if (dto.Goal != null) achiever.Goal = dto.Goal;
-            if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) achiever.Year = y;
-            if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) achiever.IsFeatured = f;
-            if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) achiever.Order = o;
-            if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) achiever.IsActive = a;
-            if (dto.Photo != null)
+            try
             {
-                achiever.Photo = await _cloudinary.UploadImageAsync(dto.Photo, "library") ?? achiever.Photo;
+                var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
+                if (achiever == null) return ServiceResult<object>.NotFound("Achiever not found");
+
+                if (dto != null)
+                {
+                    if (dto.Name != null) achiever.Name = dto.Name;
+                    if (dto.Achievement != null) achiever.Achievement = dto.Achievement;
+                    if (dto.Goal != null) achiever.Goal = dto.Goal;
+                    if (!string.IsNullOrWhiteSpace(dto.Year) && int.TryParse(dto.Year, out var y)) achiever.Year = y;
+                    if (!string.IsNullOrWhiteSpace(dto.IsFeatured) && bool.TryParse(dto.IsFeatured, out var f)) achiever.IsFeatured = f;
+                    if (!string.IsNullOrWhiteSpace(dto.Order) && int.TryParse(dto.Order, out var o)) achiever.Order = o;
+                    if (!string.IsNullOrWhiteSpace(dto.IsActive) && bool.TryParse(dto.IsActive, out var a)) achiever.IsActive = a;
+                    if (dto.Photo != null)
+                    {
+                        var uploaded = await _cloudinary.UploadImageAsync(dto.Photo, "library");
+                        if (!string.IsNullOrEmpty(uploaded))
+                        {
+                            achiever.Photo = uploaded;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok(new
+                {
+                    id = achiever.Id,
+                    name = achiever.Name,
+                    achievement = achiever.Achievement,
+                    goal = achiever.Goal,
+                    year = achiever.Year,
+                    is_featured = achiever.IsFeatured,
+                    photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
+                    order = achiever.Order,
+                    is_active = achiever.IsActive
+                });
             }
-
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(new
+            catch (Exception ex)
             {
-                id = achiever.Id,
-                name = achiever.Name,
-                achievement = achiever.Achievement,
-                goal = achiever.Goal,
-                year = achiever.Year,
-                is_featured = achiever.IsFeatured,
-                photo = !string.IsNullOrEmpty(achiever.Photo) ? (achiever.Photo.StartsWith("http") ? achiever.Photo : $"/media/{achiever.Photo}") : null,
-                order = achiever.Order,
-                is_active = achiever.IsActive
-            });
+                return ServiceResult<object>.Fail($"Error updating achiever: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> ToggleAchiever(long id, CancellationToken ct = default)
         {
-            var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
-            if (achiever == null) return ServiceResult<object>.NotFound("Not found");
-            achiever.IsActive = !achiever.IsActive;
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Achiever toggled.");
+            try
+            {
+                var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
+                if (achiever == null) return ServiceResult<object>.NotFound("Achiever not found");
+                achiever.IsActive = !achiever.IsActive;
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok("Achiever toggled.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<object>.Fail($"Error toggling achiever: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> DeleteAchiever(long id, CancellationToken ct = default)
         {
-            var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
-            if (achiever == null) return ServiceResult<object>.NotFound("Not found");
-            _context.LibraryAchievers.Remove(achiever);
-            await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok("Achiever deleted.");
+            try
+            {
+                var achiever = await _context.LibraryAchievers.FindAsync(new object[] { id }, ct);
+                if (achiever == null) return ServiceResult<object>.NotFound("Achiever not found");
+                _context.LibraryAchievers.Remove(achiever);
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok("Achiever deleted.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<object>.Fail($"Error deleting achiever: {ex.Message}");
+            }
         }
 
         public async Task<ServiceResult<object>> GetReviews(int page = 1, int pageSize = 20, CancellationToken ct = default)

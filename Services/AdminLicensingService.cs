@@ -30,6 +30,8 @@ namespace WebApplication1.Services
                     p.QuarterlyPrice,
                     p.HalfYearlyPrice,
                     p.YearlyPrice,
+                    p.DurationMonths,
+                    p.DurationDays,
                     p.MaxStudents,
                     p.MaxStaff,
                     Features = JsonSerializer.Deserialize<string[]>(p.Features, (JsonSerializerOptions?)null) ?? Array.Empty<string>(),
@@ -50,6 +52,8 @@ namespace WebApplication1.Services
                 QuarterlyPrice = payload.QuarterlyPrice,
                 HalfYearlyPrice = payload.HalfYearlyPrice,
                 YearlyPrice = payload.YearlyPrice,
+                DurationMonths = payload.DurationMonths,
+                DurationDays = payload.DurationDays,
                 MaxStudents = payload.MaxStudents,
                 MaxStaff = payload.MaxStaff,
                 Features = JsonSerializer.Serialize(payload.Features),
@@ -73,6 +77,8 @@ namespace WebApplication1.Services
             plan.QuarterlyPrice = payload.QuarterlyPrice;
             plan.HalfYearlyPrice = payload.HalfYearlyPrice;
             plan.YearlyPrice = payload.YearlyPrice;
+            plan.DurationMonths = payload.DurationMonths;
+            plan.DurationDays = payload.DurationDays;
             plan.MaxStudents = payload.MaxStudents;
             plan.MaxStaff = payload.MaxStaff;
             plan.Features = JsonSerializer.Serialize(payload.Features);
@@ -91,12 +97,15 @@ namespace WebApplication1.Services
             var hasSubscriptions = await _context.LibrarySubscriptions.AnyAsync(s => s.PlanId == id, ct);
             if (hasSubscriptions)
             {
-                return ServiceResult<object>.Fail("Cannot delete plan with active subscriptions. Try deactivating it instead.");
+                plan.IsActive = false;
+                plan.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync(ct);
+                return ServiceResult<object>.Ok(new { message = "Plan has been deactivated instead of deleted because it has existing subscriptions.", isDeactivated = true });
             }
 
             _context.PlatformSubscriptionPlans.Remove(plan);
             await _context.SaveChangesAsync(ct);
-            return ServiceResult<object>.Ok(new { message = "Plan deleted successfully" });
+            return ServiceResult<object>.Ok(new { message = "Plan deleted successfully", isDeactivated = false });
         }
 
         public async Task<ServiceResult<object>> TogglePlatformPlanStatusAsync(long id, bool? isActive = null, CancellationToken ct = default)

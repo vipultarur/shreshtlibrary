@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading;
@@ -287,6 +288,15 @@ namespace WebApplication1.Services
             {
                 await context.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Auto-marked pending students as Absent.");
+
+                // Bust backend memory cache so students see updated status immediately
+                using var cacheScope = _serviceProvider.CreateScope();
+                var memCache = cacheScope.ServiceProvider.GetRequiredService<IMemoryCache>();
+                foreach (var record in pendingRecords)
+                {
+                    memCache.Remove($"StudentDashboard_{record.StudentId}");
+                    memCache.Remove($"AttendanceLogs_{record.StudentId}");
+                }
             }
         }
 
@@ -389,6 +399,16 @@ namespace WebApplication1.Services
             {
                 await context.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Auto-checked out students.");
+
+                // Bust backend memory cache so students see updated status immediately
+                using var cacheScope = _serviceProvider.CreateScope();
+                var memCache = cacheScope.ServiceProvider.GetRequiredService<IMemoryCache>();
+                foreach (var record in recordsToCheckout)
+                {
+                    memCache.Remove($"StudentDashboard_{record.StudentId}");
+                    memCache.Remove($"AttendanceLogs_{record.StudentId}");
+                    memCache.Remove($"SessionHistory_{record.StudentId}");
+                }
             }
         }
 
