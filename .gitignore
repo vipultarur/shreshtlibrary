@@ -18,4 +18,6 @@ obj/
 Backups/
 logs/
 cache.db*
+publish/
+
 
