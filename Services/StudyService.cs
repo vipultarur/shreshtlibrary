@@ -16,11 +16,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public StudyService(ApplicationDbContext context, IMemoryCache cache)
+        public StudyService(ApplicationDbContext context, IMemoryCache cache, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
             _cache = cache;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         private object FormatSession(WebApplication1.Models.StudyStudysession session)
@@ -39,6 +41,34 @@ namespace WebApplication1.Services
 
         public async Task<ServiceResult<object>> StartSessionAsync(long userId, CancellationToken ct = default)
         {
+            var todayDate = DateOnly.FromDateTime(_dateTimeProvider.IstNow.Date);
+
+            // 1. Holiday Check
+            var isHoliday = await _context.AttendanceHolidays
+                .AsNoTracking()
+                .AnyAsync(h => h.IsActive && h.Date == todayDate, ct);
+
+            if (isHoliday)
+            {
+                return ServiceResult<object>.Fail("Today is a library holiday. Study sessions cannot be started.");
+            }
+
+            // 2. Attendance Status Check
+            var attendanceToday = await _context.AttendanceAttendances
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.StudentId == userId && a.Date == todayDate, ct);
+
+            if (attendanceToday == null || attendanceToday.Method == "PENDING")
+            {
+                return ServiceResult<object>.Fail("Please mark your attendance (scan QR code) before starting a study session.");
+            }
+
+            if (!attendanceToday.IsPresent)
+            {
+                return ServiceResult<object>.Fail("You are marked absent today. Study sessions cannot be started.");
+            }
+
+            // 3. Clear active old sessions and start new active session
             var activeSessions = await _context.StudyStudysessions
                 .Where(s => s.StudentId == userId && s.Status != "completed" && s.Status != "ended")
                 .ToListAsync(ct);
