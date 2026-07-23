@@ -17,14 +17,16 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly IEmailService _emailService;
 
         private const string SuperAdminEmail = "vipultarur@gmail.com";
 
-        public SuperAdminService(ApplicationDbContext context, ICurrentUserService currentUserService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+        public SuperAdminService(ApplicationDbContext context, ICurrentUserService currentUserService, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, IEmailService emailService)
         {
             _context = context;
             _currentUserService = currentUserService;
             _cache = cache;
+            _emailService = emailService;
         }
 
         private ServiceResult<object>? ValidateAdminPayload(AdminPayload payload)
@@ -327,6 +329,60 @@ namespace WebApplication1.Services
 
                 var filePath = System.IO.Path.Combine(backupDir, $"{backupId}.json");
                 await System.IO.File.WriteAllTextAsync(filePath, json, ct);
+
+                // Email backup file to Library Email and Administrators
+                try
+                {
+                    var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    var libraryInfo = await _context.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (libraryInfo != null && !string.IsNullOrWhiteSpace(libraryInfo.Email))
+                    {
+                        recipients.Add(libraryInfo.Email.Trim());
+                    }
+
+                    var customUserAdmins = await _context.AccountsCustomusers
+                        .AsNoTracking()
+                        .Where(u => (u.Role == "super_admin" || u.Role == "sub_super_admin") && !string.IsNullOrEmpty(u.Email))
+                        .Select(u => u.Email)
+                        .ToListAsync(ct);
+
+                    foreach (var email in customUserAdmins)
+                    {
+                        if (!string.IsNullOrWhiteSpace(email)) recipients.Add(email.Trim());
+                    }
+
+                    var adminUserEmails = await _context.AccountsAdminusers
+                        .AsNoTracking()
+                        .Where(u => !string.IsNullOrEmpty(u.Email))
+                        .Select(u => u.Email!)
+                        .ToListAsync(ct);
+
+                    foreach (var email in adminUserEmails)
+                    {
+                        if (!string.IsNullOrWhiteSpace(email)) recipients.Add(email.Trim());
+                    }
+
+                    if (recipients.Count > 0)
+                    {
+                        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+                        string subject = $"System Backup File 📦 - {libraryInfo?.LibraryName ?? "Shresht Library"}";
+                        string htmlMessage = $@"
+                            <h3>System Backup Generated</h3>
+                            <p>Please find attached the system backup JSON file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
+                            <p><strong>Library Name:</strong> {libraryInfo?.LibraryName ?? "Shresht Library"}<br/>
+                            <strong>Backup ID:</strong> {backupId}</p>";
+
+                        foreach (var recipientEmail in recipients)
+                        {
+                            await _emailService.SendEmailWithAttachmentAsync(recipientEmail, subject, htmlMessage, fileBytes, $"{backupId}.json");
+                        }
+                    }
+                }
+                catch
+                {
+                    // Non-fatal email notification failure on manual backup
+                }
 
                 return ServiceResult<object>.Ok(new { id = backupId, status = "completed" });
             }

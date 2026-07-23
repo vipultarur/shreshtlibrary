@@ -79,34 +79,64 @@ namespace WebApplication1.Services
 
             _logger.LogInformation($"Weekly backup successfully saved to: {filePath}");
 
-            // Send backup file via email to super_admin and sub_super_admin
+            // Send backup file via email to Library Email and Administrators
             try
             {
                 var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                var targetAdmins = await dbContext.AccountsCustomusers
+                var recipients = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // 1. Library Email
+                var libraryInfo = await dbContext.LibraryLibraryinfos.AsNoTracking().FirstOrDefaultAsync(ct);
+                if (libraryInfo != null && !string.IsNullOrWhiteSpace(libraryInfo.Email))
+                {
+                    recipients.Add(libraryInfo.Email.Trim());
+                }
+
+                // 2. Custom User Admins
+                var customUserAdmins = await dbContext.AccountsCustomusers
+                    .AsNoTracking()
                     .Where(u => (u.Role == "super_admin" || u.Role == "sub_super_admin") && !string.IsNullOrEmpty(u.Email))
                     .Select(u => u.Email)
                     .ToListAsync(ct);
 
-                if (targetAdmins.Count > 0)
+                foreach (var email in customUserAdmins)
+                {
+                    if (!string.IsNullOrWhiteSpace(email)) recipients.Add(email.Trim());
+                }
+
+                // 3. Admin Users
+                var adminUserEmails = await dbContext.AccountsAdminusers
+                    .AsNoTracking()
+                    .Where(u => !string.IsNullOrEmpty(u.Email))
+                    .Select(u => u.Email!)
+                    .ToListAsync(ct);
+
+                foreach (var email in adminUserEmails)
+                {
+                    if (!string.IsNullOrWhiteSpace(email)) recipients.Add(email.Trim());
+                }
+
+                if (recipients.Count > 0)
                 {
                     var fileBytes = await File.ReadAllBytesAsync(filePath, ct);
-                    string subject = "Weekly System Backup 📦";
+                    string subject = $"Weekly System Backup 📦 - {libraryInfo?.LibraryName ?? "Shresht Library"}";
                     string htmlMessage = $@"
-                        <h3>Weekly Database Backup</h3>
-                        <p>Please find attached the latest system backup generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC.</p>
-                        <p>This email is sent automatically to all authorized library administrators.</p>";
+                        <h3>Weekly System & Database Backup</h3>
+                        <p>Please find attached the latest system backup JSON file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
+                        <p>This automated email is delivered weekly to the library contact email and authorized system administrators.</p>
+                        <p><strong>Library Name:</strong> {libraryInfo?.LibraryName ?? "Shresht Library"}<br/>
+                        <strong>Backup ID:</strong> {backupId}</p>";
 
-                    foreach (var adminEmail in targetAdmins)
+                    foreach (var recipientEmail in recipients)
                     {
-                        await emailService.SendEmailWithAttachmentAsync(adminEmail, subject, htmlMessage, fileBytes, $"{backupId}.json");
+                        await emailService.SendEmailWithAttachmentAsync(recipientEmail, subject, htmlMessage, fileBytes, $"{backupId}.json");
                     }
-                    _logger.LogInformation($"Backup emailed successfully to {targetAdmins.Count} administrators.");
+                    _logger.LogInformation($"Weekly backup emailed successfully to {recipients.Count} recipient(s): {string.Join(", ", recipients)}.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to email the weekly backup to administrators.");
+                _logger.LogError(ex, "Failed to email the weekly backup file.");
             }
         }
     }
