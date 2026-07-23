@@ -457,61 +457,202 @@ namespace WebApplication1.Services
             });
         }
 
-        public async Task<ServiceResult<object>> GetStudentAnalyticsAsync(string pk, CancellationToken ct = default)
+        public async Task<ServiceResult<object>> GetStudentAnalyticsAsync(string pk, string? period = "weekly", CancellationToken ct = default)
         {
-            var profile = await _context.StudentsStudentprofiles.AsNoTracking().Include(s => s.User).FirstOrDefaultAsync(s => s.User.Username == pk || s.User.Id.ToString() == pk || s.StudentId == pk, ct);
+            var profile = await _context.StudentsStudentprofiles
+                .AsNoTracking()
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.User.Username == pk || s.User.Id.ToString() == pk || s.StudentId == pk, ct);
+
             if (profile == null) return ServiceResult<object>.NotFound("Student not found");
 
-            var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
-            var attendancesRaw = await _context.AttendanceAttendances
-                .Where(a => a.StudentId == profile.UserId && a.Date >= thirtyDaysAgo)
-                .OrderBy(a => a.Date)
-                .Select(a => new { a.Date, a.IsPresent, a.MarkedAt, a.TimeIn, a.TimeOut, a.TotalHours })
-                .ToListAsync(ct);
+            var targetDailyHours = profile.AllowedStudyMinutes.HasValue && profile.AllowedStudyMinutes.Value > 0
+                ? Math.Round(profile.AllowedStudyMinutes.Value / 60.0, 2)
+                : 6.0;
 
-            var attendances = attendancesRaw.Select(a => new {
-                date = a.Date.ToString("yyyy-MM-dd"),
-                is_present = a.IsPresent,
-                time_in = a.MarkedAt.HasValue ? TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(a.MarkedAt.Value, _dateTimeProvider.IstTimeZone)) : a.TimeIn,
-                time_out = a.TimeOut,
-                total_hours = a.TotalHours
-            }).ToList();
+            var selectedPeriod = (period ?? "weekly").ToLowerInvariant();
+            var nowIst = _dateTimeProvider.IstNow;
+            var todayIstDate = DateOnly.FromDateTime(nowIst);
 
-            var targetHours = profile.AllowedStudyMinutes.HasValue ? Math.Round(profile.AllowedStudyMinutes.Value / 60.0, 2) : 6.0;
+            var attendanceList = new System.Collections.Generic.List<object>();
+            var studyList = new System.Collections.Generic.List<object>();
 
-            var studyHours = attendancesRaw
-                .Where(a => a.IsPresent)
-                .GroupBy(a => a.Date)
-                .Select(g => {
-                    double totalHours = 0;
-                    foreach (var a in g)
+            if (selectedPeriod == "yearly")
+            {
+                var startMonth = new DateTime(nowIst.Year, nowIst.Month, 1).AddMonths(-11);
+                var startMonthDate = DateOnly.FromDateTime(startMonth);
+                var startUtc = DateTime.SpecifyKind(startMonth, DateTimeKind.Utc);
+
+                var sessions = await _context.StudyStudysessions
+                    .AsNoTracking()
+                    .Where(s => s.StudentId == profile.UserId && s.StartTime >= startUtc && (s.Status == "completed" || s.Status == "ended"))
+                    .ToListAsync(ct);
+
+                var attendances = await _context.AttendanceAttendances
+                    .AsNoTracking()
+                    .Where(a => a.StudentId == profile.UserId && a.Date >= startMonthDate)
+                    .ToListAsync(ct);
+
+                for (int i = 0; i < 12; i++)
+                {
+                    var m = startMonth.AddMonths(i);
+                    var mStart = new DateOnly(m.Year, m.Month, 1);
+                    var mEnd = mStart.AddMonths(1).AddDays(-1);
+                    var monthLabel = m.ToString("MMM yyyy");
+
+                    var monthAtt = attendances.Where(a => a.Date >= mStart && a.Date <= mEnd).ToList();
+                    int presentCount = monthAtt.Count(a => a.IsPresent);
+                    int absentCount = monthAtt.Count(a => !a.IsPresent);
+
+                    attendanceList.Add(new
                     {
-                        if (!string.IsNullOrEmpty(a.TotalHours))
-                        {
-                            if (a.TotalHours.Contains(':'))
-                            {
-                                var parts = a.TotalHours.Split(':');
-                                if (parts.Length == 2 && int.TryParse(parts[0], out var hrs) && int.TryParse(parts[1], out var mins))
-                                {
-                                    totalHours += hrs + (mins / 60.0);
-                                }
-                            }
-                            else if (double.TryParse(a.TotalHours, out var h))
-                            {
-                                totalHours += h;
-                            }
-                        }
-                    }
-                    return new {
-                        label = g.Key.ToString("yyyy-MM-dd"),
-                        hours = Math.Round(totalHours, 2),
-                        target_hours = targetHours
-                    };
-                })
-                .OrderBy(s => s.label)
-                .ToList();
+                        label = monthLabel,
+                        present = presentCount,
+                        absent = absentCount,
+                        total = monthAtt.Count
+                    });
 
-            return ServiceResult<object>.Ok(new { period = "monthly", attendance = attendances, study = studyHours });
+                    double sessionMinutes = sessions
+                        .Where(s => {
+                            var istTime = TimeZoneInfo.ConvertTimeFromUtc(s.StartTime, _dateTimeProvider.IstTimeZone);
+                            return istTime.Year == m.Year && istTime.Month == m.Month;
+                        })
+                        .Sum(s => s.DurationMinutes);
+
+                    double sessionHours = sessionMinutes / 60.0;
+                    double attHours = 0;
+                    foreach (var a in monthAtt.Where(a => a.IsPresent))
+                    {
+                        attHours += ParseHours(a.TotalHours);
+                    }
+
+                    double finalHours = Math.Max(sessionHours, attHours);
+                    double monthTargetHours = Math.Round(targetDailyHours * 25, 2);
+
+                    studyList.Add(new
+                    {
+                        label = monthLabel,
+                        hours = Math.Round(finalHours, 2),
+                        target_hours = monthTargetHours
+                    });
+                }
+            }
+            else if (selectedPeriod == "monthly")
+            {
+                var startDate = todayIstDate.AddDays(-29);
+                var startUtc = DateTime.SpecifyKind(startDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+                var sessions = await _context.StudyStudysessions
+                    .AsNoTracking()
+                    .Where(s => s.StudentId == profile.UserId && s.StartTime >= startUtc && (s.Status == "completed" || s.Status == "ended"))
+                    .ToListAsync(ct);
+
+                var attendances = await _context.AttendanceAttendances
+                    .AsNoTracking()
+                    .Where(a => a.StudentId == profile.UserId && a.Date >= startDate)
+                    .ToListAsync(ct);
+
+                for (int i = 0; i < 30; i++)
+                {
+                    var d = startDate.AddDays(i);
+                    var dateLabel = d.ToString("dd MMM");
+
+                    var dayAtt = attendances.Where(a => a.Date == d).ToList();
+                    int presentCount = dayAtt.Count(a => a.IsPresent);
+                    int absentCount = dayAtt.Count(a => !a.IsPresent);
+
+                    attendanceList.Add(new
+                    {
+                        label = dateLabel,
+                        present = presentCount,
+                        absent = absentCount,
+                        total = dayAtt.Count
+                    });
+
+                    double sessionMinutes = sessions
+                        .Where(s => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(s.StartTime, _dateTimeProvider.IstTimeZone)) == d)
+                        .Sum(s => s.DurationMinutes);
+
+                    double sessionHours = sessionMinutes / 60.0;
+                    double attHours = dayAtt.Where(a => a.IsPresent).Sum(a => ParseHours(a.TotalHours));
+                    double finalHours = Math.Max(sessionHours, attHours);
+
+                    studyList.Add(new
+                    {
+                        label = dateLabel,
+                        hours = Math.Round(finalHours, 2),
+                        target_hours = targetDailyHours
+                    });
+                }
+            }
+            else // "weekly"
+            {
+                var startDate = todayIstDate.AddDays(-6);
+                var startUtc = DateTime.SpecifyKind(startDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+                var sessions = await _context.StudyStudysessions
+                    .AsNoTracking()
+                    .Where(s => s.StudentId == profile.UserId && s.StartTime >= startUtc && (s.Status == "completed" || s.Status == "ended"))
+                    .ToListAsync(ct);
+
+                var attendances = await _context.AttendanceAttendances
+                    .AsNoTracking()
+                    .Where(a => a.StudentId == profile.UserId && a.Date >= startDate)
+                    .ToListAsync(ct);
+
+                for (int i = 0; i < 7; i++)
+                {
+                    var d = startDate.AddDays(i);
+                    var dateLabel = d.ToString("ddd (dd/MM)");
+
+                    var dayAtt = attendances.Where(a => a.Date == d).ToList();
+                    int presentCount = dayAtt.Count(a => a.IsPresent);
+                    int absentCount = dayAtt.Count(a => !a.IsPresent);
+
+                    attendanceList.Add(new
+                    {
+                        label = dateLabel,
+                        present = presentCount,
+                        absent = absentCount,
+                        total = dayAtt.Count
+                    });
+
+                    double sessionMinutes = sessions
+                        .Where(s => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(s.StartTime, _dateTimeProvider.IstTimeZone)) == d)
+                        .Sum(s => s.DurationMinutes);
+
+                    double sessionHours = sessionMinutes / 60.0;
+                    double attHours = dayAtt.Where(a => a.IsPresent).Sum(a => ParseHours(a.TotalHours));
+                    double finalHours = Math.Max(sessionHours, attHours);
+
+                    studyList.Add(new
+                    {
+                        label = dateLabel,
+                        hours = Math.Round(finalHours, 2),
+                        target_hours = targetDailyHours
+                    });
+                }
+            }
+
+            return ServiceResult<object>.Ok(new { period = selectedPeriod, attendance = attendanceList, study = studyList });
+        }
+
+        private static double ParseHours(string? input)
+        {
+            if (string.IsNullOrEmpty(input)) return 0;
+            if (input.Contains(':'))
+            {
+                var parts = input.Split(':');
+                if (parts.Length >= 2 && int.TryParse(parts[0], out var hrs) && int.TryParse(parts[1], out var mins))
+                {
+                    return hrs + (mins / 60.0);
+                }
+            }
+            else if (double.TryParse(input, out var h))
+            {
+                return h;
+            }
+            return 0;
         }
 
         public async Task<ServiceResult<object>> SuspendStudentAsync(string pk, string? reason, CancellationToken ct = default)

@@ -118,9 +118,9 @@ namespace WebApplication1.Controllers
         [WebApplication1.Utils.AuthorizePermission(WebApplication1.Utils.Permissions.Analytics.Student)]
         [HttpGet("{pk}/analytics")]
         [ProducesResponseType(typeof(WebApplication1.Models.Responses.ApiResponse<object>), 200)]
-        public async Task<IActionResult> GetStudentAnalyticsAsync(string pk, CancellationToken ct)
+        public async Task<IActionResult> GetStudentAnalyticsAsync(string pk, [FromQuery] string? period, CancellationToken ct)
         {
-            var result = await _studentAdminService.GetStudentAnalyticsAsync(pk, ct);
+            var result = await _studentAdminService.GetStudentAnalyticsAsync(pk, period, ct);
             if (result.IsNotFound) return NotFound(WebApplication1.Models.Responses.ApiResponse<object>.Fail(result.Message));
 
             return Ok(WebApplication1.Models.Responses.ApiResponse<object>.Ok(result.Data));

@@ -12,7 +12,7 @@ namespace WebApplication1.Services
         Task<ServiceResult<object>> CreateStudentAsync(WebApplication1.Models.DTOs.Admin.StudentPayload payload, CancellationToken ct = default);
         Task<ServiceResult<object>> UpdateStudentAsync(string pk, WebApplication1.Models.DTOs.Admin.StudentPayload payload, CancellationToken ct = default);
         Task<ServiceResult<bool>> DeleteStudentAsync(string pk, CancellationToken ct = default);
-        Task<ServiceResult<object>> GetStudentAnalyticsAsync(string pk, CancellationToken ct = default);
+        Task<ServiceResult<object>> GetStudentAnalyticsAsync(string pk, string? period = "weekly", CancellationToken ct = default);
         Task<ServiceResult<object>> SuspendStudentAsync(string pk, string? reason, CancellationToken ct = default);
         Task<ServiceResult<object>> ActivateStudentAsync(string pk, CancellationToken ct = default);
         Task<ServiceResult<object>> GetStudentRelatedDataAsync(string pk, string kind, CancellationToken ct = default);
