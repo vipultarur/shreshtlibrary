@@ -77,6 +77,8 @@ namespace WebApplication1.Services
             {
                 s.Status = "completed";
                 s.EndTime = DateTime.UtcNow;
+                var duration = s.EndTime.Value - s.StartTime;
+                s.DurationMinutes = (int)Math.Max(0, duration.TotalMinutes - s.PausedMinutes);
             }
 
             var session = new WebApplication1.Models.StudyStudysession
@@ -120,10 +122,16 @@ namespace WebApplication1.Services
 
             session.Status = "completed";
             session.EndTime = DateTime.UtcNow;
-            if (request != null)
+            if (request != null && request.duration_minutes > 0)
             {
                 session.DurationMinutes = request.duration_minutes;
                 session.PausedMinutes = request.paused_minutes;
+            }
+            else
+            {
+                if (request != null) session.PausedMinutes = request.paused_minutes;
+                var duration = session.EndTime.Value - session.StartTime;
+                session.DurationMinutes = (int)Math.Max(0, duration.TotalMinutes - session.PausedMinutes);
             }
 
             await _context.SaveChangesAsync(ct);

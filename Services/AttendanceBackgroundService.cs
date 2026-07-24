@@ -526,13 +526,17 @@ namespace WebApplication1.Services
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 var yesterday = today.AddDays(-1);
+                var yesterdayStartIst = yesterday.ToDateTime(TimeOnly.MinValue);
+                var todayStartIst = today.ToDateTime(TimeOnly.MinValue);
+                var yesterdayStartUtc = TimeZoneInfo.ConvertTimeToUtc(yesterdayStartIst, _dateTimeProvider.IstTimeZone);
+                var todayStartUtc = TimeZoneInfo.ConvertTimeToUtc(todayStartIst, _dateTimeProvider.IstTimeZone);
                 
                 // Get completed sessions for yesterday
                 var query = context.StudyStudysessions
                     .Include(s => s.Student)
                     .ThenInclude(s => s.StudentsStudentprofile)
                     .Where(s => s.Status == "completed" && s.EndTime != null && 
-                                DateOnly.FromDateTime(s.StartTime) == yesterday);
+                                s.StartTime >= yesterdayStartUtc && s.StartTime < todayStartUtc);
 
                 var sessions = await query.ToListAsync(stoppingToken);
 
@@ -541,8 +545,11 @@ namespace WebApplication1.Services
                     .Select(g => new
                     {
                         Student = g.Select(s => s.Student).FirstOrDefault(),
-                        TotalHours = g.Sum(s => s.DurationMinutes) / 60.0
+                        TotalHours = g.Sum(s => s.DurationMinutes > 0 
+                            ? s.DurationMinutes 
+                            : (int)Math.Max(0, (s.EndTime!.Value - s.StartTime).TotalMinutes - s.PausedMinutes)) / 60.0
                     })
+                    .Where(x => x.TotalHours > 0)
                     .OrderByDescending(x => x.TotalHours)
                     .Take(3)
                     .ToList();

@@ -39,7 +39,7 @@ namespace WebApplication1.Services
                 .AsNoTracking()
                 .Include(sn => sn.Notification)
                     .ThenInclude(n => n.NotificationsNotificationimages)
-                .Where(sn => sn.StudentId == userId && sn.Notification.SentAt != null && !sn.IsDeleted)
+                .Where(sn => sn.StudentId == userId && (sn.Notification.SentAt != null || (sn.Notification.ScheduledAt != null && sn.Notification.ScheduledAt <= DateTime.UtcNow)) && !sn.IsDeleted)
                 .OrderByDescending(sn => sn.Notification.CreatedAt);
 
             var totalCount = await query.CountAsync(ct);

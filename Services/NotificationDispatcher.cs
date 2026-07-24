@@ -61,6 +61,7 @@ namespace WebApplication1.Services
                         LinkButtonText = data != null && data.ContainsKey("link_button_text") ? data["link_button_text"] : "",
                         CreatedAt = now,
                         ScheduledAt = now,
+                        SentAt = now,
                         SendPush = true,
                         FailureCount = 0,
                         SuccessCount = 0,
