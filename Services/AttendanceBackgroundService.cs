@@ -40,6 +40,7 @@ namespace WebApplication1.Services
                     await AutoGenerateQrAsync(stoppingToken);
                     await ProcessPendingToAbsentAsync(stoppingToken);
                     await ProcessAutoCheckoutAsync(stoppingToken);
+                    await ProcessAutoExpirationsAsync(stoppingToken);
                     await ProcessPlanExpiryRemindersAsync(stoppingToken);
                     await ProcessLeaderboardRewardsAsync(stoppingToken);
                 }
@@ -71,8 +72,13 @@ namespace WebApplication1.Services
                 return;
             }
 
+            var liveUserIds = await context.StudentsStudentprofiles
+                .Where(sp => sp.Status == "LIVE")
+                .Select(sp => sp.UserId)
+                .ToListAsync(stoppingToken);
+
             var activeStudents = await context.AccountsCustomusers
-                .Where(u => u.Role == "student" && u.IsActive)
+                .Where(u => u.Role == "student" && u.IsActive && liveUserIds.Contains(u.Id))
                 .ToListAsync(stoppingToken);
 
             var existingStudentIds = await context.AttendanceAttendances
@@ -213,6 +219,22 @@ namespace WebApplication1.Services
                 .Include(a => a.Student)
                 .Where(a => a.Method == "PENDING" && !a.IsPresent)
                 .ToListAsync(stoppingToken);
+
+            if (!pendingRecords.Any()) return;
+
+            // Remove PENDING records for non-LIVE students (Pending or Expired status)
+            var liveUserIds = await context.StudentsStudentprofiles
+                .Where(sp => sp.Status == "LIVE")
+                .Select(sp => sp.UserId)
+                .ToListAsync(stoppingToken);
+
+            var invalidPending = pendingRecords.Where(r => !liveUserIds.Contains(r.StudentId)).ToList();
+            if (invalidPending.Any())
+            {
+                context.AttendanceAttendances.RemoveRange(invalidPending);
+                await context.SaveChangesAsync(stoppingToken);
+                pendingRecords = pendingRecords.Except(invalidPending).ToList();
+            }
 
             if (!pendingRecords.Any()) return;
 
@@ -421,9 +443,69 @@ namespace WebApplication1.Services
             }
         }
 
+        /// <summary>
+        /// Automatically expire memberships whose EndDate is past today,
+        /// update student profile status from LIVE to EXPIRED, and clear cache.
+        /// </summary>
+        private async Task ProcessAutoExpirationsAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+
+                var expiredMemberships = await context.MembershipsMemberships
+                    .Where(m => m.Status.ToLower() == "active" && m.EndDate < today)
+                    .ToListAsync(stoppingToken);
+
+                if (!expiredMemberships.Any()) return;
+
+                var studentIds = expiredMemberships.Select(m => m.StudentId).Distinct().ToList();
+
+                foreach (var m in expiredMemberships)
+                {
+                    m.Status = "expired";
+                    m.IsActive = false;
+                }
+
+                foreach (var studentId in studentIds)
+                {
+                    var hasActiveRemaining = await context.MembershipsMemberships
+                        .AnyAsync(m => m.StudentId == studentId && m.Status.ToLower() == "active" && m.EndDate >= today, stoppingToken);
+
+                    if (!hasActiveRemaining)
+                    {
+                        var profile = await context.StudentsStudentprofiles
+                            .FirstOrDefaultAsync(p => p.UserId == studentId, stoppingToken);
+
+                        if (profile != null && profile.Status != "SUSPENDED" && profile.Status != "PENDING")
+                        {
+                            profile.Status = "EXPIRED";
+                        }
+                    }
+                }
+
+                await context.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Auto-expired {Count} memberships for {Date}.", expiredMemberships.Count, today);
+
+                var memCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+                foreach (var studentId in studentIds)
+                {
+                    memCache.Remove($"StudentDashboard_{studentId}");
+                    memCache.Remove($"Profile_{studentId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during automatic membership expiration.");
+            }
+        }
+
         private async Task ProcessPlanExpiryRemindersAsync(CancellationToken stoppingToken)
         {
             var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
+            await ProcessAutoExpirationsAsync(stoppingToken);
             if (_lastExpiryReminderDate >= today) return; // Only run once a day
 
             try

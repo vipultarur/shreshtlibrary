@@ -59,6 +59,14 @@ namespace WebApplication1.Services
 
         public async Task<object?> ScanQrAsync(long userId, string qrHash, CancellationToken ct)
         {
+            var profile = await _context.StudentsStudentprofiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId, ct);
+            if (profile == null || profile.Status != "LIVE")
+            {
+                throw new InvalidOperationException("You must have an active subscription plan to mark attendance.");
+            }
+
             var nowUtc = DateTime.UtcNow;
             var qr = await _context.AttendanceQrcodes
                 .FirstOrDefaultAsync(q => q.QrHash == qrHash && q.IsActive && !q.IsExpired && q.ExpiresAt > nowUtc, ct);
@@ -348,9 +356,20 @@ namespace WebApplication1.Services
 
         public async Task<object> GetAttendanceLogsAsync(long userId, CancellationToken ct)
         {
-            var logs = await _context.AttendanceAttendances
+            var profile = await _context.StudentsStudentprofiles
                 .AsNoTracking()
-                .Where(a => a.StudentId == userId)
+                .FirstOrDefaultAsync(p => p.UserId == userId, ct);
+
+            var query = _context.AttendanceAttendances
+                .AsNoTracking()
+                .Where(a => a.StudentId == userId);
+
+            if (profile == null || profile.Status == "PENDING" || profile.Status == "EXPIRED")
+            {
+                query = query.Where(a => a.IsPresent || a.IsManual);
+            }
+
+            var logs = await query
                 .OrderByDescending(a => a.Date)
                 .Select(a => new
                 {

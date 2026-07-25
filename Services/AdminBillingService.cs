@@ -333,6 +333,30 @@ namespace WebApplication1.Services
                     profile.Status = "LIVE";
                 }
 
+                var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5));
+                if (startDate <= today && endDate >= today)
+                {
+                    var isHoliday = await _context.AttendanceHolidays.AnyAsync(h => h.Date == today && h.IsActive, ct);
+                    if (!isHoliday)
+                    {
+                        var hasTodayAttendance = await _context.AttendanceAttendances.AnyAsync(a => a.StudentId == payload.student_id && a.Date == today, ct);
+                        if (!hasTodayAttendance)
+                        {
+                            _context.AttendanceAttendances.Add(new AttendanceAttendance
+                            {
+                                StudentId = payload.student_id,
+                                Date = today,
+                                IsPresent = false,
+                                MarkedAt = DateTime.UtcNow,
+                                TimeIn = default,
+                                LateMark = false,
+                                IsManual = false,
+                                Method = "PENDING"
+                            });
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
 

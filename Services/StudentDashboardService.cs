@@ -34,18 +34,28 @@ namespace WebApplication1.Services
             var today = todayDate;
 
             // 1. Handle Expirations First
-            var expiringMembership = await _context.MembershipsMemberships
+            var expiringMemberships = await _context.MembershipsMemberships
                 .Where(m => m.StudentId == userId && m.Status.ToLower() == "active" && m.EndDate < todayDate)
-                .FirstOrDefaultAsync(ct);
+                .ToListAsync(ct);
 
-            if (expiringMembership != null)
+            if (expiringMemberships.Any())
             {
-                expiringMembership.Status = "expired";
-                expiringMembership.IsActive = false;
-                var prof = await _context.StudentsStudentprofiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
-                if (prof != null)
+                foreach (var expiring in expiringMemberships)
                 {
-                    prof.Status = "EXPIRED";
+                    expiring.Status = "expired";
+                    expiring.IsActive = false;
+                }
+
+                var hasActiveRemaining = await _context.MembershipsMemberships
+                    .AnyAsync(m => m.StudentId == userId && m.Status.ToLower() == "active" && m.EndDate >= todayDate, ct);
+
+                if (!hasActiveRemaining)
+                {
+                    var prof = await _context.StudentsStudentprofiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
+                    if (prof != null && prof.Status != "SUSPENDED" && prof.Status != "PENDING")
+                    {
+                        prof.Status = "EXPIRED";
+                    }
                 }
                 await _context.SaveChangesAsync(ct);
             }
@@ -59,7 +69,7 @@ namespace WebApplication1.Services
                     Profile = s,
                     User = s.User,
                     ActiveMembership = _context.MembershipsMemberships
-                        .Where(m => m.StudentId == userId && m.Status.ToLower() == "active")
+                        .Where(m => m.StudentId == userId && m.Status.ToLower() == "active" && m.EndDate >= todayDate)
                         .OrderByDescending(m => m.EndDate)
                         .Select(m => new { Membership = m, PlanName = m.Plan.Name })
                         .FirstOrDefault(),
@@ -89,7 +99,7 @@ namespace WebApplication1.Services
             bool isPremium = false;
             string membershipStatus = status;
 
-            if (data.ActiveMembership != null)
+            if (data.ActiveMembership != null && data.ActiveMembership.Membership.EndDate >= todayDate)
             {
                 membershipPlan = data.ActiveMembership.PlanName ?? "Active Plan";
                 var endDate = data.ActiveMembership.Membership.EndDate;
@@ -97,6 +107,15 @@ namespace WebApplication1.Services
                 if (membershipDaysLeft < 0) membershipDaysLeft = 0;
                 isPremium = true;
                 membershipStatus = "LIVE";
+            }
+            else
+            {
+                isPremium = false;
+                if (status != "SUSPENDED" && status != "PENDING")
+                {
+                    status = "EXPIRED";
+                    membershipStatus = "EXPIRED";
+                }
             }
 
             var restrictedFeatures = new System.Collections.Generic.List<string>();
@@ -248,9 +267,12 @@ namespace WebApplication1.Services
                 }
             }
 
-            if (restrictedFeatures.Contains("attendance"))
+            if (restrictedFeatures.Contains("attendance") || status == "PENDING" || status == "EXPIRED")
             {
                 allowQrScan = false;
+                attendanceStatus = "";
+                markedAttendanceToday = false;
+                attendanceTime = null;
             }
 
             string razorpayKey = data.RazorpayKey ?? "";

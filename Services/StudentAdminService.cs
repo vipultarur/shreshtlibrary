@@ -105,11 +105,12 @@ namespace WebApplication1.Services
                 .Include(s => s.User)
                 .ToListAsync(ct);
 
+            var today = DateOnly.FromDateTime(_dateTimeProvider.IstNow);
             var userIds = dbStudents.Select(s => s.UserId).ToList();
 
             var activeMemberships = await _context.MembershipsMemberships
                 .AsNoTracking()
-                .Where(m => userIds.Contains(m.StudentId) && m.Status == "active")
+                .Where(m => userIds.Contains(m.StudentId) && m.Status == "active" && m.EndDate >= today)
                 .ToListAsync(ct);
 
             var students = dbStudents.Select(s => {
