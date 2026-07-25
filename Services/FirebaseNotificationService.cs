@@ -139,6 +139,11 @@ namespace WebApplication1.Services
                 _logger.LogInformation("[FCM] Single push delivered. MessageId={MessageId}", response);
                 return true;
             }
+            catch (FirebaseMessagingException fex) when (fex.MessagingErrorCode == MessagingErrorCode.Unregistered || (fex.Message != null && fex.Message.Contains("NotRegistered")))
+            {
+                _logger.LogWarning("[FCM] Push skipped - Device token is no longer registered/active: {Token}", token);
+                return false;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[FCM] Error sending single push to token {Token}", token);

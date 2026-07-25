@@ -130,7 +130,19 @@ namespace WebApplication1.Services
 
                             if (tokens.Count == 1)
                             {
-                                await firebaseService.SendPushNotificationAsync(tokens[0], title, body, mergedData);
+                                bool pushSuccess = await firebaseService.SendPushNotificationAsync(tokens[0], title, body, mergedData);
+                                if (!pushSuccess)
+                                {
+                                    var tokensToDelete = await context.NotificationsDevicetokens
+                                        .Where(t => t.Token == tokens[0])
+                                        .ToListAsync();
+                                    if (tokensToDelete.Any())
+                                    {
+                                        context.NotificationsDevicetokens.RemoveRange(tokensToDelete);
+                                        await context.SaveChangesAsync();
+                                        _logger.LogInformation("[FCM] Automatically purged unregistered FCM token: {Token}", tokens[0]);
+                                    }
+                                }
                             }
                             else
                             {
