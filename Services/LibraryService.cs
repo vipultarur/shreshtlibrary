@@ -16,7 +16,7 @@ namespace WebApplication1.Services
         private readonly ApplicationDbContext _context;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
         private static readonly TimeSpan LibraryInfoCacheDuration = TimeSpan.FromHours(24);
-        private static readonly TimeSpan LibraryMediaCacheDuration = TimeSpan.FromHours(12);
+        private static readonly TimeSpan LibraryMediaCacheDuration = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan LibraryReviewCacheDuration = TimeSpan.FromMinutes(30);
 
         public LibraryService(ApplicationDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
@@ -302,9 +302,11 @@ namespace WebApplication1.Services
                 {
                     id = s.Id,
                     title = s.Title,
+                    subtitle = s.Subtitle,
                     description = s.Subtitle,
                     image = !string.IsNullOrEmpty(s.Image) ? (s.Image.StartsWith("http") ? s.Image : $"{mediaBaseUrl}/media/{s.Image}") : null,
                     link = s.LinkUrl,
+                    link_url = s.LinkUrl,
                     order = s.SortOrder,
                     is_active = s.IsActive
                 })

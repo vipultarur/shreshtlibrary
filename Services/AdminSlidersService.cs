@@ -76,6 +76,7 @@ namespace WebApplication1.Services
             _repository.Add(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _cache.Remove("LibrarySlidersStudent");
             _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new
@@ -118,6 +119,7 @@ namespace WebApplication1.Services
             _repository.Update(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _cache.Remove("LibrarySlidersStudent");
             _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new
@@ -141,6 +143,7 @@ namespace WebApplication1.Services
             _repository.Remove(slider);
             await _repository.SaveChangesAsync(ct);
             _cache.Remove("LibrarySliders");
+            _cache.Remove("LibrarySlidersStudent");
             _versionStore.BumpVersion("slider");
 
             return ServiceResult<object>.Ok(new { message = "Slider deleted successfully." });

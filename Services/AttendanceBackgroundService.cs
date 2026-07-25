@@ -376,22 +376,31 @@ namespace WebApplication1.Services
                 // Close active study session if any
                 if (activeSessions.TryGetValue(record.StudentId, out var activeSession))
                 {
-                    activeSession.Status = "completed";
-                    activeSession.EndTime = cutoffUtc;
                     var sessionDuration = cutoffUtc - activeSession.StartTime;
-                    activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+                    var durMins = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
 
-                    context.CoreActivitylogs.Add(new CoreActivitylog
+                    if (durMins < 1)
                     {
-                        Action = "STUDY_SESSION_AUTO_CLOSED",
-                        UserId = record.StudentId,
-                        Timestamp = nowUtc,
-                        Details = System.Text.Json.JsonSerializer.Serialize(new
+                        context.StudyStudysessions.Remove(activeSession);
+                    }
+                    else
+                    {
+                        activeSession.Status = "completed";
+                        activeSession.EndTime = cutoffUtc;
+                        activeSession.DurationMinutes = durMins;
+
+                        context.CoreActivitylogs.Add(new CoreActivitylog
                         {
-                            SessionId = activeSession.Id,
-                            Duration = activeSession.DurationMinutes
-                        })
-                    });
+                            Action = "STUDY_SESSION_AUTO_CLOSED",
+                            UserId = record.StudentId,
+                            Timestamp = nowUtc,
+                            Details = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                SessionId = activeSession.Id,
+                                Duration = activeSession.DurationMinutes
+                            })
+                        });
+                    }
                 }
             }
 

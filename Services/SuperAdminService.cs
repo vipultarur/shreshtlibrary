@@ -369,7 +369,7 @@ namespace WebApplication1.Services
                         string subject = $"System Backup File 📦 - {libraryInfo?.LibraryName ?? "Shresht Library"}";
                         string htmlMessage = $@"
                             <h3>System Backup Generated</h3>
-                            <p>Please find attached the system backup JSON file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
+                            <p>Please find attached the system backup ZIP file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
                             <p><strong>Library Name:</strong> {libraryInfo?.LibraryName ?? "Shresht Library"}<br/>
                             <strong>Backup ID:</strong> {backupId}</p>";
 

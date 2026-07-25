@@ -659,6 +659,8 @@ namespace WebApplication1.Services
             _context.LibraryGalleryImages.Add(galleryImage);
             await _context.SaveChangesAsync(ct);
             _cache.Remove("LibraryGallery");
+            _cache.Remove("LibraryGalleryImages");
+            _versionStore.BumpVersion("gallery");
 
             return ServiceResult<object>.Ok(new
             {
@@ -678,6 +680,8 @@ namespace WebApplication1.Services
             _context.LibraryGalleryImages.Remove(image);
             await _context.SaveChangesAsync(ct);
             _cache.Remove("LibraryGallery");
+            _cache.Remove("LibraryGalleryImages");
+            _versionStore.BumpVersion("gallery");
             
             return ServiceResult<object>.Ok("Gallery image deleted.");
         }

@@ -122,7 +122,7 @@ namespace WebApplication1.Services
                     string subject = $"Weekly System Backup 📦 - {libraryInfo?.LibraryName ?? "Shresht Library"}";
                     string htmlMessage = $@"
                         <h3>Weekly System & Database Backup</h3>
-                        <p>Please find attached the latest system backup JSON file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
+                        <p>Please find attached the latest system backup ZIP file generated at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
                         <p>This automated email is delivered weekly to the library contact email and authorized system administrators.</p>
                         <p><strong>Library Name:</strong> {libraryInfo?.LibraryName ?? "Shresht Library"}<br/>
                         <strong>Backup ID:</strong> {backupId}</p>";

@@ -84,7 +84,25 @@ namespace WebApplication1.Services
 
             if (attachmentData != null && attachmentData.Length > 0)
             {
-                payloadObj["attachment"] = new[] { new { content = Convert.ToBase64String(attachmentData), name = attachmentName ?? "attachment.pdf" } };
+                var finalData = attachmentData;
+                var finalName = attachmentName ?? "attachment.pdf";
+
+                // Brevo API returns 400 (Unsupported file format) for raw .json attachments.
+                // Automatically compress .json content into a .zip archive before sending.
+                if (finalName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var ms = new System.IO.MemoryStream();
+                    using (var archive = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true))
+                    {
+                        var entry = archive.CreateEntry(finalName, System.IO.Compression.CompressionLevel.Optimal);
+                        using var entryStream = entry.Open();
+                        entryStream.Write(attachmentData, 0, attachmentData.Length);
+                    }
+                    finalData = ms.ToArray();
+                    finalName = System.IO.Path.ChangeExtension(finalName, ".zip");
+                }
+
+                payloadObj["attachment"] = new[] { new { content = Convert.ToBase64String(finalData), name = finalName } };
             }
 
             var json = System.Text.Json.JsonSerializer.Serialize(payloadObj);

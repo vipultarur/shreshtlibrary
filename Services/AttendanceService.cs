@@ -289,23 +289,32 @@ namespace WebApplication1.Services
 
             if (activeSession != null)
             {
-                activeSession.Status = "completed";
                 var endDt = _dateTimeProvider.IstNow;
                 activeSession.EndTime = endDt;
                 var sessionDuration = endDt - activeSession.StartTime;
-                activeSession.DurationMinutes = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
+                var durMins = (int)Math.Max(0, sessionDuration.TotalMinutes - activeSession.PausedMinutes);
 
-                _context.CoreActivitylogs.Add(new CoreActivitylog
+                if (durMins < 1)
                 {
-                    Action = "STUDY_SESSION_AUTO_CLOSED",
-                    UserId = userId,
-                    Timestamp = _dateTimeProvider.UtcNow,
-                    Details = System.Text.Json.JsonSerializer.Serialize(new
+                    _context.StudyStudysessions.Remove(activeSession);
+                }
+                else
+                {
+                    activeSession.Status = "completed";
+                    activeSession.DurationMinutes = durMins;
+
+                    _context.CoreActivitylogs.Add(new CoreActivitylog
                     {
-                        SessionId = activeSession.Id,
-                        Duration = activeSession.DurationMinutes
-                    })
-                });
+                        Action = "STUDY_SESSION_AUTO_CLOSED",
+                        UserId = userId,
+                        Timestamp = _dateTimeProvider.UtcNow,
+                        Details = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            SessionId = activeSession.Id,
+                            Duration = activeSession.DurationMinutes
+                        })
+                    });
+                }
             }
 
             await _context.SaveChangesAsync(ct);

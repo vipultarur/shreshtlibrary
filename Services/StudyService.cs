@@ -75,10 +75,18 @@ namespace WebApplication1.Services
 
             foreach (var s in activeSessions)
             {
-                s.Status = "completed";
-                s.EndTime = DateTime.UtcNow;
-                var duration = s.EndTime.Value - s.StartTime;
-                s.DurationMinutes = (int)Math.Max(0, duration.TotalMinutes - s.PausedMinutes);
+                var duration = DateTime.UtcNow - s.StartTime;
+                var durMins = (int)Math.Max(0, duration.TotalMinutes - s.PausedMinutes);
+                if (durMins < 1)
+                {
+                    _context.StudyStudysessions.Remove(s);
+                }
+                else
+                {
+                    s.Status = "completed";
+                    s.EndTime = DateTime.UtcNow;
+                    s.DurationMinutes = durMins;
+                }
             }
 
             var session = new WebApplication1.Models.StudyStudysession
@@ -108,7 +116,7 @@ namespace WebApplication1.Services
             {
                 var latestSession = await _context.StudyStudysessions
                     .AsNoTracking()
-                    .Where(s => s.StudentId == userId)
+                    .Where(s => s.StudentId == userId && (s.Status == "active" || s.DurationMinutes >= 1))
                     .OrderByDescending(s => s.StartTime)
                     .FirstOrDefaultAsync(ct);
 
@@ -120,19 +128,40 @@ namespace WebApplication1.Services
                 return ServiceResult<object>.Fail("No active session found.");
             }
 
-            session.Status = "completed";
             session.EndTime = DateTime.UtcNow;
+            int durMins = 0;
             if (request != null && request.duration_minutes > 0)
             {
-                session.DurationMinutes = request.duration_minutes;
+                durMins = request.duration_minutes;
                 session.PausedMinutes = request.paused_minutes;
             }
             else
             {
                 if (request != null) session.PausedMinutes = request.paused_minutes;
                 var duration = session.EndTime.Value - session.StartTime;
-                session.DurationMinutes = (int)Math.Max(0, duration.TotalMinutes - session.PausedMinutes);
+                durMins = (int)Math.Max(0, duration.TotalMinutes - session.PausedMinutes);
             }
+
+            if (durMins < 1)
+            {
+                // Discard 0m study session (do not store in database)
+                _context.StudyStudysessions.Remove(session);
+                await _context.SaveChangesAsync(ct);
+                _cache.Remove($"SessionHistory_{userId}");
+                return ServiceResult<object>.Ok(new
+                {
+                    id = session.Id,
+                    start_time = session.StartTime.ToString("O"),
+                    end_time = session.EndTime?.ToString("O"),
+                    duration_minutes = 0,
+                    paused_minutes = session.PausedMinutes,
+                    status = "discarded",
+                    student = session.StudentId
+                });
+            }
+
+            session.Status = "completed";
+            session.DurationMinutes = durMins;
 
             await _context.SaveChangesAsync(ct);
             _cache.Remove($"SessionHistory_{userId}");
@@ -180,6 +209,23 @@ namespace WebApplication1.Services
                 session.PausedMinutes = request.paused_minutes.Value;
             }
 
+            if ((session.Status == "completed" || session.Status == "ended") && session.DurationMinutes < 1)
+            {
+                _context.StudyStudysessions.Remove(session);
+                await _context.SaveChangesAsync(ct);
+                _cache.Remove($"SessionHistory_{userId}");
+                return ServiceResult<object>.Ok(new
+                {
+                    id = session.Id,
+                    start_time = session.StartTime.ToString("O"),
+                    end_time = session.EndTime?.ToString("O"),
+                    duration_minutes = 0,
+                    paused_minutes = session.PausedMinutes,
+                    status = "discarded",
+                    student = session.StudentId
+                });
+            }
+
             await _context.SaveChangesAsync(ct);
             _cache.Remove($"SessionHistory_{userId}");
             return ServiceResult<object>.Ok(FormatSession(session));
@@ -192,7 +238,7 @@ namespace WebApplication1.Services
             {
                 var sessions = await _context.StudyStudysessions
                     .AsNoTracking()
-                    .Where(s => s.StudentId == userId)
+                    .Where(s => s.StudentId == userId && (s.Status == "active" || s.DurationMinutes >= 1))
                     .OrderByDescending(s => s.StartTime)
                     .ToListAsync(ct);
 
