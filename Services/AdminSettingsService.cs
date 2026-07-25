@@ -15,11 +15,13 @@ namespace WebApplication1.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
+        private readonly WebApplication1.Services.Caching.CacheVersionStore _versionStore;
 
-        public AdminSettingsService(ApplicationDbContext context, IMemoryCache cache)
+        public AdminSettingsService(ApplicationDbContext context, IMemoryCache cache, WebApplication1.Services.Caching.CacheVersionStore versionStore)
         {
             _context = context;
             _cache = cache;
+            _versionStore = versionStore;
         }
 
         public async Task<ServiceResult<object>> GetSettingsAsync(string role, CancellationToken ct = default)
@@ -105,7 +107,7 @@ namespace WebApplication1.Services
                 result.Add("brevo_from_email", brevoFromEmail?.Value ?? "");
 
                 var enableEmailSystemStr = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "enable_email_system", ct);
-                result.Add("enable_email_system", enableEmailSystemStr?.Value == "true");
+                result.Add("enable_email_system", enableEmailSystemStr == null || enableEmailSystemStr.Value != "false");
 
                 var cloudinaryCloudName = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_cloud_name", ct);
                 var cloudinaryApiKey = await _context.CoreGlobalsettings.FirstOrDefaultAsync(s => s.Key == "cloudinary_api_key", ct);
@@ -238,6 +240,8 @@ namespace WebApplication1.Services
             _cache.Remove("AdminSettings_sub_super_admin");
             _cache.Remove("AdminSettings_admin");
             _cache.Remove("AdminSettings_");
+            _versionStore.BumpVersion("library_info");
+            _versionStore.BumpVersion("settings");
 
             return await GetSettingsAsync(role, ct);
         }
